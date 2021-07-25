@@ -4,6 +4,8 @@ This package has not been published to any registry yet.
 
 ```bash
 git clone https://github.com/dr666m1/project_bq_language_server.git
+cd project_bq_language_server
+npm run compile
 cd server
 npm install -g .
 ```
