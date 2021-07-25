@@ -1,0 +1,4 @@
+client/out
+server/out
+package-lock.json
+node_modules

@@ -1,0 +1,36 @@
+{
+  "private": true,
+  "name": "bq-extension-vscode",
+  "description": "Client for bq-language-server.",
+  "author": "dr666m1",
+  "license": "MIT",
+  "version": "0.0.1",
+  "publisher": "dr666m1",
+  "categories": [],
+  "keywords": [],
+  "engines": {
+    "vscode": "^1.43.0"
+  },
+  "activationEvents": [
+    "onLanguage:sql"
+  ],
+  "main": "./client/out/extension",
+  "contributes": {},
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -b",
+    "watch": "tsc -b -w",
+    "lint": "prettier --write . && eslint . --ext .ts,.tsx",
+    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "@types/node": "^12.12.0",
+    "@typescript-eslint/eslint-plugin": "^4.23.0",
+    "@typescript-eslint/parser": "^4.23.0",
+    "eslint": "^7.26.0",
+    "eslint-config-prettier": "^8.3.0",
+    "prettier": "^2.3.2",
+    "typescript": "^4.3.5"
+  }
+}

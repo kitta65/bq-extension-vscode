@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "author": "dr666m1",
+  "license": "MIT",
+  "version": "0.0.1",
+  "publisher": "dr666m1",
+  "engines": {
+    "vscode": "^1.52.0"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.52.0"
+  }
+}

@@ -1,0 +1,49 @@
+{
+  // https://code.visualstudio.com/Docs/editor/debugging#_launchjson-attributes
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "extensionHost",
+      "request": "launch",
+      "name": "Launch Client",
+      "runtimeExecutable": "${execPath}", // location of Code.exe
+      "args": ["--extensionDevelopmentPath=${workspaceRoot}"],
+      // NOTE outFiles may look redundant, but it is necessary
+      // https://github.com/Microsoft/vscode/issues/57752#issuecomment-417891343
+      "outFiles": ["${workspaceRoot}/client/out/**/*.js"],
+      "preLaunchTask": {
+        // specified in `.vscode/tasks.json`
+        "type": "npm",
+        "script": "watch"
+      }
+    },
+    {
+      // NOTE add `"bqExtensionVSCode.trace.server": "verbose"` to settings.json
+      "type": "node",
+      "request": "attach",
+      "name": "Attach to Server",
+      "port": 6009,
+      "restart": true,
+      // NOTE without this setting, you will see `Could not read source map` error on DEBUG CONSOLE
+      "outFiles": ["${workspaceRoot}/server/out/**/*.js"]
+    },
+    {
+      "name": "E2E Test",
+      "type": "extensionHost",
+      "request": "launch",
+      "runtimeExecutable": "${execPath}",
+      "args": [
+        "--extensionDevelopmentPath=${workspaceRoot}",
+        "--extensionTestsPath=${workspaceRoot}/client/out/test/index",
+        "${workspaceRoot}/client/testFixture"
+      ],
+      "outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Client + Server",
+      "configurations": ["Launch Client", "Attach to Server"]
+    }
+  ]
+}
