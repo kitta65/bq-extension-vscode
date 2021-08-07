@@ -1,5 +1,5 @@
 import * as path from "path";
-import { ExtensionContext } from "vscode";
+import * as vscode from "vscode";
 
 import {
   LanguageClient,
@@ -9,8 +9,14 @@ import {
 } from "vscode-languageclient/node";
 
 let client: LanguageClient;
+let statusBarItem: vscode.StatusBarItem;
 
-export function activate(context: ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
+  statusBarItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100
+  );
+
   const serverModule = context.asAbsolutePath(
     path.join("server", "out", "server.js")
   );
@@ -32,6 +38,12 @@ export function activate(context: ExtensionContext) {
     serverOptions,
     clientOptions
   );
+  client.onReady().then(() => {
+    client.onNotification("dryRun", (msg) => {
+      statusBarItem.text = msg;
+      statusBarItem.show();
+    });
+  });
   client.start();
 }
 

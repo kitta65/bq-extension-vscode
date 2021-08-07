@@ -31,30 +31,17 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
   const text = textDocument.getText();
   let diagnostic: Diagnostic;
   try {
-    // NOTE bqClient.createQueryJob()[1].statistics.totalBytesProcessed may be useful
+    let msg;
     const [_, apiResponse] = await bqClient.createQueryJob({
       query: text,
       dryRun: true,
     });
     if (apiResponse.statistics && apiResponse.statistics.totalBytesProcessed) {
-      diagnostic = {
-        severity: DiagnosticSeverity.Information,
-        range: {
-          start: textDocument.positionAt(0),
-          end: textDocument.positionAt(1),
-        },
-        message: apiResponse.statistics.totalBytesProcessed,
-      };
+      msg = formatBytes(Number(apiResponse.statistics.totalBytesProcessed));
     } else {
-      diagnostic = {
-        severity: DiagnosticSeverity.Error,
-        range: {
-          start: textDocument.positionAt(0),
-          end: textDocument.positionAt(1),
-        },
-        message: "Could not receive information about total bytes processed.",
-      };
+      msg = "???B";
     }
+    connection.sendNotification("dryRun", msg);
   } catch (e) {
     // TODO detect `not log in` error
     diagnostic = {
@@ -65,12 +52,29 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
       },
       message: e.message, // Syntax error: Unexpected end of script at [1:7]
     };
+    connection.sendNotification("dryRun", "ERROR");
+    connection.sendDiagnostics({
+      uri: textDocument.uri,
+      diagnostics: [diagnostic],
+    });
   }
-  connection.sendDiagnostics({
-    uri: textDocument.uri,
-    diagnostics: [diagnostic],
-  });
 }
 
 documents.listen(connection);
 connection.listen();
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) {
+    return `${bytes}B`;
+  } else if (bytes < 1024 ** 2) {
+    return `${(bytes / 1024 ** 2).toFixed(1)}KB`;
+  } else if (bytes < 1024 ** 3) {
+    return `${(bytes / 1024 ** 3).toFixed(1)}MB`;
+  } else if (bytes < 1024 ** 4) {
+    return `${(bytes / 1024 ** 4).toFixed(1)}GB`;
+  } else if (bytes < 1024 ** 5) {
+    return `${(bytes / 1024 ** 5).toFixed(1)}TB`;
+  } else {
+    return `${(bytes / 1024 ** 6).toFixed(1)}PB`;
+  }
+}
