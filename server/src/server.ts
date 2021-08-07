@@ -82,15 +82,15 @@ function formatBytes(bytes: number) {
   if (bytes < 1024) {
     return `${bytes}B`;
   } else if (bytes < 1024 ** 2) {
-    return `${(bytes / 1024 ** 2).toFixed(1)}KB`;
+    return `${(bytes / 1024).toFixed(1)}KB`;
   } else if (bytes < 1024 ** 3) {
-    return `${(bytes / 1024 ** 3).toFixed(1)}MB`;
+    return `${(bytes / 1024 ** 2).toFixed(1)}MB`;
   } else if (bytes < 1024 ** 4) {
-    return `${(bytes / 1024 ** 4).toFixed(1)}GB`;
+    return `${(bytes / 1024 ** 3).toFixed(1)}GB`;
   } else if (bytes < 1024 ** 5) {
-    return `${(bytes / 1024 ** 5).toFixed(1)}TB`;
+    return `${(bytes / 1024 ** 4).toFixed(1)}TB`;
   } else {
-    return `${(bytes / 1024 ** 6).toFixed(1)}PB`;
+    return `${(bytes / 1024 ** 5).toFixed(1)}PB`;
   }
 }
 
