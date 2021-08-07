@@ -49,9 +49,11 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
     connection.sendNotification("dryRun", msg);
   } catch (e) {
     // TODO detect `not log in` error
-    const msg = e.message; // Syntax error: Unexpected end of script at [1:7]
+    const msg = e.message;
     const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
     if (matchResult) {
+      // in the case of message like below
+      // Syntax error: Unexpected end of script at [1:7]
       const token = getTokenByRowColumn(
         text,
         Number(matchResult[1]),
@@ -66,11 +68,22 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
         },
         message: msg,
       };
-      connection.sendDiagnostics({
-        uri: textDocument.uri,
-        diagnostics: [diagnostic],
-      });
+    } else {
+      // in the case of message like below
+      // Table name "abc" missing dataset while no default dataset is set in the request
+      diagnostic = {
+        severity: DiagnosticSeverity.Error,
+        range: {
+          start: textDocument.positionAt(0),
+          end: textDocument.positionAt(text.length),
+        },
+        message: msg,
+      };
     }
+    connection.sendDiagnostics({
+      uri: textDocument.uri,
+      diagnostics: [diagnostic],
+    });
     connection.sendNotification("dryRun", "ERROR");
   }
 }
