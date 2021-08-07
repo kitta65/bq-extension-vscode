@@ -23,35 +23,9 @@ connection.onInitialize(() => {
   return result;
 });
 
-documents.onDidChangeContent((change) => {
-  validateTextDocument(change.document);
-});
-
 documents.onDidSave((change) => {
   dryRun(change.document);
 });
-
-async function validateTextDocument(textDocument: TextDocument): Promise<void> {
-  const text = textDocument.getText();
-  const pattern = /\b[A-Z]{2,}\b/g;
-  let m: RegExpExecArray | null;
-
-  let problems = 0;
-  const diagnostics: Diagnostic[] = [];
-  while ((m = pattern.exec(text)) && problems < 100) {
-    problems++;
-    const diagnostic: Diagnostic = {
-      severity: DiagnosticSeverity.Warning,
-      range: {
-        start: textDocument.positionAt(m.index),
-        end: textDocument.positionAt(m.index + m[0].length),
-      },
-      message: `${m[0]} is all uppercase.`,
-    };
-    diagnostics.push(diagnostic);
-  }
-  connection.sendDiagnostics({ uri: textDocument.uri, diagnostics });
-}
 
 async function dryRun(textDocument: TextDocument): Promise<void> {
   const text = textDocument.getText();
