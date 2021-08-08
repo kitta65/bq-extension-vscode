@@ -39,8 +39,8 @@ export function activate(context: vscode.ExtensionContext) {
     clientOptions
   );
   client.onReady().then(() => {
-    client.onNotification("dryRun", (msg) => {
-      statusBarItem.text = msg;
+    client.onNotification("bq/dryRun", (params) => {
+      statusBarItem.text = params.totalBytesProcessed;
       statusBarItem.show();
     });
   });
@@ -53,3 +53,4 @@ export function deactivate(): Thenable<void> | undefined {
   }
   return client.stop();
 }
+

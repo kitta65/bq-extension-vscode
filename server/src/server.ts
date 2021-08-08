@@ -46,9 +46,8 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
       uri: textDocument.uri,
       diagnostics: [],
     }); // clear old diagnostics
-    connection.sendNotification("dryRun", msg);
+    connection.sendNotification("bq/dryRun", { totalBytesProcessed: msg });
   } catch (e) {
-    // TODO detect `not log in` error
     const msg = e.message;
     const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
     if (matchResult) {
