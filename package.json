@@ -10,7 +10,7 @@
   "license": "MIT",
   "version": "0.0.4",
   "publisher": "dr666m1",
-  "categories": ["ProgrammingLanguages", "Formatters", "Linters"],
+  "categories": ["Programming Languages", "Formatters", "Linters"],
   "keywords": ["BigQuery"],
   "engines": {
     "vscode": "^1.43.0"

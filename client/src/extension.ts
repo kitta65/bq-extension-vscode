@@ -46,11 +46,15 @@ export function activate(context: vscode.ExtensionContext) {
     serverOptions,
     clientOptions
   );
+  const channel = client.outputChannel
   client.onReady().then(() => {
     client.onNotification("bq/dryRun", (params) => {
       statusBarItem.text = params.totalBytesProcessed;
       statusBarItem.show();
     });
+    client.onNotification("window/logMessage", (params) => {
+      channel.appendLine(params.message)
+    })
   });
   client.start();
 }

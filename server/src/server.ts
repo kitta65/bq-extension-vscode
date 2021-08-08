@@ -10,10 +10,14 @@ import {
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { tokenize } from "@dr666m1/bq2cst";
+import * as fs from "fs";
+import * as https from "https";
+import { exec } from "child_process";
 
 const connection = createConnection(ProposedFeatures.all);
 const bqClient = new BigQuery();
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
+const cacheDir = `${process.env.HOME}/.bq_extension_vscode/cache/`;
 
 connection.onInitialize(() => {
   const result: InitializeResult = {
@@ -26,7 +30,18 @@ connection.onInitialize(() => {
 
 documents.onDidSave((change) => {
   dryRun(change.document);
+  makeCache(change.document);
 });
+
+documents.onDidOpen((change) => {
+  makeCache(change.document);
+});
+
+function log(message: string) {
+  connection.sendNotification("window/logMessage", {
+    message: message,
+  });
+}
 
 async function dryRun(textDocument: TextDocument): Promise<void> {
   const text = textDocument.getText();
@@ -83,7 +98,7 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
       uri: textDocument.uri,
       diagnostics: [diagnostic],
     });
-    connection.sendNotification("dryRun", "ERROR");
+    connection.sendNotification("bq/dryRun", { totalBytesProcessed: "ERROR" });
   }
 }
 
@@ -132,4 +147,149 @@ function getTokenByRowColumn(text: string, row: number, column: number) {
     prevTokenPosition = currTokenPosition;
   }
   return tokens[tokens.length - 1];
+}
+
+async function makeCache(textDocument: TextDocument): Promise<void> {
+  // TODO prevent collision
+  const text = textDocument.getText();
+  fs.mkdir(cacheDir, { recursive: true }, (err) => {
+    if (err) log(err.toString());
+  });
+
+  // cache projects
+  const projects = await getAvailableProjects();
+  fs.writeFile(cacheDir + "projects.json", JSON.stringify(projects), (err) => {
+    if (err) log(err.toString());
+  });
+
+  // cache datasets
+  let datasets = [];
+  for (const proj of projects) {
+    try {
+      const [job] = await bqClient.createQueryJob({
+        query: `
+          SELECT
+            catalog_name AS project,
+            schema_name AS dataset,
+          FROM \`${proj}\`.INFORMATION_SCHEMA.SCHEMATA
+          LIMIT 10000;`,
+      });
+      const [rows] = await job.getQueryResults();
+      datasets.push(rows);
+    } catch (err) {
+      log(err.toString());
+    }
+  }
+  datasets = datasets.reduce((x, y) => x.concat(y), []);
+  fs.writeFile(`${cacheDir}/datasets.json`, JSON.stringify(datasets), (err) => {
+    if (err) log(err.toString());
+  });
+
+  // cache tables & columns
+  // TODO handle _TABLE_SUFFIX
+  const tokens = fineTokenize(text);
+  let tables = [];
+  try {
+    for (const dataset of datasets) {
+      if (!tokens.includes(dataset.dataset)) continue;
+      const [job] = await bqClient.createQueryJob({
+        query: `
+          SELECT
+            table_catalog AS project,
+            table_schema AS dataset,
+            table_name AS table,
+            column_name AS column,
+            data_type,
+          FROM \`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
+          LIMIT 10000;`,
+      });
+      const [rows] = await job.getQueryResults();
+      tables.push(rows);
+    }
+    tables = tables.reduce((x, y) => x.concat(y), []);
+    fs.writeFile(`${cacheDir}/tables.json`, JSON.stringify(tables), (err) => {
+      if (err) err.toString();
+    });
+  } catch (err) {
+    log(err.toString());
+  }
+}
+
+//function detectIdentifiersFromCst(cst: UnknownNode[]): string[] {
+//  const res: string[] = [];
+//  function detectIdentifierFromNode(node: UnknownNode) {
+//    if (node.node_type === "Identifier") {
+//      const literal = node.token.literal;
+//      const matchingResult = literal.match(/^`(.+)`$/);
+//      if (matchingResult) {
+//        matchingResult[1].split(".").forEach((x) => {
+//          res.push(x);
+//        });
+//      } else {
+//        res.push(literal);
+//      }
+//    }
+//    for (const [_, child] of Object.entries(node.children)) {
+//      if (child && "Node" in child) {
+//        detectIdentifierFromNode(child.Node as UnknownNode);
+//      } else if (child && "NodeVec" in child) {
+//        child.NodeVec.forEach((node) =>
+//          detectIdentifierFromNode(node as UnknownNode)
+//        );
+//      }
+//    }
+//  }
+//  for (const node of cst) {
+//    detectIdentifierFromNode(node);
+//  }
+//  return res;
+//}
+
+function fineTokenize(text: string) {
+  const tokens = tokenize(text);
+  const res: string[] = [];
+  for (const t of tokens) {
+    const matchingResult = t.literal.match(/^`(.+)`$/);
+    if (matchingResult) {
+      matchingResult[1].split(".").forEach((x) => res.push(x));
+    } else {
+      res.push(t.literal);
+    }
+  }
+  return res;
+}
+
+async function getAvailableProjects() {
+  const token = await getToken();
+  return new Promise<string[]>((resolve) => {
+    https
+      .request(
+        "https://bigquery.googleapis.com/bigquery/v2/projects",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        },
+        (res) => {
+          res.on("data", (chunk) => {
+            const json: {
+              projects: { projectReference: { projectId: string } }[];
+            } = JSON.parse("" + chunk);
+            const projects = json.projects.map((x) => {
+              return x.projectReference.projectId;
+            });
+            resolve(projects);
+          });
+        }
+      )
+      .end();
+  });
+}
+
+async function getToken() {
+  return new Promise<string>((resolve) => {
+    exec("gcloud auth application-default print-access-token", (_, stdout) => {
+      resolve(stdout.trim()); // remove "\n"
+    });
+  });
 }
