@@ -1,5 +1,5 @@
 # BQ Language Sever
-⚠️ This language server is designed to be used by [bq-extension-vscode](https://github.com/dr666m1/project_bq_language_server).
+⚠️ This language server is designed to be used by [bq-extension-vscode](https://github.com/dr666m1/project_bq_extension_vscode).
 Some features might be ignored by other client.
 
 ## Install

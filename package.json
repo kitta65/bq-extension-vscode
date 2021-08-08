@@ -8,10 +8,10 @@
   },
   "author": "dr666m1",
   "license": "MIT",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "publisher": "dr666m1",
-  "categories": [],
-  "keywords": [],
+  "categories": ["ProgrammingLanguages", "Formatters", "Linters"],
+  "keywords": ["BigQuery"],
   "engines": {
     "vscode": "^1.43.0"
   },
