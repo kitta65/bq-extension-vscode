@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as vscode from "vscode";
+import * as prettier from "prettier";
 
 import {
   LanguageClient,
@@ -15,6 +16,13 @@ export function activate(context: vscode.ExtensionContext) {
   statusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100
+  );
+
+  context.subscriptions.push(
+    vscode.languages.registerDocumentFormattingEditProvider(
+      { scheme: "file", language: "sql" },
+      new BQDocumentFormatter()
+    )
   );
 
   const serverModule = context.asAbsolutePath(
@@ -54,3 +62,27 @@ export function deactivate(): Thenable<void> | undefined {
   return client.stop();
 }
 
+class BQDocumentFormatter implements vscode.DocumentFormattingEditProvider {
+  public provideDocumentFormattingEdits(
+    document: vscode.TextDocument
+  ): vscode.TextEdit[] {
+    const original_text = document.getText();
+    const formatted_text = prettier.format(original_text, {
+      // NOTE you do not have to specify `plugins`
+      parser: "sql-parse",
+    });
+    return [
+      vscode.TextEdit.replace(
+        document.validateRange(
+          new vscode.Range(
+            0,
+            0,
+            document.lineCount, // NOTE intentionally missing `-1`
+            0
+          )
+        ),
+        formatted_text
+      ),
+    ];
+  }
+}

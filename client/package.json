@@ -8,9 +8,11 @@
     "vscode": "^1.52.0"
   },
   "dependencies": {
+    "@dr666m1/prettier-plugin-bq": "^0.2.8",
     "vscode-languageclient": "^7.0.0"
   },
   "devDependencies": {
+    "@types/prettier": "^2.3.2",
     "@types/vscode": "^1.52.0"
   }
 }

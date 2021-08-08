@@ -15,6 +15,7 @@ The [language server](https://github.com/dr666m1/project_bq_language_server/tree
 - Dry run on save
 - Highlight error
 - Show total bytes processed in status bar
+- Format source code using [prettier-plugin-bq](https://github.com/dr666m1/project_prettier_bq) (`Shift+Alt+F`)
 
 ## Advanced Settings
 ### file extensions
