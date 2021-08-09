@@ -8,7 +8,7 @@
   },
   "author": "dr666m1",
   "license": "MIT",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "publisher": "dr666m1",
   "categories": ["Programming Languages", "Formatters", "Linters"],
   "keywords": ["BigQuery"],
