@@ -16,6 +16,7 @@ The [language server](https://github.com/dr666m1/project_bq_extension_vscode/tre
 - Highlight error
 - Show total bytes processed in status bar
 - Format source code using [prettier-plugin-bq](https://github.com/dr666m1/project_prettier_bq) (`Shift+Alt+F`)
+- Show table schema on hover
 
 ## Advanced Settings
 ### file extensions

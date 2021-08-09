@@ -6,10 +6,11 @@ import {
   ProposedFeatures,
   TextDocumentSyncKind,
   InitializeResult,
+  Position,
 } from "vscode-languageserver/node";
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { tokenize } from "@dr666m1/bq2cst";
+import { tokenize, parse, UnknownNode } from "@dr666m1/bq2cst";
 import * as fs from "fs";
 import * as https from "https";
 import { exec } from "child_process";
@@ -18,11 +19,19 @@ const connection = createConnection(ProposedFeatures.all);
 const bqClient = new BigQuery();
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 const cacheDir = `${process.env.HOME}/.bq_extension_vscode/cache/`;
-
+const cst: Record<string, UnknownNode[]> = {};
+type TableRecord = {
+  project: string;
+  dataset: string;
+  table: string;
+  column: string;
+  data_type: string;
+};
 connection.onInitialize(() => {
   const result: InitializeResult = {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Incremental,
+      hoverProvider: true,
     },
   };
   return result;
@@ -31,6 +40,15 @@ connection.onInitialize(() => {
 documents.onDidSave((change) => {
   dryRun(change.document);
   makeCache(change.document);
+});
+
+documents.onDidChangeContent((change) => {
+  const uri = change.document.uri;
+  try {
+    cst[uri] = parse(change.document.getText());
+  } catch (err) {
+    //
+  }
 });
 
 documents.onDidOpen((change) => {
@@ -103,6 +121,11 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
 }
 
 documents.listen(connection);
+connection.onHover(async (params) => {
+  const uri = params.textDocument.uri;
+  const res = await provideHoverMessage(cst[uri], params.position);
+  return res;
+});
 connection.listen();
 
 function formatBytes(bytes: number) {
@@ -262,4 +285,79 @@ async function getToken() {
       resolve(stdout.trim()); // remove "\n"
     });
   });
+}
+
+async function provideHoverMessage(cst: UnknownNode[], position: Position) {
+  const res: string[] = [];
+  async function checkCache(
+    node: UnknownNode,
+    parent?: UnknownNode,
+    _?: UnknownNode // grandParent
+  ) {
+    if (node.token) {
+      const literal = node.token.literal;
+      const splittedLiteral = literal.split("\n");
+      const startPosition = {
+        line: node.token.line - 1,
+        character: node.token.column - 1,
+      };
+      const endPosition = {
+        line: startPosition.line + splittedLiteral.length - 1,
+        character:
+          splittedLiteral.length === 1
+            ? startPosition.character + literal.length
+            : splittedLiteral[splittedLiteral.length - 1].length - 1,
+      };
+      if (positionBetween(position, startPosition, endPosition)) {
+        log(literal);
+        // TODO check parent and grandParent
+        if (node.node_type === "Identifier") {
+          const matchingResult = literal.match(/^`(.+)`$/);
+          if (matchingResult) {
+            const splittedIdentifier = matchingResult[1].split(".");
+            const table = splittedIdentifier[splittedIdentifier.length - 1];
+            const tables = await getMatchTables(table);
+            tables.forEach((x: TableRecord) => res.push(x.column));
+          } else {
+            const tables = await getMatchTables(literal);
+            tables.forEach((x: TableRecord) => res.push(x.column));
+          }
+        }
+      } else {
+        for (const [_, child] of Object.entries(node.children)) {
+          if (child && "Node" in child) {
+            await checkCache(child.Node as UnknownNode, node, parent);
+          } else if (child && "NodeVec" in child) {
+            for (const n in child.NodeVec) {
+              await checkCache(n as UnknownNode, node, parent);
+            }
+          }
+        }
+      }
+    }
+  }
+  // TODO parallelize
+  for (const c of cst) {
+    await checkCache(c);
+  }
+  return { contents: res };
+}
+
+function positionBetween(position: Position, start: Position, end: Position) {
+  if (position.line < start.line) return false;
+  if (position.line === start.line && position.character < start.character)
+    return false;
+  if (end.line < position.line) return false;
+  if (position.line === end.line && end.character < position.character)
+    return false;
+  return true;
+}
+
+async function getMatchTables(ident: string) {
+  const jsonString = await fs.promises.readFile(
+    `${cacheDir}/tables.json`,
+    "utf8"
+  );
+  const jsonObj = JSON.parse(jsonString);
+  return jsonObj.filter((x: TableRecord) => x.table === ident);
 }
