@@ -1,7 +1,7 @@
 # BigQuery Extension for Visual Studio Code
 <img src="https://user-images.githubusercontent.com/26474260/128605753-b1596da9-eee2-4f84-b121-cda73d06aa19.png" width=500px>
 
-This is a Visual Studio Code extension for standardSQL, which is a dialect of BigQuery.
+This is a Visual Studio Code extension for standardSQL, which is a SQL dialect supported by BigQuery.
 The [language server](https://github.com/dr666m1/project_bq_extension_vscode/tree/main/server) itself is also available by other editors.
 
 ⚠️ This extension is still a work in progress, so the behavior would change frequently.

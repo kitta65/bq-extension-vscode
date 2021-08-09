@@ -1,7 +1,7 @@
 {
   "private": true,
   "name": "bq-extension-vscode",
-  "description": "Client for bq-language-server.",
+  "description": "Dry run and format standardSQL, which is a SQL dialect supported by BigQuery.",
   "repository": {
     "type": "git",
     "url": "https://github.com/dr666m1/project_bq_language_server"
