@@ -19,7 +19,23 @@
     "onLanguage:sql"
   ],
   "main": "./client/out/extension",
-  "contributes": {},
+  "contributes": {
+    "configuration": {
+      "title": "BigQuery Extension for Visual Studio Code",
+      "properties": {
+        "bqExtensionVSCode.trace.server": {
+          "type": "string",
+          "default": "off",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "description": "Log communications between Client / Server."
+        }
+      }
+    }
+  },
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -b",

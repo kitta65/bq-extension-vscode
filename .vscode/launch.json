@@ -18,7 +18,7 @@
       }
     },
     {
-      // NOTE add `"bqExtensionVSCode.trace.server": "verbose"` to settings.json
+      // NOTE after attachment, breakpoint is also available in server scripts
       "type": "node",
       "request": "attach",
       "name": "Attach to Server",
