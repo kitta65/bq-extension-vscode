@@ -215,36 +215,6 @@ async function makeCache(textDocument: TextDocument): Promise<void> {
   }
 }
 
-//function detectIdentifiersFromCst(cst: UnknownNode[]): string[] {
-//  const res: string[] = [];
-//  function detectIdentifierFromNode(node: UnknownNode) {
-//    if (node.node_type === "Identifier") {
-//      const literal = node.token.literal;
-//      const matchingResult = literal.match(/^`(.+)`$/);
-//      if (matchingResult) {
-//        matchingResult[1].split(".").forEach((x) => {
-//          res.push(x);
-//        });
-//      } else {
-//        res.push(literal);
-//      }
-//    }
-//    for (const [_, child] of Object.entries(node.children)) {
-//      if (child && "Node" in child) {
-//        detectIdentifierFromNode(child.Node as UnknownNode);
-//      } else if (child && "NodeVec" in child) {
-//        child.NodeVec.forEach((node) =>
-//          detectIdentifierFromNode(node as UnknownNode)
-//        );
-//      }
-//    }
-//  }
-//  for (const node of cst) {
-//    detectIdentifierFromNode(node);
-//  }
-//  return res;
-//}
-
 function fineTokenize(text: string) {
   const tokens = tokenize(text);
   const res: string[] = [];
