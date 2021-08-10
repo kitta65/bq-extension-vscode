@@ -1,0 +1,15 @@
+{
+  "scopeName": "bq.injection",
+  "injectionSelector": "L:source.sql -string -comment",
+  "patterns": [
+    {
+      "include": "#sharp-comment"
+    }
+  ],
+  "repository": {
+    "sharp-comment": {
+      "match": "#[^\n]*",
+      "name": "comment.sharp.sql"
+    }
+  }
+}

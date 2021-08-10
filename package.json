@@ -34,7 +34,14 @@
           "description": "Log communications between Client / Server."
         }
       }
-    }
+    },
+    "grammars": [
+      {
+        "path": "./syntaxes/injection.json",
+        "scopeName": "bq.injection",
+        "injectTo": ["source.sql"]
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
