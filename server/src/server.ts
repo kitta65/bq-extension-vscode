@@ -288,7 +288,7 @@ async function getToken() {
 }
 
 async function provideHoverMessage(cst: UnknownNode[], position: Position) {
-  const res: string[] = [];
+  const columns: string[] = [];
   async function checkCache(
     node: UnknownNode,
     parent?: UnknownNode,
@@ -317,10 +317,14 @@ async function provideHoverMessage(cst: UnknownNode[], position: Position) {
             const splittedIdentifier = matchingResult[1].split(".");
             const table = splittedIdentifier[splittedIdentifier.length - 1];
             const tables = await getMatchTables(table);
-            tables.forEach((x: TableRecord) => res.push(x.column));
+            tables.forEach((x: TableRecord) =>
+              columns.push(`${x.column}: ${x.data_type}`)
+            );
           } else {
             const tables = await getMatchTables(literal);
-            tables.forEach((x: TableRecord) => res.push(x.column));
+            tables.forEach((x: TableRecord) =>
+              columns.push(`${x.column}: ${x.data_type}`)
+            );
           }
         }
       } else {
@@ -340,7 +344,7 @@ async function provideHoverMessage(cst: UnknownNode[], position: Position) {
   for (const c of cst) {
     await checkCache(c);
   }
-  return { contents: res };
+  return { contents: columns };
 }
 
 function positionBetween(position: Position, start: Position, end: Position) {
