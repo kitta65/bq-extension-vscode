@@ -1,15 +1,15 @@
 {
-  "scopeName": "bq.injection",
-  "injectionSelector": "L:source.sql -string -comment",
+  "scopeName": "bigquery.injection",
+  "injectionSelector": "L:source.bigquery -string -comment",
   "patterns": [
     {
-      "include": "#sharp-comment"
+      "include": "#number-sign-comment"
     }
   ],
   "repository": {
-    "sharp-comment": {
+    "number-sign-comment": {
       "match": "#[^\n]*",
-      "name": "comment.sharp.sql"
+      "name": "comment.line.number-sign.bigquery"
     }
   }
 }

@@ -20,7 +20,7 @@ export function activate(context: vscode.ExtensionContext) {
 
   context.subscriptions.push(
     vscode.languages.registerDocumentFormattingEditProvider(
-      { scheme: "file", language: "sql" },
+      { scheme: "file", language: "bigquery" },
       new BQDocumentFormatter()
     )
   );
@@ -38,7 +38,7 @@ export function activate(context: vscode.ExtensionContext) {
     },
   };
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: "file", language: "sql" }],
+    documentSelector: [{ scheme: "file", language: "bigquery" }],
   };
   client = new LanguageClient(
     "bqExtensionVSCode",

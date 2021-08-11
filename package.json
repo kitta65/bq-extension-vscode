@@ -10,16 +10,37 @@
   "license": "MIT",
   "version": "0.0.5",
   "publisher": "dr666m1",
-  "categories": ["Programming Languages", "Formatters", "Linters"],
-  "keywords": ["BigQuery"],
+  "categories": [
+    "Programming Languages",
+    "Formatters",
+    "Linters"
+  ],
+  "keywords": [
+    "BigQuery"
+  ],
   "engines": {
     "vscode": "^1.43.0"
   },
   "activationEvents": [
-    "onLanguage:sql"
+    "onLanguage:bigquery"
   ],
   "main": "./client/out/extension",
   "contributes": {
+    "languages": [
+      {
+        "id": "bigquery",
+        "extensions": [
+          ".bq",
+          ".bigquery"
+        ],
+        "aliases": [
+          "BigQuery"
+        ],
+        "filenames": [],
+        "firstLine": "#standardSQL",
+        "configuration": "./language-configuration.json"
+      }
+    ],
     "configuration": {
       "title": "BigQuery Extension for Visual Studio Code",
       "properties": {
@@ -37,9 +58,16 @@
     },
     "grammars": [
       {
+        "language": "bigquery",
+        "path": "./syntaxes/bigquery.tmGrammar.json",
+        "scopeName": "source.bigquery"
+      },
+      {
         "path": "./syntaxes/injection.json",
-        "scopeName": "bq.injection",
-        "injectTo": ["source.sql"]
+        "scopeName": "bigquery.injection",
+        "injectTo": [
+          "source.bigquery"
+        ]
       }
     ]
   },
