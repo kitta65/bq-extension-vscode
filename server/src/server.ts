@@ -90,7 +90,6 @@ documents.onDidOpen((change) => {
   } finally {
     console.error = originalConsoleError;
   }
-  makeCache(change.document);
 });
 
 function log(message: string) {
@@ -176,6 +175,10 @@ connection.onCompletion(
      * You can assume that change event comes before the completion request,
      * otherwise `process.nextTick()` might be needed.
      * https://github.com/Microsoft/vscode/issues/28458
+     */
+    /* NOTE
+     * When this function returns [] (empty array),
+     * VSCode's default completion works.
      */
     const res: { label: string; detail?: string }[] = [];
     const line = position.position.line + 1;
