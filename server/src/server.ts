@@ -7,10 +7,12 @@ import {
   TextDocumentSyncKind,
   InitializeResult,
   Position,
+  CompletionItem,
+  CompletionParams,
 } from "vscode-languageserver/node";
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { tokenize, parse, UnknownNode } from "@dr666m1/bq2cst";
+import { tokenize, parse, UnknownNode, Token } from "@dr666m1/bq2cst";
 import * as fs from "fs";
 import * as https from "https";
 import { exec } from "child_process";
@@ -19,7 +21,10 @@ const connection = createConnection(ProposedFeatures.all);
 const bqClient = new BigQuery();
 const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 const cacheDir = `${process.env.HOME}/.bq_extension_vscode/cache/`;
-const cst: Record<string, UnknownNode[]> = {};
+const uriToCst: Record<string, UnknownNode[]> = {};
+const uriToTokens: Record<string, Token[]> = {};
+const uriToText: Record<string, string> = {};
+
 type TableRecord = {
   project: string;
   dataset: string;
@@ -27,11 +32,15 @@ type TableRecord = {
   column: string;
   data_type: string;
 };
+
 connection.onInitialize(() => {
   const result: InitializeResult = {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
+      completionProvider: {
+        triggerCharacters: [".", "`"],
+      },
     },
   };
   return result;
@@ -44,14 +53,24 @@ documents.onDidSave((change) => {
 
 documents.onDidChangeContent((change) => {
   const uri = change.document.uri;
+  uriToTokens[uri] = tokenize(change.document.getText());
+  uriToText[uri] = change.document.getText();
   try {
-    cst[uri] = parse(change.document.getText());
+    uriToCst[uri] = parse(change.document.getText());
   } catch (err) {
     //
   }
 });
 
 documents.onDidOpen((change) => {
+  const uri = change.document.uri;
+  uriToTokens[uri] = tokenize(change.document.getText());
+  uriToText[uri] = change.document.getText();
+  try {
+    uriToCst[uri] = parse(change.document.getText());
+  } catch (err) {
+    //
+  }
   makeCache(change.document);
 });
 
@@ -62,12 +81,12 @@ function log(message: string) {
 }
 
 async function dryRun(textDocument: TextDocument): Promise<void> {
-  const text = textDocument.getText();
+  const uri = textDocument.uri;
   let diagnostic: Diagnostic;
   try {
     let msg;
     const [_, apiResponse] = await bqClient.createQueryJob({
-      query: text,
+      query: uriToText[uri],
       dryRun: true,
     });
     if (apiResponse.statistics && apiResponse.statistics.totalBytesProcessed) {
@@ -76,7 +95,7 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
       msg = "???B";
     }
     connection.sendDiagnostics({
-      uri: textDocument.uri,
+      uri: uri,
       diagnostics: [],
     }); // clear old diagnostics
     connection.sendNotification("bq/dryRun", { totalBytesProcessed: msg });
@@ -87,11 +106,11 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
       // in the case of message like below
       // Syntax error: Unexpected end of script at [1:7]
       const token = getTokenByRowColumn(
-        text,
+        uri,
         Number(matchResult[1]),
         Number(matchResult[2])
       );
-      const position = getPositionByRowColumn(text, token.line, token.column);
+      const position = getPositionByRowColumn(uri, token.line, token.column);
       diagnostic = {
         severity: DiagnosticSeverity.Error,
         range: {
@@ -107,13 +126,13 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
         severity: DiagnosticSeverity.Error,
         range: {
           start: textDocument.positionAt(0),
-          end: textDocument.positionAt(text.length),
+          end: textDocument.positionAt(uriToText[uri].length),
         },
         message: msg,
       };
     }
     connection.sendDiagnostics({
-      uri: textDocument.uri,
+      uri: uri,
       diagnostics: [diagnostic],
     });
     connection.sendNotification("bq/dryRun", { totalBytesProcessed: "ERROR" });
@@ -123,9 +142,42 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
 documents.listen(connection);
 connection.onHover(async (params) => {
   const uri = params.textDocument.uri;
-  const res = await provideHoverMessage(cst[uri], params.position);
-  return res;
+  if (uriToCst[uri]) {
+    const res = await provideHoverMessage(uriToCst[uri], params.position);
+    return res;
+  } else {
+    return { contents: [] };
+  }
 });
+connection.onCompletion(
+  async (position: CompletionParams): Promise<CompletionItem[]> => {
+    /* NOTE
+     * You can assume that change event comes before the completion request,
+     * otherwise `process.nextTick()` might be needed.
+     * https://github.com/Microsoft/vscode/issues/28458
+     */
+    const res: { label: string; detail?: string }[] = [];
+    const line = position.position.line + 1;
+    const column = position.position.character + 1;
+    const currLiteral = getTokenByRowColumn(
+      position.textDocument.uri,
+      line,
+      column
+    ).literal;
+    if (currLiteral.startsWith("`")) {
+      const jsonString = await fs.promises.readFile(
+        `${cacheDir}/projects.json`,
+        "utf8"
+      );
+      const projects = JSON.parse(jsonString);
+      for (const project of projects) {
+        res.push({ label: project });
+      }
+    }
+    return res;
+  }
+);
+
 connection.listen();
 
 function formatBytes(bytes: number) {
@@ -144,32 +196,28 @@ function formatBytes(bytes: number) {
   }
 }
 
-function getPositionByRowColumn(text: string, row: number, column: number) {
-  const rowLengthArr = text.split("\n").map((x) => x.length + 1); // add length of "\n"
+function getPositionByRowColumn(uri: string, row: number, column: number) {
+  // row, column... 1-based index
+  const rowLengthArr = uriToText[uri].split("\n").map((x) => x.length + 1); // add length of "\n"
   const position =
-    rowLengthArr.slice(0, row - 1).reduce((x, y) => x + y, 0) + column;
-  return position - 1;
+    rowLengthArr.slice(0, row - 1).reduce((x, y) => x + y, 0) + (column - 1);
+  return position;
 }
 
-function getTokenByRowColumn(text: string, row: number, column: number) {
-  const errorPosition = getPositionByRowColumn(text, row, column);
-  const tokens = tokenize(text);
-  let prevTokenPosition = 0;
-  for (const token of tokens) {
-    const currTokenPosition = getPositionByRowColumn(
-      text,
-      token.line,
-      token.column
-    );
-    if (
-      prevTokenPosition <= errorPosition &&
-      errorPosition <= currTokenPosition
-    ) {
-      return token;
+function getTokenByRowColumn(uri: string, row: number, column: number) {
+  // row, column... 1-based index
+  const targetPosition = getPositionByRowColumn(uri, row, column);
+  const tokens = uriToTokens[uri];
+  let res = tokens[tokens.length - 1];
+  for (let i = 1; i < tokens.length; i++) {
+    const token = tokens[i];
+    const tokenPosition = getPositionByRowColumn(uri, token.line, token.column);
+    if (targetPosition < tokenPosition) {
+      res = tokens[i - 1];
+      break;
     }
-    prevTokenPosition = currTokenPosition;
   }
-  return tokens[tokens.length - 1];
+  return res;
 }
 
 async function makeCache(textDocument: TextDocument): Promise<void> {
@@ -292,7 +340,7 @@ async function provideHoverMessage(cst: UnknownNode[], position: Position) {
   async function checkCache(
     node: UnknownNode,
     parent?: UnknownNode,
-    _?: UnknownNode // grandParent
+    _grandParent?: UnknownNode
   ) {
     if (node.token) {
       const literal = node.token.literal;
