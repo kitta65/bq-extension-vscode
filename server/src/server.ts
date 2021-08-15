@@ -55,10 +55,17 @@ documents.onDidChangeContent((change) => {
   const uri = change.document.uri;
   uriToTokens[uri] = tokenize(change.document.getText());
   uriToText[uri] = change.document.getText();
+
+  const originalConsoleError = console.error;
+  console.error = () => {
+    /* NOP */
+  };
   try {
     uriToCst[uri] = parse(change.document.getText());
   } catch (err) {
     //
+  } finally {
+    console.error = originalConsoleError;
   }
 });
 
@@ -66,10 +73,17 @@ documents.onDidOpen((change) => {
   const uri = change.document.uri;
   uriToTokens[uri] = tokenize(change.document.getText());
   uriToText[uri] = change.document.getText();
+
+  const originalConsoleError = console.error;
+  console.error = () => {
+    /* NOP */
+  };
   try {
     uriToCst[uri] = parse(change.document.getText());
   } catch (err) {
     //
+  } finally {
+    console.error = originalConsoleError;
   }
   makeCache(change.document);
 });
