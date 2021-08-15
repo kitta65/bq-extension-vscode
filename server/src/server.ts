@@ -33,6 +33,11 @@ type TableRecord = {
   data_type: string;
 };
 
+type DatasetRecord = {
+  project: string;
+  dataset: string;
+};
+
 connection.onInitialize(() => {
   const result: InitializeResult = {
     capabilities: {
@@ -154,6 +159,7 @@ async function dryRun(textDocument: TextDocument): Promise<void> {
 }
 
 documents.listen(connection);
+
 connection.onHover(async (params) => {
   const uri = params.textDocument.uri;
   if (uriToCst[uri]) {
@@ -163,6 +169,7 @@ connection.onHover(async (params) => {
     return { contents: [] };
   }
 });
+
 connection.onCompletion(
   async (position: CompletionParams): Promise<CompletionItem[]> => {
     /* NOTE
@@ -178,7 +185,11 @@ connection.onCompletion(
       line,
       column
     ).literal;
-    if (currLiteral.startsWith("`")) {
+    const currCharacter =
+      uriToText[position.textDocument.uri][
+        getPositionByRowColumn(position.textDocument.uri, line, column) - 1
+      ]; // `-1` is needed to capture just typed character
+    if (currCharacter === "`") {
       const jsonString = await fs.promises.readFile(
         `${cacheDir}/projects.json`,
         "utf8"
@@ -186,6 +197,36 @@ connection.onCompletion(
       const projects = JSON.parse(jsonString);
       for (const project of projects) {
         res.push({ label: project });
+      }
+    } else if (currCharacter === ".") {
+      const matchingResult = currLiteral.match(/^`([^`]+)`?$/);
+      if (matchingResult) {
+        const idents = matchingResult[1].split(".");
+        const parent = idents[idents.length - 2];
+        const projects = JSON.parse(
+          await fs.promises.readFile(`${cacheDir}/projects.json`, "utf8")
+        );
+        const datasets: DatasetRecord[] = JSON.parse(
+          await fs.promises.readFile(`${cacheDir}/datasets.json`, "utf8")
+        );
+        const tables: TableRecord[] = JSON.parse(
+          await fs.promises.readFile(`${cacheDir}/tables.json`, "utf8")
+        );
+        if (projects.includes(parent)) {
+          datasets
+            .filter((x) => x.project === parent)
+            .forEach((x) => {
+              res.push({ label: x.dataset });
+            });
+        } else if (datasets.map((x) => x.dataset).includes(parent)) {
+          [
+            ...new Set(
+              tables.filter((x) => x.dataset === parent).map((x) => x.table)
+            ),
+          ].forEach((x) => res.push({ label: x }));
+        }
+      } else {
+        // completion out of `` is currently not supported
       }
     }
     return res;
