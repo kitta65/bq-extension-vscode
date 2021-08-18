@@ -436,10 +436,10 @@ async function provideHoverMessage(cst: UnknownNode[], position: Position) {
       } else {
         for (const [_, child] of Object.entries(node.children)) {
           if (child && "Node" in child) {
-            await checkCache(child.Node as UnknownNode, node, parent);
+            await checkCache(child.Node, node, parent);
           } else if (child && "NodeVec" in child) {
-            for (const n in child.NodeVec) {
-              await checkCache(n as UnknownNode, node, parent);
+            for (const n of child.NodeVec) {
+              await checkCache(n, node, parent);
             }
           }
         }
