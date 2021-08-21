@@ -9,6 +9,7 @@ import {
   Position,
   CompletionItem,
   CompletionParams,
+  DocumentFormattingParams,
 } from "vscode-languageserver/node";
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
@@ -16,6 +17,7 @@ import { tokenize, parse, UnknownNode, Token } from "@dr666m1/bq2cst";
 import * as fs from "fs";
 import * as https from "https";
 import { exec } from "child_process";
+import * as prettier from "prettier";
 
 const connection = createConnection(ProposedFeatures.all);
 const bqClient = new BigQuery();
@@ -43,6 +45,7 @@ connection.onInitialize(() => {
     capabilities: {
       textDocumentSync: TextDocumentSyncKind.Incremental,
       hoverProvider: true,
+      documentFormattingProvider: true,
       completionProvider: {
         triggerCharacters: [".", "`"],
       },
@@ -471,3 +474,28 @@ async function getMatchTables(ident: string) {
   const jsonObj = JSON.parse(jsonString);
   return jsonObj.filter((x: TableRecord) => x.table === ident);
 }
+
+connection.onRequest(
+  "textDocument/formatting",
+  async (params: DocumentFormattingParams) => {
+    const originalText = uriToText[params.textDocument.uri];
+    const splittedOriginalText = originalText.split("\n");
+    const formattedText = prettier.format(originalText, {
+      // NOTE you do not have to specify `plugins`
+      parser: "sql-parse",
+    }).slice(0, -1); // remove unnecessary \n
+    return [
+      {
+        range: {
+          start: { line: 0, character: 0 },
+          end: {
+            line: splittedOriginalText.length - 1,
+            character:
+              splittedOriginalText[splittedOriginalText.length - 1].length, // `-1` is not needed
+          },
+        },
+        newText: formattedText,
+      },
+    ];
+  }
+);
