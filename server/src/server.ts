@@ -2,24 +2,9 @@ import * as LSP from "vscode-languageserver/node";
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { tokenize, parse, UnknownNode, Token } from "@dr666m1/bq2cst";
-import * as fs from "fs";
-import * as https from "https";
-import { exec } from "child_process";
 import * as prettier from "prettier";
 import * as utils from "./utils";
-
-type TableRecord = {
-  project: string;
-  dataset: string;
-  table: string;
-  column: string;
-  data_type: string;
-};
-
-type DatasetRecord = {
-  project: string;
-  dataset: string;
-};
+import { CacheDB } from "./database";
 
 type Configuration = {
   trace: {
@@ -31,15 +16,12 @@ type Configuration = {
 export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
+    db: CacheDB,
     params: LSP.InitializeParams
   ): Promise<BQLanguageServer> {
-    return new BQLanguageServer(connection, params);
+    return new BQLanguageServer(connection, db, params);
   }
   private bqClient = new BigQuery();
-  private cacheDir = `${process.env.HOME}/.bq_extension_vscode/cache/`;
-  private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
-    TextDocument
-  );
   public capabilities: LSP.InitializeResult = {
     capabilities: {
       textDocumentSync: LSP.TextDocumentSyncKind.Incremental,
@@ -50,12 +32,16 @@ export class BQLanguageServer {
       },
     },
   };
+  private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
+    TextDocument
+  );
   private hasConfigurationCapability: boolean;
   private uriToCst: Record<string, UnknownNode[]> = {};
   private uriToText: Record<string, string> = {};
   private uriToTokens: Record<string, Token[]> = {};
   private constructor(
     private connection: LSP.Connection,
+    private db: CacheDB,
     params: LSP.InitializeParams
   ) {
     const capabilities = params.capabilities;
@@ -134,32 +120,6 @@ export class BQLanguageServer {
       });
     }
   }
-  private async getAvailableProjects() {
-    const token = await this.getToken();
-    return new Promise<string[]>((resolve) => {
-      https
-        .request(
-          "https://bigquery.googleapis.com/bigquery/v2/projects",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-          (res) => {
-            res.on("data", (chunk) => {
-              const json: {
-                projects: { projectReference: { projectId: string } }[];
-              } = JSON.parse("" + chunk);
-              const projects = json.projects.map((x) => {
-                return x.projectReference.projectId;
-              });
-              resolve(projects);
-            });
-          }
-        )
-        .end();
-    });
-  }
 
   private async getConfiguration(): Promise<Configuration> {
     if (!this.hasConfigurationCapability) {
@@ -182,110 +142,23 @@ export class BQLanguageServer {
   }
 
   private async getMatchTables(ident: string) {
-    const jsonString = await fs.promises.readFile(
-      `${this.cacheDir}/tables.json`,
-      "utf8"
+    const jsonObj = await this.db.dbAll(
+      "SELECT DISTINCT table_name, column, data_type FROM schemas;"
     );
-    const jsonObj = JSON.parse(jsonString);
-    return jsonObj.filter((x: TableRecord) => x.table === ident);
+    return jsonObj.filter((x) => x.table_name === ident);
   }
 
-  private async getToken() {
-    return new Promise<string>((resolve) => {
-      exec(
-        "gcloud auth application-default print-access-token",
-        (_, stdout) => {
-          resolve(stdout.trim()); // remove "\n"
-        }
-      );
-    });
-  }
-  private log(message: string) {
-    this.connection.sendNotification("window/logMessage", {
-      message: message,
-    });
-  }
-  private async makeCache(textDocument: TextDocument): Promise<void> {
-    // TODO prevent collision
-    fs.mkdir(this.cacheDir, { recursive: true }, (err) => {
-      if (err) this.log(err.toString());
-    });
+  //private log(message: string) {
+  //  this.connection.sendNotification("window/logMessage", {
+  //    message: message,
+  //  });
+  //}
 
-    // cache projects
-    const projects = await this.getAvailableProjects();
-    fs.writeFile(
-      this.cacheDir + "projects.json",
-      JSON.stringify(projects),
-      (err) => {
-        if (err) this.log(err.toString());
-      }
-    );
-
-    // cache datasets
-    let datasets = [];
-    for (const proj of projects) {
-      try {
-        const [job] = await this.bqClient.createQueryJob({
-          query: `
-          SELECT
-            catalog_name AS project,
-            schema_name AS dataset,
-          FROM \`${proj}\`.INFORMATION_SCHEMA.SCHEMATA
-          LIMIT 10000;`,
-        });
-        const [rows] = await job.getQueryResults();
-        datasets.push(rows);
-      } catch (err) {
-        this.log(err.toString());
-      }
-    }
-    datasets = datasets.reduce((x, y) => x.concat(y), []);
-    fs.writeFile(
-      `${this.cacheDir}/datasets.json`,
-      JSON.stringify(datasets),
-      (err) => {
-        if (err) this.log(err.toString());
-      }
-    );
-
-    // cache tables & columns
-    // TODO handle _TABLE_SUFFIX
-    const tokens = utils.breakdownTokens(this.uriToTokens[textDocument.uri]);
-    let tables = [];
-    try {
-      for (const dataset of datasets) {
-        if (!tokens.includes(dataset.dataset)) continue;
-        const [job] = await this.bqClient.createQueryJob({
-          query: `
-          SELECT
-            table_catalog AS project,
-            table_schema AS dataset,
-            table_name AS table,
-            column_name AS column,
-            data_type,
-          FROM \`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
-          LIMIT 10000;`,
-        });
-        const [rows] = await job.getQueryResults();
-        tables.push(rows);
-      }
-      tables = tables.reduce((x, y) => x.concat(y), []);
-      fs.writeFile(
-        `${this.cacheDir}/tables.json`,
-        JSON.stringify(tables),
-        (err) => {
-          if (err) err.toString();
-        }
-      );
-    } catch (err) {
-      this.log(err.toString());
-    }
-  }
   public register() {
     this.documents.listen(this.connection);
     this.documents.onDidSave((change) => {
       this.dryRun(change.document);
-      this.makeCache(change.document);
+      this.db.updateCache(Object.values(this.uriToText));
     });
     this.documents.onDidChangeContent((change) => {
       const uri = change.document.uri;
@@ -327,6 +200,9 @@ export class BQLanguageServer {
       "textDocument/formatting",
       this.onRequestFormatting.bind(this)
     );
+    this.connection.onShutdown(() => {
+      this.db.close();
+    });
   }
 
   private async onCompletion(
@@ -358,11 +234,9 @@ export class BQLanguageServer {
         ) - 1
       ]; // `-1` is needed to capture just typed character
     if (currCharacter === "`") {
-      const jsonString = await fs.promises.readFile(
-        `${this.cacheDir}/projects.json`,
-        "utf8"
-      );
-      const projects = JSON.parse(jsonString);
+      const projects = (
+        await this.db.dbAll("SELECT DISTINCT project FROM schemas;")
+      ).map((x) => x.project);
       for (const project of projects) {
         res.push({ label: project });
       }
@@ -371,15 +245,15 @@ export class BQLanguageServer {
       if (matchingResult) {
         const idents = matchingResult[1].split(".");
         const parent = idents[idents.length - 2];
-        const projects = JSON.parse(
-          await fs.promises.readFile(`${this.cacheDir}/projects.json`, "utf8")
-        );
-        const datasets: DatasetRecord[] = JSON.parse(
-          await fs.promises.readFile(`${this.cacheDir}/datasets.json`, "utf8")
-        );
-        const tables: TableRecord[] = JSON.parse(
-          await fs.promises.readFile(`${this.cacheDir}/tables.json`, "utf8")
-        );
+        const projects = (
+          await this.db.dbAll("SELECT DISTINCT project FROM schemas;")
+        ).map((x) => x.project);
+        const datasets: { project: string; dataset: string }[] =
+          await this.db.dbAll("SELECT DISTINCT project, dataset FROM schemas;");
+        const tables: { dataset: string; table_name: string }[] =
+          await this.db.dbAll(
+            "SELECT DISTINCT dataset, table_name FROM schemas;"
+          );
         if (projects.includes(parent)) {
           datasets
             .filter((x) => x.project === parent)
@@ -389,7 +263,9 @@ export class BQLanguageServer {
         } else if (datasets.map((x) => x.dataset).includes(parent)) {
           [
             ...new Set(
-              tables.filter((x) => x.dataset === parent).map((x) => x.table)
+              tables
+                .filter((x) => x.dataset === parent)
+                .map((x) => x.table_name)
             ),
           ].forEach((x) => res.push({ label: x }));
         }
@@ -464,7 +340,6 @@ export class BQLanguageServer {
               : splittedLiteral[splittedLiteral.length - 1].length - 1,
         };
         if (utils.positionBetween(position, startPosition, endPosition)) {
-          this.log(literal);
           // TODO check parent and grandParent
           if (node.node_type === "Identifier") {
             const matchingResult = literal.match(/^`(.+)`$/);
@@ -472,12 +347,12 @@ export class BQLanguageServer {
               const splittedIdentifier = matchingResult[1].split(".");
               const table = splittedIdentifier[splittedIdentifier.length - 1];
               const tables = await this.getMatchTables(table);
-              tables.forEach((x: TableRecord) =>
+              tables.forEach((x) =>
                 columns.push(`${x.column}: ${x.data_type}`)
               );
             } else {
               const tables = await this.getMatchTables(literal);
-              tables.forEach((x: TableRecord) =>
+              tables.forEach((x) =>
                 columns.push(`${x.column}: ${x.data_type}`)
               );
             }
