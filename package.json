@@ -45,6 +45,7 @@
       "title": "BigQuery Extension for Visual Studio Code",
       "properties": {
         "bqExtensionVSCode.trace.server": {
+          "scope": "application",
           "type": "string",
           "default": "off",
           "enum": [
@@ -53,6 +54,21 @@
             "verbose"
           ],
           "description": "Log communications between Client / Server."
+        },
+        "bqExtensionVSCode.formatting.formatMultilineComment": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Print multiline commnets in ['starred-block'](https://eslint.org/docs/rules/multiline-comment-style) style."
+        },
+        "bqExtensionVSCode.formatting.printKeywordsInUpperCase": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Print [reserved keywords](https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords) and functions in upper case."
+        },
+        "bqExtensionVSCode.formatting.printPseudoColumnsInUpperCase": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Print pseudo columns (e.g. `_PARTITIONDATE`, `_PARTITIONTIME`) in upper case. When `printKeywordsInUpperCase` is `false`, this option is ignored."
         }
       }
     },

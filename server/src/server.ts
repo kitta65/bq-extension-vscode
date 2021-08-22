@@ -21,6 +21,13 @@ type DatasetRecord = {
   dataset: string;
 };
 
+type Configuration = {
+  trace: {
+    server: "off" | "messages" | "verbose";
+  };
+  formatting: Record<string, boolean>;
+};
+
 export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
@@ -153,6 +160,19 @@ export class BQLanguageServer {
         .end();
     });
   }
+
+  private async getConfiguration(): Promise<Configuration> {
+    if (!this.hasConfigurationCapability) {
+      return {
+        trace: { server: "messages" },
+        formatting: {},
+      };
+    }
+    return await this.connection.workspace.getConfiguration({
+      section: "bqExtensionVSCode",
+    });
+  }
+
   private getDocInfo(uri: string) {
     return {
       text: this.uriToText[uri],
@@ -394,13 +414,14 @@ export class BQLanguageServer {
   }
 
   private async onRequestFormatting(params: LSP.DocumentFormattingParams) {
+    const config = await this.getConfiguration();
     const originalText = this.uriToText[params.textDocument.uri];
     const splittedOriginalText = originalText.split("\n");
     const formattedText = prettier
-      .format(
-        originalText,
-        { parser: "sql-parse" } // NOTE you do not have to specify `plugins`
-      )
+      .format(originalText, {
+        parser: "sql-parse",
+        ...config.formatting,
+      })
       .slice(0, -1); // remove unnecessary \n
     return [
       {
