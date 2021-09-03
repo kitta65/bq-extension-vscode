@@ -37,7 +37,11 @@
         "--extensionTestsPath=${workspaceRoot}/client/out/test/index",
         "${workspaceRoot}/client/testFixture"
       ],
-      "outFiles": ["${workspaceRoot}/client/out/test/**/*.js"]
+      "outFiles": ["${workspaceRoot}/client/out/test/**/*.js"],
+      "preLaunchTask": {
+        "type": "npm",
+        "script": "compile"
+      }
     }
   ],
   "compounds": [
