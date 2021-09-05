@@ -36,7 +36,6 @@ async function globalSetup() {
   console.log("Start initializing the extension");
   const ext = vscode.extensions.getExtension("dr666m1.bq-extension-vscode")!;
   await ext.activate();
-  await util.sleep(3 * 1000); // wait for server activation
   util.focusOnTextDocument("cache.bq")
   await vscode.commands.executeCommand("bqExtensionVSCode.clearCache");
   await vscode.commands.executeCommand("bqExtensionVSCode.updateCache");

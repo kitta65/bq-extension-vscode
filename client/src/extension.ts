@@ -11,7 +11,7 @@ import {
 
 let client: LanguageClient;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   const statusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100
@@ -40,7 +40,8 @@ export function activate(context: vscode.ExtensionContext) {
   );
   const channel = client.outputChannel;
   const commands = [clearCache, updateCache, dryRun];
-  client.onReady().then(() => {
+  client.start();
+  await client.onReady().then(() => {
     client.onNotification("bq/totalBytesProcessed", (params) => {
       statusBarItem.text = params.totalBytesProcessed;
       statusBarItem.show();
@@ -57,7 +58,6 @@ export function activate(context: vscode.ExtensionContext) {
       context.subscriptions.push(disposable);
     });
   });
-  client.start();
 }
 
 export function deactivate(): Thenable<void> | undefined {
