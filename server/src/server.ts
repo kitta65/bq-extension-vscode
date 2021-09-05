@@ -3,7 +3,7 @@ import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
 import { tokenize, parse, UnknownNode, Token } from "@dr666m1/bq2cst";
 import * as prettier from "prettier";
-import * as utils from "./utils";
+import * as util from "./util";
 import { CacheDB } from "./database";
 
 type Configuration = {
@@ -49,8 +49,7 @@ export class BQLanguageServer {
       capabilities.workspace && capabilities.workspace.configuration
     );
   }
-  private async dryRun(textDocument: TextDocument): Promise<void> {
-    const uri = textDocument.uri;
+  private async dryRun(uri: LSP.URI): Promise<void> {
     let diagnostic: LSP.Diagnostic;
     try {
       let msg;
@@ -62,7 +61,7 @@ export class BQLanguageServer {
         apiResponse.statistics &&
         apiResponse.statistics.totalBytesProcessed
       ) {
-        msg = utils.formatBytes(
+        msg = util.formatBytes(
           Number(apiResponse.statistics.totalBytesProcessed)
         );
       } else {
@@ -72,41 +71,36 @@ export class BQLanguageServer {
         uri: uri,
         diagnostics: [],
       }); // clear old diagnostics
-      this.connection.sendNotification("bq/dryRun", {
+      this.connection.sendNotification("bq/totalBytesProcessed", {
         totalBytesProcessed: msg,
       });
-    } catch (e) {
+    } catch (e: any) {
       const msg = e.message;
       const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
       if (matchResult) {
         // in the case of message like below
         // Syntax error: Unexpected end of script at [1:7]
-        const token = utils.getTokenByRowColumn(
-          this.getDocInfo(uri),
-          Number(matchResult[1]),
-          Number(matchResult[2])
-        );
-        const position = utils.getPositionByRowColumn(
-          this.getDocInfo(uri),
-          token.line,
-          token.column
-        );
         diagnostic = {
           severity: LSP.DiagnosticSeverity.Error,
-          range: {
-            start: textDocument.positionAt(position),
-            end: textDocument.positionAt(position + token.literal.length),
-          },
+          range: util.getTokenRangeByRowColumn(
+            this.getDocInfo(uri),
+            Number(matchResult[1]),
+            Number(matchResult[2])
+          ),
           message: msg,
         };
       } else {
         // in the case of message like below
         // Table name "abc" missing dataset while no default dataset is set in the request
+        const splittedText = this.uriToText[uri].split("\n");
         diagnostic = {
           severity: LSP.DiagnosticSeverity.Error,
           range: {
-            start: textDocument.positionAt(0),
-            end: textDocument.positionAt(this.uriToText[uri].length),
+            start: { line: 0, character: 0 },
+            end: {
+              line: splittedText.length - 1,
+              character: splittedText[splittedText.length - 1].length,
+            },
           },
           message: msg,
         };
@@ -115,7 +109,7 @@ export class BQLanguageServer {
         uri: uri,
         diagnostics: [diagnostic],
       });
-      this.connection.sendNotification("bq/dryRun", {
+      this.connection.sendNotification("bq/totalBytesProcessed", {
         totalBytesProcessed: "ERROR",
       });
     }
@@ -142,7 +136,7 @@ export class BQLanguageServer {
   }
 
   private async getMatchTables(ident: string) {
-    const jsonObj = await this.db.dbAll(
+    const jsonObj = await this.db.select(
       "SELECT DISTINCT table_name, column, data_type FROM schemas;"
     );
     return jsonObj.filter((x) => x.table_name === ident);
@@ -157,7 +151,7 @@ export class BQLanguageServer {
   public register() {
     this.documents.listen(this.connection);
     this.documents.onDidSave((change) => {
-      this.dryRun(change.document);
+      this.dryRun(change.document.uri);
       this.db.updateCache(Object.values(this.uriToText));
     });
     this.documents.onDidChangeContent((change) => {
@@ -197,8 +191,17 @@ export class BQLanguageServer {
     this.connection.onCompletion(this.onCompletion.bind(this));
     this.connection.onHover(this.onHover.bind(this));
     this.connection.onRequest(
+      "bq/clearCache",
+      this.onRequestClearCache.bind(this)
+    );
+    this.connection.onRequest("bq/dryRun", this.onRequestDryRun.bind(this));
+    this.connection.onRequest(
       "textDocument/formatting",
       this.onRequestFormatting.bind(this)
+    );
+    this.connection.onRequest(
+      "bq/updateCache",
+      this.onRequestUpdateCache.bind(this)
     );
     this.connection.onShutdown(() => {
       this.db.close();
@@ -220,14 +223,14 @@ export class BQLanguageServer {
     const res: { label: string; detail?: string }[] = [];
     const line = position.position.line + 1;
     const column = position.position.character + 1;
-    const currLiteral = utils.getTokenByRowColumn(
+    const currLiteral = util.getTokenByRowColumn(
       this.getDocInfo(position.textDocument.uri),
       line,
       column
     ).literal;
     const currCharacter =
       this.uriToText[position.textDocument.uri][
-        utils.getPositionByRowColumn(
+        util.getPositionByRowColumn(
           this.getDocInfo(position.textDocument.uri),
           line,
           column
@@ -235,7 +238,7 @@ export class BQLanguageServer {
       ]; // `-1` is needed to capture just typed character
     if (currCharacter === "`") {
       const projects = (
-        await this.db.dbAll("SELECT DISTINCT project FROM schemas;")
+        await this.db.select("SELECT DISTINCT project FROM schemas;")
       ).map((x) => x.project);
       for (const project of projects) {
         res.push({ label: project });
@@ -246,12 +249,14 @@ export class BQLanguageServer {
         const idents = matchingResult[1].split(".");
         const parent = idents[idents.length - 2];
         const projects = (
-          await this.db.dbAll("SELECT DISTINCT project FROM schemas;")
+          await this.db.select("SELECT DISTINCT project FROM schemas;")
         ).map((x) => x.project);
         const datasets: { project: string; dataset: string }[] =
-          await this.db.dbAll("SELECT DISTINCT project, dataset FROM schemas;");
+          await this.db.select(
+            "SELECT DISTINCT project, dataset FROM schemas;"
+          );
         const tables: { dataset: string; table_name: string }[] =
-          await this.db.dbAll(
+          await this.db.select(
             "SELECT DISTINCT dataset, table_name FROM schemas;"
           );
         if (projects.includes(parent)) {
@@ -289,6 +294,27 @@ export class BQLanguageServer {
     }
   }
 
+  private async onRequestClearCache(
+    params: LSP.RequestMessage
+  ): Promise<LSP.ResponseMessage> {
+    await this.db.clearCache();
+    return {
+      jsonrpc: params.jsonrpc,
+      id: params.id,
+      result: "The cache was cleared successfully.",
+    };
+  }
+
+  private async onRequestDryRun(
+    params: LSP.RequestMessage & { uri: string }
+  ): Promise<LSP.ResponseMessage> {
+    await this.dryRun(params.uri);
+    return {
+      jsonrpc: params.jsonrpc,
+      id: params.id,
+    };
+  }
+
   private async onRequestFormatting(params: LSP.DocumentFormattingParams) {
     const config = await this.getConfiguration();
     const originalText = this.uriToText[params.textDocument.uri];
@@ -312,6 +338,17 @@ export class BQLanguageServer {
         newText: formattedText,
       },
     ];
+  }
+
+  private async onRequestUpdateCache(
+    params: LSP.RequestMessage
+  ): Promise<LSP.ResponseMessage> {
+    await this.db.updateCache(Object.values(this.uriToText));
+    return {
+      jsonrpc: params.jsonrpc,
+      id: params.id,
+      result: "The cache was updated successfully.",
+    };
   }
 
   private async provideHoverMessage(
@@ -339,7 +376,7 @@ export class BQLanguageServer {
               ? startPosition.character + literal.length
               : splittedLiteral[splittedLiteral.length - 1].length - 1,
         };
-        if (utils.positionBetween(position, startPosition, endPosition)) {
+        if (util.positionBetween(position, startPosition, endPosition)) {
           // TODO check parent and grandParent
           if (node.node_type === "Identifier") {
             const matchingResult = literal.match(/^`(.+)`$/);

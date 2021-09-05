@@ -36,6 +36,36 @@ export function formatBytes(bytes: number) {
   }
 }
 
+export function getTokenRangeByRowColumn(
+  docInfo: DocumentInfo,
+  row: number,
+  column: number
+): LSP.Range {
+  // row, column... 1-based index
+
+  // start position
+  const start = { line: row - 1, character: column - 1 };
+
+  // end position
+  const token = getTokenByRowColumn(docInfo, row, column);
+  const splittedLiteral = token.literal.split("\n");
+  let endLine
+  let endChacter
+  if (splittedLiteral.length === 1) {
+    endLine = start.line
+    endChacter = start.character + splittedLiteral[splittedLiteral.length - 1].length
+  } else {
+    endLine = start.line + splittedLiteral.length - 1
+    endChacter = splittedLiteral[splittedLiteral.length - 1].length
+  }
+  const end = {
+    line: endLine,
+    character: endChacter,
+  };
+
+  return { start: start, end: end };
+}
+
 export function getPositionByRowColumn(
   docInfo: DocumentInfo,
   row: number,

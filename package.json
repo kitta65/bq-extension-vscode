@@ -4,7 +4,7 @@
   "description": "Dry run / Format / Show table schema",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dr666m1/bq_language_server"
+    "url": "https://github.com/dr666m1/bq-extension-vscode"
   },
   "author": "dr666m1",
   "license": "MIT",
@@ -41,6 +41,39 @@
         "configuration": "./language-configuration.json"
       }
     ],
+    "commands": [
+      {
+        "command": "bqExtensionVSCode.dryRun",
+        "title": "Dry Run",
+        "category": "BQExtensionVSCode"
+      },
+      {
+        "command": "bqExtensionVSCode.clearCache",
+        "title": "Clear Cache",
+        "category": "BQExtensionVSCode"
+      },
+      {
+        "command": "bqExtensionVSCode.updateCache",
+        "title": "Update Cache",
+        "category": "BQExtensionVSCode"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        {
+          "command": "bqExtensionVSCode.dryRun",
+          "when": "editorLangId == bigquery"
+        },
+        {
+          "command": "bqExtensionVSCode.clearCache",
+          "when": "editorLangId == bigquery"
+        },
+        {
+          "command": "bqExtensionVSCode.updateCache",
+          "when": "editorLangId == bigquery"
+        }
+      ]
+    },
     "configuration": {
       "title": "BigQuery Extension for Visual Studio Code",
       "properties": {

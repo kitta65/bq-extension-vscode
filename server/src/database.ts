@@ -24,7 +24,8 @@ export class CacheDB {
   public static async initialize(filename: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
     const db = new CacheDB(filename);
-    await db.dbRun(
+    db.db.configure("busyTimeout", 100 * 1000) // default value seems to be 10 * 1000 ms
+    await db.run(
       "CREATE TABLE IF NOT EXISTS schemas (project TEXT, dataset TEXT, table_name TEXT, column TEXT, data_type TEXT, PRIMARY KEY (project, dataset, table_name, column));"
     );
     return db;
@@ -37,13 +38,29 @@ export class CacheDB {
     this.db = new sqlite3.Database(filename);
   }
 
+  public clearCache() {
+    return new Promise<void>((resolve) => {
+      // NOTE `run()` is not suitable here because it runs only one statement.
+      this.db.exec(
+        `
+BEGIN;
+DROP TABLE schemas;
+CREATE TABLE schemas (project TEXT, dataset TEXT, table_name TEXT, column TEXT, data_type TEXT, PRIMARY KEY (project, dataset, table_name, column));
+COMMIT;`,
+        (_) => {
+          resolve();
+        }
+      );
+    });
+  }
+
   public close() {
     if (this.db.open) {
       this.db.close();
     }
   }
 
-  public dbAll(sql: string): Promise<any[]> {
+  public select(sql: string): Promise<any[]> {
     return new Promise((resolve, reject) => {
       this.db.all(sql, (err, rows) => {
         if (err) {
@@ -54,12 +71,12 @@ export class CacheDB {
     });
   }
 
-  private dbRun(sql: string, params?: any[]): Promise<void> {
+  private run(sql: string, params?: any[]): Promise<void> {
     return new Promise((resolve, reject) => {
       if (params) {
         /* NOTE
          * Type inference is a little confusiong here.
-         * The last argument is also considered as a part of `params`.
+         * The last argument (arrow function) is also considered as a part of `params`.
          */
         this.db.run(sql, ...params, (err: Error | null) => {
           if (err) {
@@ -161,7 +178,7 @@ LIMIT 10000;`,
       }
       schemaRecords.forEach((s) =>
         insertQueries.push(
-          this.dbRun(
+          this.run(
             "INSERT OR IGNORE INTO schemas (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?)",
             [s.project, s.dataset, s.table, s.column, s.data_type]
           )

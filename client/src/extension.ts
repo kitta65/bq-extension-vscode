@@ -6,13 +6,13 @@ import {
   LanguageClientOptions,
   ServerOptions,
   TransportKind,
+  ResponseMessage,
 } from "vscode-languageclient/node";
 
 let client: LanguageClient;
-let statusBarItem: vscode.StatusBarItem;
 
 export function activate(context: vscode.ExtensionContext) {
-  statusBarItem = vscode.window.createStatusBarItem(
+  const statusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
     100
   );
@@ -39,13 +39,22 @@ export function activate(context: vscode.ExtensionContext) {
     clientOptions
   );
   const channel = client.outputChannel;
+  const commands = [clearCache, updateCache, dryRun];
   client.onReady().then(() => {
-    client.onNotification("bq/dryRun", (params) => {
+    client.onNotification("bq/totalBytesProcessed", (params) => {
       statusBarItem.text = params.totalBytesProcessed;
       statusBarItem.show();
     });
     client.onNotification("window/logMessage", (params) => {
       channel.appendLine(params.message);
+    });
+    // NOTE Some commands should not be executed before the client is ready.
+    commands.forEach((c) => {
+      const disposable = vscode.commands.registerCommand(
+        `bqExtensionVSCode.${c.name}`,
+        c.bind(client)
+      );
+      context.subscriptions.push(disposable);
     });
   });
   client.start();
@@ -56,4 +65,35 @@ export function deactivate(): Thenable<void> | undefined {
     return undefined;
   }
   return client.stop();
+}
+
+async function clearCache(this: LanguageClient): Promise<void> {
+  const response = (await this.sendRequest("bq/clearCache")) as ResponseMessage;
+  handleResponse(response);
+}
+
+async function dryRun(this: LanguageClient): Promise<void> {
+  const uri = vscode.window.activeTextEditor.document.uri;
+  const response = (await this.sendRequest("bq/dryRun", {
+    uri: uri.toString(),
+  })) as ResponseMessage;
+  handleResponse(response);
+}
+
+async function updateCache(this: LanguageClient): Promise<void> {
+  const response = (await this.sendRequest(
+    "bq/updateCache"
+  )) as ResponseMessage;
+  handleResponse(response);
+}
+
+function handleResponse(response: ResponseMessage): void {
+  const err = response.error;
+  if (err) {
+    vscode.window.showInformationMessage(`${err.code}: ${err.message}`);
+  } else if (response.result) {
+    vscode.window.showInformationMessage(`${response.result}`);
+  } else {
+    vscode.window.showInformationMessage("done!");
+  }
 }
