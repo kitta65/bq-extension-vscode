@@ -68,15 +68,26 @@ COMMIT;`,
     }
   }
 
-  public select(sql: string): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      this.db.all(sql, (err, rows) => {
-        if (err) {
-          reject(err);
-        }
-        resolve(rows);
+  public select(sql: string, params?: any[]): Promise<any[]> {
+    if (params) {
+      return new Promise((resolve, reject) => {
+        this.db.all(sql, ...params, (err: Error | null, rows: any[]) => {
+          if (err) {
+            reject(err);
+          }
+          resolve(rows);
+        });
       });
-    });
+    } else {
+      return new Promise((resolve, reject) => {
+        this.db.all(sql, (err, rows) => {
+          if (err) {
+            reject(err);
+          }
+          resolve(rows);
+        });
+      });
+    }
   }
 
   private run(sql: string, params?: any[]): Promise<void> {
@@ -146,6 +157,7 @@ COMMIT;`,
 
     const datasetResults: { project: string; dataset: string }[][] = [];
     for (const proj of projects) {
+      if (!texts.some((txt) => txt.includes(proj))) continue;
       try {
         const [job] = await this.bqClient.createQueryJob({
           query: `
@@ -166,14 +178,14 @@ LIMIT 10000;`,
     const insertQueries: Promise<void>[] = [];
     for (const dataset of datasetRecords) {
       let schemaRecords: SchemaRecord[] = [];
+      if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
       try {
-        if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
         const [job] = await this.bqClient.createQueryJob({
           query: `
-SELECT
+SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
-  table_name AS table,
+  REGEXP_REPLACE(table_name, r'[0-9]{2,}$', '*') AS table,
   column_name AS column,
   data_type,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS

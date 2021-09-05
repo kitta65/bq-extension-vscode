@@ -135,11 +135,13 @@ export class BQLanguageServer {
     };
   }
 
-  private async getMatchTables(ident: string) {
-    const jsonObj = await this.db.select(
-      "SELECT DISTINCT table_name, column, data_type FROM schemas;"
+  private async getSchemaRecords(ident: string) {
+    const trimmedIdent = ident.replace(/[0-9]{2,}|\*$/, "");
+    const schemaRecords = await this.db.select(
+      "SELECT DISTINCT column, data_type FROM schemas WHERE table_name like ? || '%'",
+      [trimmedIdent]
     );
-    return jsonObj.filter((x) => x.table_name === ident);
+    return schemaRecords;
   }
 
   //private log(message: string) {
@@ -295,7 +297,7 @@ export class BQLanguageServer {
   }
 
   private async onRequestClearCache(_: any) {
-    this.db.clearCache()
+    this.db.clearCache();
     return "The cache was cleared successfully.";
   }
 
@@ -366,12 +368,12 @@ export class BQLanguageServer {
             if (matchingResult) {
               const splittedIdentifier = matchingResult[1].split(".");
               const table = splittedIdentifier[splittedIdentifier.length - 1];
-              const tables = await this.getMatchTables(table);
+              const tables = await this.getSchemaRecords(table);
               tables.forEach((x) =>
                 columns.push(`${x.column}: ${x.data_type}`)
               );
             } else {
-              const tables = await this.getMatchTables(literal);
+              const tables = await this.getSchemaRecords(literal);
               tables.forEach((x) =>
                 columns.push(`${x.column}: ${x.data_type}`)
               );
