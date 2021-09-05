@@ -152,7 +152,6 @@ export class BQLanguageServer {
     this.documents.listen(this.connection);
     this.documents.onDidSave((change) => {
       this.dryRun(change.document.uri);
-      this.db.updateCache(Object.values(this.uriToText));
     });
     this.documents.onDidChangeContent((change) => {
       const uri = change.document.uri;
@@ -219,6 +218,7 @@ export class BQLanguageServer {
     /* NOTE
      * When this function returns [] (empty array),
      * VSCode's default completion works.
+     * https://github.com/microsoft/vscode/issues/21611
      */
     const res: { label: string; detail?: string }[] = [];
     const line = position.position.line + 1;
@@ -294,25 +294,14 @@ export class BQLanguageServer {
     }
   }
 
-  private async onRequestClearCache(
-    params: LSP.RequestMessage
-  ): Promise<LSP.ResponseMessage> {
-    await this.db.clearCache();
-    return {
-      jsonrpc: params.jsonrpc,
-      id: params.id,
-      result: "The cache was cleared successfully.",
-    };
+  private async onRequestClearCache(_: any) {
+    this.db.clearCache()
+    return "The cache was cleared successfully.";
   }
 
-  private async onRequestDryRun(
-    params: LSP.RequestMessage & { uri: string }
-  ): Promise<LSP.ResponseMessage> {
+  private async onRequestDryRun(params: { uri: string }) {
     await this.dryRun(params.uri);
-    return {
-      jsonrpc: params.jsonrpc,
-      id: params.id,
-    };
+    return null;
   }
 
   private async onRequestFormatting(params: LSP.DocumentFormattingParams) {
@@ -340,15 +329,9 @@ export class BQLanguageServer {
     ];
   }
 
-  private async onRequestUpdateCache(
-    params: LSP.RequestMessage
-  ): Promise<LSP.ResponseMessage> {
+  private async onRequestUpdateCache(_: any) {
     await this.db.updateCache(Object.values(this.uriToText));
-    return {
-      jsonrpc: params.jsonrpc,
-      id: params.id,
-      result: "The cache was updated successfully.",
-    };
+    return "The cache was updated successfully.";
   }
 
   private async provideHoverMessage(

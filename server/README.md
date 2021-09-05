@@ -21,7 +21,7 @@ npm install -g .
 ```json
 {
   "languageserver": {
-    "sql": {
+    "bigquery": {
       "command": "bq-language-server",
       "args": ["--stdio"],
       "filetypes": ["sql", "bq"]
@@ -30,3 +30,4 @@ npm install -g .
 }
 ```
 
+You can use `CocRequestAsync` instead of VSCode commands (e.g. `:call CocRequestAsync("bigquery", "bq/updateCache")`).

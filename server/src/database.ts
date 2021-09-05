@@ -20,14 +20,22 @@ type SchemaRecord = {
 
 sqlite3.verbose();
 
+const createTableSQL = `
+CREATE TABLE IF NOT EXISTS schemas (
+  project TEXT,
+  dataset TEXT,
+  table_name TEXT,
+  column TEXT,
+  data_type TEXT,
+  PRIMARY KEY (project, dataset, table_name, column)
+);`;
+
 export class CacheDB {
   public static async initialize(filename: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
     const db = new CacheDB(filename);
-    db.db.configure("busyTimeout", 100 * 1000) // default value seems to be 10 * 1000 ms
-    await db.run(
-      "CREATE TABLE IF NOT EXISTS schemas (project TEXT, dataset TEXT, table_name TEXT, column TEXT, data_type TEXT, PRIMARY KEY (project, dataset, table_name, column));"
-    );
+    db.db.configure("busyTimeout", 100 * 1000); // default value seems to be 10 * 1000 ms
+    await db.run(createTableSQL);
     return db;
   }
 
@@ -45,7 +53,7 @@ export class CacheDB {
         `
 BEGIN;
 DROP TABLE schemas;
-CREATE TABLE schemas (project TEXT, dataset TEXT, table_name TEXT, column TEXT, data_type TEXT, PRIMARY KEY (project, dataset, table_name, column));
+${createTableSQL}
 COMMIT;`,
         (_) => {
           resolve();

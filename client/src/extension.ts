@@ -68,32 +68,32 @@ export function deactivate(): Thenable<void> | undefined {
 }
 
 async function clearCache(this: LanguageClient): Promise<void> {
-  const response = (await this.sendRequest("bq/clearCache")) as ResponseMessage;
-  handleResponse(response);
-}
-
-async function dryRun(this: LanguageClient): Promise<void> {
-  const uri = vscode.window.activeTextEditor.document.uri;
-  const response = (await this.sendRequest("bq/dryRun", {
-    uri: uri.toString(),
-  })) as ResponseMessage;
-  handleResponse(response);
-}
-
-async function updateCache(this: LanguageClient): Promise<void> {
-  const response = (await this.sendRequest(
-    "bq/updateCache"
-  )) as ResponseMessage;
-  handleResponse(response);
-}
-
-function handleResponse(response: ResponseMessage): void {
-  const err = response.error;
-  if (err) {
-    vscode.window.showInformationMessage(`${err.code}: ${err.message}`);
-  } else if (response.result) {
-    vscode.window.showInformationMessage(`${response.result}`);
+  const response = await this.sendRequest("bq/clearCache");
+  if (typeof response === "string") {
+    vscode.window.showInformationMessage(response);
   } else {
     vscode.window.showInformationMessage("done!");
   }
 }
+
+async function dryRun(this: LanguageClient): Promise<void> {
+  const uri = vscode.window.activeTextEditor.document.uri;
+  const response = await this.sendRequest("bq/dryRun", {
+    uri: uri.toString(),
+  });
+  if (typeof response === "string") {
+    vscode.window.showInformationMessage(response);
+  } else {
+    vscode.window.showInformationMessage("done!");
+  }
+}
+
+async function updateCache(this: LanguageClient): Promise<void> {
+  const response = await this.sendRequest("bq/updateCache");
+  if (typeof response === "string") {
+    vscode.window.showInformationMessage(response);
+  } else {
+    vscode.window.showInformationMessage("done!");
+  }
+}
+
