@@ -10,7 +10,12 @@ declare module "sqlite3" {
   }
 }
 
-type SchemaRecord = {
+type DatasetRecord = {
+  project: string;
+  dataset: string;
+};
+
+type ColumnRecord = {
   project: string;
   dataset: string;
   table: string;
@@ -20,22 +25,38 @@ type SchemaRecord = {
 
 sqlite3.verbose();
 
-const createTableSQL = `
-CREATE TABLE IF NOT EXISTS schemas (
+const createTableProjects = `
+CREATE TABLE IF NOT EXISTS projects (
+  project TEXT,
+  PRIMARY KEY (project)
+);`;
+const createTableDatasets = `
+CREATE TABLE IF NOT EXISTS datasets (
+  project TEXT,
+  dataset TEXT,
+  PRIMARY KEY (project, dataset)
+);`;
+const createTableColumns = `
+CREATE TABLE IF NOT EXISTS columns (
   project TEXT,
   dataset TEXT,
   table_name TEXT,
   column TEXT,
   data_type TEXT,
   PRIMARY KEY (project, dataset, table_name, column)
-);`;
+);
+`;
 
 export class CacheDB {
   public static async initialize(filename: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
     const db = new CacheDB(filename);
     db.db.configure("busyTimeout", 100 * 1000); // default value seems to be 10 * 1000 ms
-    await db.run(createTableSQL);
+    await Promise.all([
+      db.run(createTableProjects),
+      db.run(createTableDatasets),
+      db.run(createTableColumns),
+    ]);
     return db;
   }
 
@@ -46,19 +67,23 @@ export class CacheDB {
     this.db = new sqlite3.Database(filename);
   }
 
-  public clearCache() {
-    return new Promise<void>((resolve) => {
-      // NOTE `run()` is not suitable here because it runs only one statement.
-      this.db.exec(
-        `
+  public async clearCache() {
+    await this.exec(`
 BEGIN;
-DROP TABLE schemas;
-${createTableSQL}
-COMMIT;`,
-        (_) => {
-          resolve();
-        }
-      );
+DROP TABLE projects;
+DROP TABLE datasets;
+DROP TABLE columns;
+${createTableProjects}
+${createTableDatasets}
+${createTableColumns}
+COMMIT;`);
+  }
+
+  private exec(sql: string) {
+    return new Promise<void>((resolve) => {
+      this.db.exec(sql, (_) => {
+        resolve();
+      });
     });
   }
 
@@ -153,9 +178,23 @@ COMMIT;`,
   }
 
   public async updateCache(texts: string[]) {
-    const projects = await this.getAvailableProjects();
+    const insertQueries: Promise<void>[] = [];
 
-    const datasetResults: { project: string; dataset: string }[][] = [];
+    // cache projects
+    const projects = await this.getAvailableProjects();
+    await this.exec(`
+BEGIN;
+DROP TABLE projects;
+${createTableProjects}
+COMMIT;`);
+    projects.forEach((proj) => {
+      insertQueries.push(
+        this.run(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [proj])
+      );
+    });
+
+    // cache datasets
+    const datasetRecords: DatasetRecord[] = [];
     for (const proj of projects) {
       if (!texts.some((txt) => txt.includes(proj))) continue;
       try {
@@ -168,16 +207,24 @@ FROM \`${proj}\`.INFORMATION_SCHEMA.SCHEMATA
 LIMIT 10000;`,
         });
         const [rows] = await job.getQueryResults();
-        datasetResults.push(rows);
+        await this.run("DELETE FROM datasets WHERE project = ?", [proj]);
+        rows.forEach((row) => {
+          datasetRecords.push(row);
+          insertQueries.push(
+            this.run(
+              `INSERT OR IGNORE INTO datasets (project, dataset) VALUES (?, ?);`,
+              [row.project, row.dataset]
+            )
+          );
+        });
       } catch (err) {
         /* NOP */
       }
     }
-    const datasetRecords = datasetResults.reduce((x, y) => x.concat(y), []);
 
-    const insertQueries: Promise<void>[] = [];
+    // cache columns
     for (const dataset of datasetRecords) {
-      let schemaRecords: SchemaRecord[] = [];
+      let columnRecords: ColumnRecord[] = [];
       if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
       try {
         const [job] = await this.bqClient.createQueryJob({
@@ -192,15 +239,16 @@ FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
 LIMIT 10000;`,
         });
         const [rows] = await job.getQueryResults();
-        schemaRecords = rows;
+        columnRecords = rows;
+        await this.run("DELETE FROM columns WHERE dataset = ?", [dataset]);
       } catch (err) {
         /* NOP */
       }
-      schemaRecords.forEach((s) =>
+      columnRecords.forEach((c) =>
         insertQueries.push(
           this.run(
-            "INSERT OR IGNORE INTO schemas (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?)",
-            [s.project, s.dataset, s.table, s.column, s.data_type]
+            "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
+            [c.project, c.dataset, c.table, c.column, c.data_type]
           )
         )
       );

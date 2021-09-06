@@ -137,11 +137,11 @@ export class BQLanguageServer {
 
   private async getSchemaRecords(ident: string) {
     const trimmedIdent = ident.replace(/[0-9]{2,}|\*$/, "");
-    const schemaRecords = await this.db.select(
-      "SELECT DISTINCT column, data_type FROM schemas WHERE table_name like ? || '%'",
+    const columnRecords = await this.db.select(
+      "SELECT DISTINCT column, data_type FROM columns WHERE table_name like ? || '%'",
       [trimmedIdent]
     );
-    return schemaRecords;
+    return columnRecords;
   }
 
   //private log(message: string) {
@@ -240,7 +240,7 @@ export class BQLanguageServer {
       ]; // `-1` is needed to capture just typed character
     if (currCharacter === "`") {
       const projects = (
-        await this.db.select("SELECT DISTINCT project FROM schemas;")
+        await this.db.select("SELECT DISTINCT project FROM columns;")
       ).map((x) => x.project);
       for (const project of projects) {
         res.push({ label: project });
@@ -251,15 +251,15 @@ export class BQLanguageServer {
         const idents = matchingResult[1].split(".");
         const parent = idents[idents.length - 2];
         const projects = (
-          await this.db.select("SELECT DISTINCT project FROM schemas;")
+          await this.db.select("SELECT DISTINCT project FROM columns;")
         ).map((x) => x.project);
         const datasets: { project: string; dataset: string }[] =
           await this.db.select(
-            "SELECT DISTINCT project, dataset FROM schemas;"
+            "SELECT DISTINCT project, dataset FROM columns;"
           );
         const tables: { dataset: string; table_name: string }[] =
           await this.db.select(
-            "SELECT DISTINCT dataset, table_name FROM schemas;"
+            "SELECT DISTINCT dataset, table_name FROM columns;"
           );
         if (projects.includes(parent)) {
           datasets
