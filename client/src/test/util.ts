@@ -1,5 +1,8 @@
 import * as vscode from "vscode";
 import * as path from "path";
+import { execSync } from "child_process";
+
+export const project = (execSync(" gcloud config get-value project") + "").trim();
 
 export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
