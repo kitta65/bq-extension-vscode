@@ -42,7 +42,7 @@ describe("Completion", function () {
     assert.ok(list.items.some((x) => x.label === util.project));
   });
   it("dataset", async function () {
-    const sql = `SELECT * \`${util.project}.\``;
+    const sql = `SELECT * FROM \`${util.project}.\``;
     await util.insert("completion.bq", new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -52,7 +52,7 @@ describe("Completion", function () {
     assert.ok(list.items.some((x) => x.label === "bq_extension_vscode_test"));
   });
   it("table_name", async function () {
-    const sql = `SELECT * \`${util.project}.bq_extension_vscode_test.\``;
+    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.\``;
     await util.insert("completion.bq", new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
