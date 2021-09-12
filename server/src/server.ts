@@ -5,6 +5,7 @@ import { tokenize, parse, UnknownNode, Token } from "@dr666m1/bq2cst";
 import * as prettier from "prettier";
 import * as util from "./util";
 import { CacheDB } from "./database";
+import { reservedKeywords, globalFunctions } from "./keywords";
 
 type Configuration = {
   trace: {
@@ -199,7 +200,11 @@ export class BQLanguageServer {
      * VSCode's default completion works.
      * https://github.com/microsoft/vscode/issues/21611
      */
-    const res: { label: string; detail?: string }[] = [];
+    const res: {
+      label: string;
+      detail?: string;
+      kind?: LSP.CompletionItemKind;
+    }[] = [];
     const line = position.position.line + 1;
     const column = position.position.character + 1;
     const currLiteral = util.getTokenByRowColumn(
@@ -217,7 +222,7 @@ export class BQLanguageServer {
       ]; // `-1` is needed to capture just typed character
     if (currCharacter === "`") {
       const projects = (
-        await this.db.select("SELECT DISTINCT project FROM columns;")
+        await this.db.select("SELECT DISTINCT project FROM projects;")
       ).map((x) => x.project);
       for (const project of projects) {
         res.push({ label: project });
@@ -228,11 +233,11 @@ export class BQLanguageServer {
         const idents = matchingResult[1].split(".");
         const parent = idents[idents.length - 2];
         const projects = (
-          await this.db.select("SELECT DISTINCT project FROM columns;")
+          await this.db.select("SELECT DISTINCT project FROM projects;")
         ).map((x) => x.project);
         const datasets: { project: string; dataset: string }[] =
           await this.db.select(
-            "SELECT DISTINCT project, dataset FROM columns;"
+            "SELECT DISTINCT project, dataset FROM datasets;"
           );
         const tables: { dataset: string; table_name: string }[] =
           await this.db.select(
@@ -242,7 +247,10 @@ export class BQLanguageServer {
           datasets
             .filter((x) => x.project === parent)
             .forEach((x) => {
-              res.push({ label: x.dataset });
+              res.push({
+                label: x.dataset,
+                kind: LSP.CompletionItemKind.Field,
+              });
             });
         } else if (datasets.map((x) => x.dataset).includes(parent)) {
           [
@@ -251,11 +259,20 @@ export class BQLanguageServer {
                 .filter((x) => x.dataset === parent)
                 .map((x) => x.table_name)
             ),
-          ].forEach((x) => res.push({ label: x }));
+          ].forEach((x) =>
+            res.push({ label: x, kind: LSP.CompletionItemKind.Field })
+          );
         }
       } else {
         // completion out of `` is currently not supported
       }
+    } else {
+      new Set(reservedKeywords).forEach((x) => {
+        res.push({ label: x, kind: LSP.CompletionItemKind.Keyword });
+      });
+      globalFunctions.forEach((x) => {
+        res.push({ label: x, kind: LSP.CompletionItemKind.Function });
+      });
     }
     return res;
   }
