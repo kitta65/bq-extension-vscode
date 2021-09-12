@@ -156,37 +156,14 @@ export class BQLanguageServer {
       this.dryRun(change.document.uri);
     });
     this.documents.onDidChangeContent((change) => {
-      const uri = change.document.uri;
-      this.uriToTokens[uri] = tokenize(change.document.getText());
-      this.uriToText[uri] = change.document.getText();
-
-      const originalConsoleError = console.error;
-      console.error = () => {
-        /* NOP */
-      };
-      try {
-        this.uriToCst[uri] = parse(change.document.getText());
-      } catch (err) {
-        /* NOP */
-      } finally {
-        console.error = originalConsoleError;
-      }
+      this.updateDocumentInfo(change);
     });
     this.documents.onDidOpen((change) => {
       const uri = change.document.uri;
-      this.uriToTokens[uri] = tokenize(change.document.getText());
-      this.uriToText[uri] = change.document.getText();
-      const originalConsoleError = console.error;
-      console.error = () => {
-        /* NOP */
-      };
-      try {
-        this.uriToCst[uri] = parse(change.document.getText());
-      } catch (err) {
-        /* NOP */
-      } finally {
-        console.error = originalConsoleError;
-      }
+      this.uriToText[uri] = "";
+      this.uriToTokens[uri] = [];
+      this.uriToCst[uri] = [];
+      this.updateDocumentInfo(change);
     });
     // Register all the handlers for the LSP events.
     this.connection.onCompletion(this.onCompletion.bind(this));
@@ -397,5 +374,54 @@ export class BQLanguageServer {
       await checkCache.call(this, c);
     }
     return { contents: columns };
+  }
+  private updateDocumentInfo(
+    change: LSP.TextDocumentChangeEvent<TextDocument>
+  ) {
+    const uri = change.document.uri;
+    this.uriToText[uri] = change.document.getText();
+    const text = change.document.getText();
+    try {
+      this.uriToTokens[uri] = tokenize(text);
+      this.uriToCst[uri] = parse(text);
+      this.connection.sendDiagnostics({
+        uri: uri,
+        diagnostics: [],
+      });
+    } catch (err) {
+      if (err.line && err.column && err.message) {
+        let errorPosition = { line: err.line - 1, character: err.column - 1 };
+        const splittedText = text.trimEnd().split("\n");
+        const finalCharaPosition = {
+          line: splittedText.length - 1,
+          character: splittedText[splittedText.length - 1].length - 1,
+        };
+        if (
+          !util.positionBetween(
+            errorPosition,
+            { line: 0, character: 0 },
+            finalCharaPosition
+          )
+        ) {
+          errorPosition = finalCharaPosition;
+        }
+        // NOTE
+        // https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#diagnostics-tips-and-tricks
+        // If the start and end positions are the same, VSCode will underline the word at that position.
+        // Other editors may fail to underline.
+        const diagnostic: LSP.Diagnostic = {
+          severity: LSP.DiagnosticSeverity.Error,
+          range: {
+            start: errorPosition,
+            end: errorPosition,
+          },
+          message: err.message,
+        };
+        this.connection.sendDiagnostics({
+          uri: uri,
+          diagnostics: [diagnostic],
+        });
+      }
+    }
   }
 }
