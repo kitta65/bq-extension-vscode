@@ -88,6 +88,11 @@
           ],
           "description": "Log communications between Client / Server."
         },
+        "bqExtensionVSCode.diagnostic.forVSCode": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Use [these](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#diagnostics-tips-and-tricks) tips and tricks or not."
+        },
         "bqExtensionVSCode.formatting.formatMultilineComment": {
           "type": "boolean",
           "default": false,

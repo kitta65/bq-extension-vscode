@@ -405,7 +405,7 @@ export class BQLanguageServer {
         uri: uri,
         diagnostics: [],
       });
-    } catch (err) {
+    } catch (err: any) {
       if (err.line && err.column && err.message) {
         let errorPosition = { line: err.line - 1, character: err.column - 1 };
         const splittedText = text.trimEnd().split("\n");
