@@ -8,10 +8,23 @@ import { CacheDB } from "./database";
 import { reservedKeywords, globalFunctions } from "./keywords";
 
 type Configuration = {
+  diagnostic: {
+    forVSCode: boolean;
+  };
+  formatting: Record<string, boolean>;
   trace: {
     server: "off" | "messages" | "verbose";
   };
-  formatting: Record<string, boolean>;
+};
+
+const defaultConfiguration: Configuration = {
+  diagnostic: {
+    forVSCode: false,
+  },
+  trace: {
+    server: "messages",
+  },
+  formatting: {},
 };
 
 export class BQLanguageServer {
@@ -33,6 +46,7 @@ export class BQLanguageServer {
       },
     },
   };
+  private configurations: Map<string, Thenable<Configuration>> = new Map();
   private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
     TextDocument
   );
@@ -116,16 +130,18 @@ export class BQLanguageServer {
     }
   }
 
-  private async getConfiguration(): Promise<Configuration> {
+  private getConfiguration(uri: string): Thenable<Configuration> {
     if (!this.hasConfigurationCapability) {
-      return {
-        trace: { server: "messages" },
-        formatting: {},
-      };
+      return Promise.resolve(defaultConfiguration);
     }
-    return await this.connection.workspace.getConfiguration({
-      section: "bqExtensionVSCode",
-    });
+    let result = this.configurations.get(uri);
+    if (!result) {
+      result = this.connection.workspace.getConfiguration({
+        section: "bqExtensionVSCode",
+      });
+      this.configurations.set(uri, result);
+    }
+    return result;
   }
 
   private getDocInfo(uri: string) {
@@ -144,12 +160,6 @@ export class BQLanguageServer {
     );
     return columnRecords;
   }
-
-  //private log(message: string) {
-  //  this.connection.sendNotification("window/logMessage", {
-  //    message: message,
-  //  });
-  //}
 
   public register() {
     this.documents.listen(this.connection);
@@ -301,7 +311,7 @@ export class BQLanguageServer {
   }
 
   private async onRequestFormatting(params: LSP.DocumentFormattingParams) {
-    const config = await this.getConfiguration();
+    const config = await this.getConfiguration(params.textDocument.uri);
     const originalText = this.uriToText[params.textDocument.uri];
     const splittedOriginalText = originalText.split("\n");
     const formattedText = prettier
@@ -426,17 +436,24 @@ export class BQLanguageServer {
         // https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#diagnostics-tips-and-tricks
         // If the start and end positions are the same, VSCode will underline the word at that position.
         // Other editors may fail to underline.
-        const diagnostic: LSP.Diagnostic = {
-          severity: LSP.DiagnosticSeverity.Error,
-          range: {
-            start: errorPosition,
-            end: errorPosition,
-          },
-          message: err.message,
-        };
-        this.connection.sendDiagnostics({
-          uri: uri,
-          diagnostics: [diagnostic],
+        this.getConfiguration(uri).then((config) => {
+          const diagnostic: LSP.Diagnostic = {
+            severity: LSP.DiagnosticSeverity.Error,
+            range: {
+              start: errorPosition,
+              end: config.diagnostic.forVSCode
+                ? errorPosition
+                : {
+                    line: errorPosition.line,
+                    character: errorPosition.character + 1,
+                  },
+            },
+            message: err.message,
+          };
+          this.connection.sendDiagnostics({
+            uri: uri,
+            diagnostics: [diagnostic],
+          });
         });
       }
     }

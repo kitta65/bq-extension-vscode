@@ -80,7 +80,7 @@
         "bqExtensionVSCode.trace.server": {
           "scope": "application",
           "type": "string",
-          "default": "off",
+          "default": "messages",
           "enum": [
             "off",
             "messages",
@@ -89,6 +89,7 @@
           "description": "Log communications between Client / Server."
         },
         "bqExtensionVSCode.diagnostic.forVSCode": {
+          "scope": "application",
           "type": "boolean",
           "default": true,
           "markdownDescription": "Use [these](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#diagnostics-tips-and-tricks) tips and tricks or not."
