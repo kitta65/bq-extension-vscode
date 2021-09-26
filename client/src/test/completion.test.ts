@@ -13,50 +13,50 @@ describe("Completion", function () {
   });
   it("reservedKeywords", async function () {
     const sql = "S"; // NOTE Actually, any string is ok.
-    await util.insert("completion.bq", new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
-      util.getDocUri("completion.bq"),
+      util.getDocUri(filename),
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "SELECT"));
   });
   it("function", async function () {
     const sql = "SELECT C";
-    await util.insert("completion.bq", new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
-      util.getDocUri("completion.bq"),
+      util.getDocUri(filename),
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "CURRENT_TIMESTAMP"));
   });
   it("project", async function () {
     const sql = "SELECT * FROM `";
-    await util.insert("completion.bq", new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
-      util.getDocUri("completion.bq"),
+      util.getDocUri(filename),
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === util.project));
   });
   it("dataset", async function () {
     const sql = `SELECT * FROM \`${util.project}.\``;
-    await util.insert("completion.bq", new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
-      util.getDocUri("completion.bq"),
+      util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "bq_extension_vscode_test"));
   });
   it("table_name", async function () {
     const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.\``;
-    await util.insert("completion.bq", new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
-      util.getDocUri("completion.bq"),
+      util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "t"));
