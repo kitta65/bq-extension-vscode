@@ -27,5 +27,30 @@ describe("Hover", function () {
     const items = hover.contents.map((x) => x.value);
     assert.ok(items.some((x) => x === "str: STRING"));
   });
-  // TODO add tests about tables with _TABLE_SUFFIX
+  it("table suffix (asterisk)", async function () {
+    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.u_*\``;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const hover: Hover = (
+      await vscode.commands.executeCommand(
+        "vscode.executeHoverProvider",
+        util.getDocUri(filename),
+        new vscode.Position(0, sql.length)
+      )
+    )[0];
+    const items = hover.contents.map((x) => x.value);
+    assert.ok(items.some((x) => x === "str: STRING"));
+  });
+  it("table suffix (full)", async function () {
+    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.u_20210101\``;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const hover: Hover = (
+      await vscode.commands.executeCommand(
+        "vscode.executeHoverProvider",
+        util.getDocUri(filename),
+        new vscode.Position(0, sql.length)
+      )
+    )[0];
+    const items = hover.contents.map((x) => x.value);
+    assert.ok(items.some((x) => x === "str: STRING"));
+  });
 });

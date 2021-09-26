@@ -26,6 +26,8 @@ CREATE OR REPLACE TABLE bq_extension_vscode_test.t (
     int INT64
   >
 );
+CREATE OR REPLACE TABLE bq_extension_vscode_test.u_20210101 (str STRING);
+CREATE OR REPLACE TABLE bq_extension_vscode_test.u_20210102 (str STRING);
 ```
 
 ## How to execute tests?
