@@ -61,4 +61,16 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "t"));
   });
+  it("table_name (table suffix)", async function () {
+    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.\``;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(0, sql.length - 1)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "u_*"));
+    assert.ok(!list.items.some((x) => x.label === "u_20210101"));
+    assert.ok(!list.items.some((x) => x.label === "u_20210102"));
+  });
 });
