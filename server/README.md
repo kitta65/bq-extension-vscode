@@ -25,6 +25,13 @@ npm install -g .
       "command": "bq-language-server",
       "args": ["--stdio"],
       "filetypes": ["sql", "bq"]
+    },
+    "settings": {
+      "bqExtensionVSCode": {
+        "diagnostic": {
+          "forVSCode": false
+        }
+      }
     }
   }
 }

@@ -12,17 +12,11 @@ type Configuration = {
     forVSCode: boolean;
   };
   formatting: Record<string, boolean>;
-  trace: {
-    server: "off" | "messages" | "verbose";
-  };
 };
 
 const defaultConfiguration: Configuration = {
   diagnostic: {
     forVSCode: false,
-  },
-  trace: {
-    server: "messages",
   },
   formatting: {},
 };
@@ -136,9 +130,19 @@ export class BQLanguageServer {
     }
     let result = this.configurations.get(uri);
     if (!result) {
-      result = this.connection.workspace.getConfiguration({
-        section: "bqExtensionVSCode",
-      });
+      result = this.connection.workspace
+        .getConfiguration({
+          section: "bqExtensionVSCode",
+        })
+        .then((res) => {
+          const config = JSON.parse(JSON.stringify(defaultConfiguration)); // deep copy
+          for (const k of Object.keys(config)) {
+            if (k in res) {
+              config[k] = res[k];
+            }
+          }
+          return config;
+        });
       this.configurations.set(uri, result);
     }
     return result;
@@ -178,6 +182,9 @@ export class BQLanguageServer {
     });
     // Register all the handlers for the LSP events.
     this.connection.onCompletion(this.onCompletion.bind(this));
+    this.connection.onDidChangeConfiguration(
+      this.onDidChangeConfiguration.bind(this)
+    );
     this.connection.onHover(this.onHover.bind(this));
     this.connection.onRequest(
       "bq/clearCache",
@@ -285,6 +292,10 @@ export class BQLanguageServer {
       });
     }
     return res;
+  }
+
+  private onDidChangeConfiguration(_: LSP.DidChangeConfigurationParams) {
+    this.configurations.clear();
   }
 
   private async onHover(params: LSP.TextDocumentPositionParams) {
