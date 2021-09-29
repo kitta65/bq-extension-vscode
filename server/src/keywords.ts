@@ -168,6 +168,8 @@ export const globalFunctions = [
   // federated query functions
   "EXTERNAL_QUERY",
   // geography functions
+  "S2_COVERINGCELLIDS",
+  "S2_CELLIDFROMPOINT",
   "ST_ANGLE",
   "ST_AREA",
   "ST_ASBINARY",
@@ -175,6 +177,7 @@ export const globalFunctions = [
   "ST_ASTEXT",
   "ST_AZIMUTH",
   "ST_BOUNDARY",
+  "ST_BOUNDINGBOX",
   "ST_CENTROID",
   "ST_CENTROID_AGG",
   "ST_CLOSESTPOINT",
@@ -190,6 +193,7 @@ export const globalFunctions = [
   "ST_DUMP",
   "ST_DWITHIN",
   "ST_ENDPOINT",
+  "ST_EXTENT",
   "ST_EQUALS",
   "ST_EXTERIORRING",
   "ST_GEOGFROM",
