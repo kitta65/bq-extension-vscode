@@ -6,7 +6,6 @@ import {
   LanguageClientOptions,
   ServerOptions,
   TransportKind,
-  ResponseMessage,
 } from "vscode-languageclient/node";
 
 let client: LanguageClient;
@@ -38,16 +37,12 @@ export async function activate(context: vscode.ExtensionContext) {
     serverOptions,
     clientOptions
   );
-  const channel = client.outputChannel;
   const commands = [clearCache, updateCache, dryRun];
   client.start();
   await client.onReady().then(() => {
     client.onNotification("bq/totalBytesProcessed", (params) => {
       statusBarItem.text = params.totalBytesProcessed;
       statusBarItem.show();
-    });
-    client.onNotification("window/logMessage", (params) => {
-      channel.appendLine(params.message);
     });
     // NOTE Some commands should not be executed before the client is ready.
     commands.forEach((c) => {
