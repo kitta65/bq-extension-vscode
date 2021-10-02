@@ -6,6 +6,7 @@ import * as prettier from "prettier";
 import * as util from "./util";
 import { CacheDB } from "./database";
 import { reservedKeywords, globalFunctions } from "./keywords";
+import { execSync } from "child_process";
 
 type Configuration = {
   diagnostic: {
@@ -41,6 +42,7 @@ export class BQLanguageServer {
     },
   };
   private configurations: Map<string, Thenable<Configuration>> = new Map();
+  private defaultProject: string;
   private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
     TextDocument
   );
@@ -54,6 +56,9 @@ export class BQLanguageServer {
     params: LSP.InitializeParams
   ) {
     const capabilities = params.capabilities;
+    this.defaultProject = (
+      execSync(" gcloud config get-value project") + ""
+    ).trim();
     this.hasConfigurationCapability = !!(
       capabilities.workspace && capabilities.workspace.configuration
     );
@@ -247,40 +252,48 @@ export class BQLanguageServer {
     } else if (currCharacter === ".") {
       const matchingResult = currLiteral.match(/^`([^`]+)`?$/);
       if (matchingResult) {
+        // in ``
         const idents = matchingResult[1].split(".");
-        const parent = idents[idents.length - 2];
-        const projects = (
-          await this.db.select("SELECT DISTINCT project FROM projects;")
-        ).map((x) => x.project);
-        const datasets: { project: string; dataset: string }[] =
-          await this.db.select(
-            "SELECT DISTINCT project, dataset FROM datasets;"
-          );
-        const tables: { dataset: string; table_name: string }[] =
-          await this.db.select(
-            "SELECT DISTINCT dataset, table_name FROM columns;"
-          );
-        if (projects.includes(parent)) {
-          datasets
-            .filter((x) => x.project === parent)
-            .forEach((x) => {
-              res.push({
-                label: x.dataset,
-                kind: LSP.CompletionItemKind.Field,
-              });
+        const length = idents.length;
+        if (idents[0] === this.defaultProject) {
+          // idents[0] is assumed to be project name
+          if (length === 2) {
+            const datasets = (
+              await this.db.select(
+                "SELECT DISTINCT dataset FROM datasets WHERE project = ?",
+                [this.defaultProject]
+              )
+            ).map((x) => x.dataset);
+            datasets.forEach((dataset) => {
+              res.push({ label: dataset, kind: LSP.CompletionItemKind.Field });
             });
-        } else if (datasets.map((x) => x.dataset).includes(parent)) {
-          [
-            ...new Set(
-              tables
-                .filter((x) => x.dataset === parent)
-                .map((x) => x.table_name)
-            ),
-          ].forEach((x) =>
-            res.push({ label: x, kind: LSP.CompletionItemKind.Field })
-          );
+          } else if (length === 3) {
+            const tables = (
+              await this.db.select(
+                "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?",
+                [idents[0], idents[1]]
+              )
+            ).map((x) => x.table_name);
+            tables.forEach((table) => {
+              res.push({ label: table, kind: LSP.CompletionItemKind.Field });
+            });
+          } else {
+            return res; // something went wrong!
+          }
+        } else {
+          // idents[0] is assumed to be dataset name
+          const tables = (
+            await this.db.select(
+              "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?",
+              [this.defaultProject, idents[0]]
+            )
+          ).map((x) => x.table_name);
+          tables.forEach((table) => {
+            res.push({ label: table, kind: LSP.CompletionItemKind.Field });
+          });
         }
       } else {
+        // out of ``
         // completion out of `` is currently not supported
       }
     } else {
