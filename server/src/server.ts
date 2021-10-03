@@ -1,12 +1,23 @@
 import * as LSP from "vscode-languageserver/node";
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { tokenize, parse, UnknownNode, Token } from "@dr666m1/bq2cst";
+import * as bq2cst from "@dr666m1/bq2cst";
 import * as prettier from "prettier";
 import * as util from "./util";
 import { CacheDB } from "./database";
 import { reservedKeywords, globalFunctions } from "./keywords";
 import { execSync } from "child_process";
+
+type CompletionItem = {
+  parent?: string;
+  name: string;
+};
+
+export type NameSpace = {
+  start: { line: number; column: number };
+  end: { line: number; column: number };
+  variables: CompletionItem[];
+};
 
 type Configuration = {
   diagnostic: {
@@ -47,9 +58,9 @@ export class BQLanguageServer {
     TextDocument
   );
   private hasConfigurationCapability: boolean;
-  private uriToCst: Record<string, UnknownNode[]> = {};
+  private uriToCst: Record<string, bq2cst.UnknownNode[]> = {};
   private uriToText: Record<string, string> = {};
-  private uriToTokens: Record<string, Token[]> = {};
+  private uriToTokens: Record<string, bq2cst.Token[]> = {};
   private constructor(
     private connection: LSP.Connection,
     private db: CacheDB,
@@ -227,6 +238,7 @@ export class BQLanguageServer {
       detail?: string;
       kind?: LSP.CompletionItemKind;
     }[] = [];
+    const uri = position.textDocument.uri;
     const line = position.position.line + 1;
     const column = position.position.character + 1;
     const currLiteral = util.getTokenByRowColumn(
@@ -294,15 +306,81 @@ export class BQLanguageServer {
         }
       } else {
         // out of ``
-        // completion out of `` is currently not supported
+        let nameSpaces = await this.createNameSpaces(uri);
+        nameSpaces = nameSpaces.filter((ns) =>
+          util.positionBetween(
+            { line: line, character: column },
+            { line: ns.start.line, character: ns.start.column },
+            { line: ns.end.line, character: ns.end.column }
+          )
+        );
+        // TODO limit varialbes in nameSpaces
       }
     } else {
-      new Set(reservedKeywords).forEach((x) => {
-        res.push({ label: x, kind: LSP.CompletionItemKind.Keyword });
-      });
-      globalFunctions.forEach((x) => {
-        res.push({ label: x, kind: LSP.CompletionItemKind.Function });
-      });
+      let nameSpaces = await this.createNameSpaces(uri);
+      nameSpaces = nameSpaces.filter((ns) =>
+        util.positionBetween(
+          { line: line, character: column },
+          { line: ns.start.line, character: ns.start.column },
+          { line: ns.end.line, character: ns.end.column }
+        )
+      );
+      if (nameSpaces.length !== 0) {
+        let smallestNameSpace = nameSpaces[0];
+        for (let i = 1; i < nameSpaces.length; i++) {
+          if (
+            util.positionBetween(
+              {
+                line: nameSpaces[i].start.line,
+                character: nameSpaces[i].start.column,
+              },
+              {
+                line: smallestNameSpace.start.line,
+                character: smallestNameSpace.start.column,
+              },
+              {
+                line: smallestNameSpace.end.line,
+                character: smallestNameSpace.end.column,
+              }
+            ) &&
+            util.positionBetween(
+              {
+                line: nameSpaces[i].end.line,
+                character: nameSpaces[i].end.column,
+              },
+              {
+                line: smallestNameSpace.start.line,
+                character: smallestNameSpace.start.column,
+              },
+              {
+                line: smallestNameSpace.end.line,
+                character: smallestNameSpace.end.column,
+              }
+            )
+          ) {
+            smallestNameSpace = nameSpaces[i];
+          }
+        }
+        smallestNameSpace.variables.forEach((variable) => {
+          res.push({
+            label: variable.name,
+            kind: LSP.CompletionItemKind.Field,
+            detail: variable.parent,
+          });
+        });
+      }
+      /*
+       * Reserved keywords and functions are not suggested without leading characters.
+       * If they are suggested, it will be difficult to find the column you want.
+       */
+      if (res.length === 0 || !currCharacter.match(/^[, ]$/)) {
+        new Set(reservedKeywords).forEach((x) => {
+          res.push({ label: x, kind: LSP.CompletionItemKind.Keyword });
+        });
+        globalFunctions.forEach((x) => {
+          res.push({ label: x, kind: LSP.CompletionItemKind.Function });
+        });
+      }
     }
     return res;
   }
@@ -365,15 +443,15 @@ export class BQLanguageServer {
   }
 
   private async provideHoverMessage(
-    cst: UnknownNode[],
+    cst: bq2cst.UnknownNode[],
     position: LSP.Position
   ) {
     const columns: string[] = [];
     async function checkCache(
       this: BQLanguageServer,
-      node: UnknownNode,
-      parent?: UnknownNode,
-      _grandParent?: UnknownNode
+      node: bq2cst.UnknownNode,
+      parent?: bq2cst.UnknownNode,
+      _grandParent?: bq2cst.UnknownNode
     ) {
       if (node.token) {
         const literal = node.token.literal;
@@ -433,8 +511,8 @@ export class BQLanguageServer {
     this.uriToText[uri] = change.document.getText();
     const text = change.document.getText();
     try {
-      this.uriToTokens[uri] = tokenize(text);
-      this.uriToCst[uri] = parse(text);
+      this.uriToTokens[uri] = bq2cst.tokenize(text);
+      this.uriToCst[uri] = bq2cst.parse(text);
       this.connection.sendDiagnostics({
         uri: uri,
         diagnostics: [],
@@ -481,5 +559,144 @@ export class BQLanguageServer {
         });
       }
     }
+  }
+
+  private async createNameSpaces(uri: string): Promise<NameSpace[]> {
+    // TODO igonore far away stmts from current position
+    const cst = this.uriToCst[uri];
+    const nameSpaces: NameSpace[] = [];
+    const promises = cst.map((node) => {
+      return this.pushNameSpaceOfNode(node, nameSpaces);
+    });
+    await Promise.all(promises);
+    return nameSpaces;
+  }
+
+  private async pushNameSpaceOfNode(
+    node: bq2cst.UnknownNode,
+    parent: NameSpace[]
+  ) {
+    if (node.node_type === "SelectStatement") {
+      const variables: CompletionItem[] = [];
+      const range = util.getNodeRange(node);
+      if (!range) {
+        throw new Error("something went wrong!");
+      }
+      const from = node.children.from;
+      if (from && from.Node.node_type === "KeywordWithExpr") {
+        const with_ = node.children.with;
+        if (with_ && with_.Node.node_type === "WithClause") {
+          await this.findVariablesInsideSelectStatment(
+            variables,
+            from.Node,
+            with_.Node
+          );
+        } else {
+          await this.findVariablesInsideSelectStatment(variables, from.Node);
+        }
+      }
+      parent.push({
+        start: range.start,
+        end: range.end,
+        variables: variables,
+      });
+    }
+    for (const [_, v] of Object.entries(node.children)) {
+      if (util.isNodeChild(v)) {
+        await this.pushNameSpaceOfNode(v.Node, parent);
+      } else if (util.isNodeVecChild(v)) {
+        const promises = v.NodeVec.map((n) =>
+          this.pushNameSpaceOfNode(n, parent)
+        );
+        await Promise.all(promises);
+      }
+    }
+  }
+
+  private async findVariablesInsideSelectStatment(
+    output: CompletionItem[],
+    from: bq2cst.KeywordWithExpr,
+    with_?: bq2cst.WithClause
+  ) {
+    async function findVariable(
+      this: BQLanguageServer,
+      fromItem: bq2cst.UnknownNode,
+      parent?: string
+    ) {
+      if (fromItem.node_type === "JoinOperator") {
+        await findVariable.call(this, fromItem.children.left.Node);
+        await findVariable.call(this, fromItem.children.right.Node);
+      } else if (fromItem.node_type === "Identifier") {
+        const literal = fromItem.token.literal;
+        const explicitAlias =
+          fromItem.children.alias && fromItem.children.alias.Node.token
+            ? fromItem.children.alias.Node.token.literal
+            : undefined;
+        const mattingResult = literal.match(/^`(.+)`$/);
+        if (mattingResult) {
+          const idents = mattingResult[1].split(".");
+          if (idents.length === 3) {
+            // idents[0] is assumed to be project
+            const columns = (
+              await this.db.select(
+                "SELECT DISTINCT column FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
+                [idents[0], idents[1], idents[2]]
+              )
+            ).map((x) => x.column);
+            columns.forEach((column) => {
+              output.push({ name: column, parent: explicitAlias });
+            });
+          } else if (idents.length == 2) {
+            // idents[0] is assumed to be dataset
+            const columns = (
+              await this.db.select(
+                "SELECT DISTINCT column FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
+                [this.defaultProject, idents[0], idents[1]]
+              )
+            ).map((x) => x.column);
+            columns.forEach((column) => {
+              output.push({ name: column, parent: explicitAlias });
+            });
+          }
+        } else if (with_) {
+          const withQueries = with_.children.queries
+            .NodeVec as bq2cst.WithQuery[]; // TODO Improve type definition of bq2cst
+          const promises = withQueries.map((query) => {
+            const alias = query.token.literal;
+            if (alias === literal) {
+              return findVariable.call(
+                this,
+                query.children.stmt.Node,
+                explicitAlias || query.token.literal
+              );
+            } else {
+              return Promise.resolve();
+            }
+          });
+          await Promise.all(promises);
+        }
+      } else if (fromItem.node_type === "GroupedStatement") {
+        const stmt = fromItem.children.stmt.Node;
+        if (stmt.node_type === "SelectStatement") {
+          const unknowns = stmt.children.exprs.NodeVec;
+          unknowns.forEach((unknown) => {
+            const expr = unknown as bq2cst.Expr; // to satisfy compiler
+            if (expr.children.alias) {
+              output.push({
+                name: expr.children.alias.Node.token!.literal, // TODO Improve type definition of bq2cst
+                parent: parent,
+              });
+            } else if (unknown.node_type === "Identifier") {
+              output.push({
+                name: unknown.token.literal,
+                parent: parent,
+              });
+            }
+          });
+        }
+      }
+    }
+    const fromItem = from.children.expr.Node;
+    await findVariable.call(this, fromItem);
   }
 }
