@@ -176,6 +176,8 @@ export const globalFunctions = [
   "ST_ASGEOJSON",
   "ST_ASTEXT",
   "ST_AZIMUTH",
+  "ST_BUFFER",
+  "ST_BUFFERWITHTOLERANCE",
   "ST_BOUNDARY",
   "ST_BOUNDINGBOX",
   "ST_CENTROID",
