@@ -10,6 +10,7 @@ import { execSync } from "child_process";
 
 type CompletionItem = {
   parent?: string;
+  type?: string;
   name: string;
 };
 
@@ -361,11 +362,21 @@ export class BQLanguageServer {
             smallestNameSpace = nameSpaces[i];
           }
         }
+        const parents = new Set(
+          smallestNameSpace.variables.map((x) => x.parent)
+        );
+        parents.forEach((x) => {
+          if (x) {
+            res.push({ label: x, kind: LSP.CompletionItemKind.Struct });
+          }
+        });
         smallestNameSpace.variables.forEach((variable) => {
           res.push({
             label: variable.name,
             kind: LSP.CompletionItemKind.Field,
-            detail: variable.parent,
+            detail: `Table: ${variable.parent || "unknown"}, Type: ${
+              variable.type || "unknown"
+            }`,
           });
         });
       }
@@ -382,6 +393,8 @@ export class BQLanguageServer {
         });
       }
     }
+    // TODO remove just typed identifier
+    // e.g. when you have typed `col1`, `col1` is suggested.
     return res;
   }
 
@@ -639,23 +652,35 @@ export class BQLanguageServer {
             // idents[0] is assumed to be project
             const columns = (
               await this.db.select(
-                "SELECT DISTINCT column FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
+                "SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
                 [idents[0], idents[1], idents[2]]
               )
-            ).map((x) => x.column);
+            ).map((x) => {
+              return { name: x.column, type: x.data_type };
+            });
             columns.forEach((column) => {
-              output.push({ name: column, parent: explicitAlias });
+              output.push({
+                name: column.name,
+                parent: explicitAlias || idents[2],
+                type: column.type,
+              });
             });
           } else if (idents.length == 2) {
             // idents[0] is assumed to be dataset
             const columns = (
               await this.db.select(
-                "SELECT DISTINCT column FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
+                "SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
                 [this.defaultProject, idents[0], idents[1]]
               )
-            ).map((x) => x.column);
+            ).map((x) => {
+              return { name: x.column, type: x.data_type };
+            });
             columns.forEach((column) => {
-              output.push({ name: column, parent: explicitAlias });
+              output.push({
+                name: column.name,
+                parent: explicitAlias || idents[1],
+                type: column.type,
+              });
             });
           }
         } else if (with_) {
