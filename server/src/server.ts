@@ -702,6 +702,10 @@ export class BQLanguageServer {
         }
       } else if (fromItem.node_type === "GroupedStatement") {
         const stmt = fromItem.children.stmt.Node;
+        const explicitAlias =
+          fromItem.children.alias && fromItem.children.alias.Node.token
+            ? fromItem.children.alias.Node.token.literal
+            : undefined;
         if (stmt.node_type === "SelectStatement") {
           const unknowns = stmt.children.exprs.NodeVec;
           unknowns.forEach((unknown) => {
@@ -709,12 +713,12 @@ export class BQLanguageServer {
             if (expr.children.alias) {
               output.push({
                 name: expr.children.alias.Node.token!.literal, // TODO Improve type definition of bq2cst
-                parent: parent,
+                parent: explicitAlias || parent, // `parent` is passed by withQuery
               });
             } else if (unknown.node_type === "Identifier") {
               output.push({
                 name: unknown.token.literal,
-                parent: parent,
+                parent: explicitAlias || parent, // `parent` is passed by withQuery
               });
             }
           });

@@ -20,8 +20,6 @@ export function breakdownTokens(tokens: bq2cst.Token[]) {
   return res;
 }
 
-
-
 export function formatBytes(bytes: number) {
   if (bytes < 1024) {
     return `${bytes}B`;
@@ -71,10 +69,10 @@ function getLastNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
   const candidates = [];
   for (const [_, v] of Object.entries(node.children)) {
     if (isNodeChild(v)) {
-      candidates.push(getFirstNode(v.Node));
+      candidates.push(getLastNode(v.Node));
     } else if (isNodeVecChild(v)) {
       // NOTE maybe you don't have to check 2nd, 3rd, or latter node
-      v.NodeVec.forEach((x) => candidates.push(getFirstNode(x)));
+      v.NodeVec.forEach((x) => candidates.push(getLastNode(x)));
     }
   }
   let res = node;
@@ -87,8 +85,8 @@ function getLastNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
       continue;
     }
     if (
-      c.token.line > res.token.line ||
-      (c.token.line === res.token.line && c.token.column > res.token.column)
+      res.token.line < c.token.line ||
+      (res.token.line === c.token.line && res.token.column < c.token.column)
     ) {
       res = c;
     }
