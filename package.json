@@ -77,16 +77,11 @@
     "configuration": {
       "title": "BigQuery Extension for Visual Studio Code",
       "properties": {
-        "bqExtensionVSCode.trace.server": {
+        "bqExtensionVSCode.diagnostic.dryRunOnSave": {
           "scope": "application",
-          "type": "string",
-          "default": "messages",
-          "enum": [
-            "off",
-            "messages",
-            "verbose"
-          ],
-          "description": "Log communications between Client / Server."
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "When enabled dry run is executed on save."
         },
         "bqExtensionVSCode.diagnostic.forVSCode": {
           "scope": "application",
@@ -108,6 +103,17 @@
           "type": "boolean",
           "default": true,
           "markdownDescription": "Print pseudo columns (e.g. `_PARTITIONDATE`, `_PARTITIONTIME`) in upper case. When `printKeywordsInUpperCase` is `false`, this option is ignored."
+        },
+        "bqExtensionVSCode.trace.server": {
+          "scope": "application",
+          "type": "string",
+          "default": "messages",
+          "enum": [
+            "off",
+            "messages",
+            "verbose"
+          ],
+          "description": "Log communications between Client / Server."
         }
       }
     },

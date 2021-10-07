@@ -22,6 +22,7 @@ export type NameSpace = {
 
 type Configuration = {
   diagnostic: {
+    dryRunOnSave: boolean;
     forVSCode: boolean;
   };
   formatting: Record<string, boolean>;
@@ -29,6 +30,7 @@ type Configuration = {
 
 const defaultConfiguration: Configuration = {
   diagnostic: {
+    dryRunOnSave: true,
     forVSCode: false,
   },
   formatting: {},
@@ -142,6 +144,19 @@ export class BQLanguageServer {
   }
 
   private getConfiguration(uri: string): Thenable<Configuration> {
+    function replace(defaultConfig: any, userConfig: any) {
+      for (const [k, v] of Object.entries(defaultConfig)) {
+        if (typeof v === "object") {
+          if (!userConfig) continue;
+          replace(defaultConfig[k], userConfig[k]);
+        } else {
+          if (userConfig && userConfig[k]) {
+            defaultConfig[k] = userConfig[k];
+          }
+        }
+      }
+    }
+
     if (!this.hasConfigurationCapability) {
       return Promise.resolve(defaultConfiguration);
     }
@@ -153,11 +168,7 @@ export class BQLanguageServer {
         })
         .then((res) => {
           const config = JSON.parse(JSON.stringify(defaultConfiguration)); // deep copy
-          for (const k of Object.keys(config)) {
-            if (k in res) {
-              config[k] = res[k];
-            }
-          }
+          replace(config, res);
           return config;
         });
       this.configurations.set(uri, result);
@@ -185,7 +196,9 @@ export class BQLanguageServer {
   public register() {
     this.documents.listen(this.connection);
     this.documents.onDidSave((change) => {
-      this.dryRun(change.document.uri);
+      this.getConfiguration(change.document.uri).then((config) => {
+        if (config.diagnostic.dryRunOnSave) this.dryRun(change.document.uri);
+      });
     });
     this.documents.onDidChangeContent((change) => {
       this.updateDocumentInfo(change);
