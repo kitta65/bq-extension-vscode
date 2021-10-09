@@ -209,6 +209,24 @@ export function getTokenByRowColumn(
   return res;
 }
 
+export function parseType(str: string) {
+  let depth = 0;
+  let start = 0;
+  const res: string[] = [];
+  for (let i = 0; i < str.length; i++) {
+    if (str[i] === "<") {
+      depth += 1;
+    } else if (str[i] === ">") {
+      depth -= 1;
+    } else if (str[i] === "," && depth === 0) {
+      res.push(str.substring(start, i));
+      start = i + 1;
+    }
+  }
+  res.push(str.substring(start)); // last item
+  return res.map((x) => x.trim());
+}
+
 export function positionBetween(
   position: LSP.Position,
   start: LSP.Position,

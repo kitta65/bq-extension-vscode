@@ -97,6 +97,21 @@ FROM \`${util.project}.bq_extension_vscode_test.t\``;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+  it("column end of statement", async function () {
+    // NOTE `s` is neeeded to parse sql!
+    const sql = `
+SELECT *
+FROM \`${util.project}.bq_extension_vscode_test.t\`
+WHERE
+  s`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(4, 2)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str"));
+  });
   it("table alias", async function () {
     const sql = `
 SELECT
@@ -202,5 +217,103 @@ FROM tmp AS renamed`;
       new vscode.Position(5, 2)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "renamed"));
+  });
+  it("column leaded by table", async function () {
+    const sql = `
+SELECT
+  tmp
+FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(2, 5), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 6)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str"));
+  });
+  it("column leaded by table subquery", async function () {
+    const sql = `
+SELECT *
+FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+WHERE EXISTS(
+  SELECT *
+  FROM \`${util.project}.bq_extension_vscode_test.u_*\` AS tmp2
+  WHERE tmp2.str = tmp1
+)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(6, 23), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(6, 24)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str"));
+  });
+  it("struct", async function () {
+    const sql = `
+SELECT nested
+FROM \`${util.project}.bq_extension_vscode_test.t\`
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(1, 13), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(1, 14)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "int2"));
+  });
+  it("struct subquery", async function () {
+    const sql = `
+SELECT *
+FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+WHERE EXISTS(
+  SELECT *
+  FROM \`${util.project}.bq_extension_vscode_test.u_*\` AS tmp2
+  WHERE tmp2.str = tmp1.nested
+)
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(6, 31), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(6, 32)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "int"));
+  });
+  it("deep struct", async function () {
+    const sql = `
+SELECT nested.nested2.nested3
+FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(1, 29), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(1, 30)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str4"));
+  });
+  it("deep struct subquery", async function () {
+    const sql = `
+SELECT *
+FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+WHERE EXISTS(
+  SELECT *
+  FROM \`${util.project}.bq_extension_vscode_test.u_*\` AS tmp2
+  WHERE tmp2.str = tmp1.nested.nested2.nested3
+)
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(6, 46), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(6, 47)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str4"));
   });
 });

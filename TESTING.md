@@ -17,13 +17,12 @@ CREATE OR REPLACE TABLE bq_extension_vscode_test.t (
   str STRING,
   int INT64,
   float FLOAT64,
-  ts TIMESTAMP,
-  dt DATE,
   bool BOOLEAN,
   nested STRUCT<
-    arr ARRAY<INT64>,
-    str STRING,
-    int INT64
+    arr2 ARRAY<INT64>,
+    str2 STRING,
+    int2 INT64,
+    nested2 STRUCT<nested3 STRUCT<str4 STRING>, int3 INT64>
   >
 );
 CREATE OR REPLACE TABLE bq_extension_vscode_test.u_20210101 (str STRING);
