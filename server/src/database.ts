@@ -232,7 +232,7 @@ LIMIT 10000;`,
 SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
-  REGEXP_REPLACE(table_name, r'[0-9]{2,}$', '*') AS table,
+  REGEXP_REPLACE(table_name, r"([^0-9])[0-9]{8}$", r"\\1*") AS table,
   column_name AS column,
   data_type,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS

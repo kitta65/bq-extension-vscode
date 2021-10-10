@@ -1,7 +1,7 @@
 import * as bq2cst from "@dr666m1/bq2cst";
 import * as LSP from "vscode-languageserver/node";
 
-type DocumentInfo = {
+export type DocumentInfo = {
   text: string;
   tokens: bq2cst.Token[];
   cst: bq2cst.UnknownNode[];

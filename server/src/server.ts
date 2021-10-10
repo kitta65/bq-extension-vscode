@@ -184,15 +184,6 @@ export class BQLanguageServer {
     };
   }
 
-  private async getSchemaRecords(ident: string) {
-    const trimmedIdent = ident.replace(/[0-9]{2,}|\*$/, "");
-    const columnRecords = await this.db.select(
-      "SELECT DISTINCT column, data_type FROM columns WHERE table_name like ? || '%'",
-      [trimmedIdent]
-    );
-    return columnRecords;
-  }
-
   private getSmallestNameSpace(nameSpaces: NameSpace[]) {
     let smallestNameSpace = nameSpaces[0];
     for (let i = 1; i < nameSpaces.length; i++) {
@@ -603,7 +594,7 @@ export class BQLanguageServer {
     const uri = params.textDocument.uri;
     if (this.uriToCst[uri]) {
       const res = await this.provideHoverMessage(
-        this.uriToCst[uri],
+        this.getDocInfo(uri),
         params.position
       );
       return res;
@@ -653,66 +644,40 @@ export class BQLanguageServer {
   }
 
   private async provideHoverMessage(
-    cst: bq2cst.UnknownNode[],
+    docInfo: util.DocumentInfo,
     position: LSP.Position
   ) {
-    const columns: string[] = [];
-    async function checkCache(
-      this: BQLanguageServer,
-      node: bq2cst.UnknownNode,
-      parent?: bq2cst.UnknownNode,
-      _grandParent?: bq2cst.UnknownNode
-    ) {
-      if (node.token) {
-        const literal = node.token.literal;
-        const splittedLiteral = literal.split("\n");
-        const startPosition = {
-          line: node.token.line - 1,
-          character: node.token.column - 1,
-        };
-        const endPosition = {
-          line: startPosition.line + splittedLiteral.length - 1,
-          character:
-            splittedLiteral.length === 1
-              ? startPosition.character + literal.length
-              : splittedLiteral[splittedLiteral.length - 1].length - 1,
-        };
-        if (util.positionBetween(position, startPosition, endPosition)) {
-          // TODO check parent and grandParent
-          if (node.node_type === "Identifier") {
-            const matchingResult = literal.match(/^`(.+)`$/);
-            if (matchingResult) {
-              const splittedIdentifier = matchingResult[1].split(".");
-              const table = splittedIdentifier[splittedIdentifier.length - 1];
-              const tables = await this.getSchemaRecords(table);
-              tables.forEach((x) =>
-                columns.push(`${x.column}: ${x.data_type}`)
-              );
-            } else {
-              const tables = await this.getSchemaRecords(literal);
-              tables.forEach((x) =>
-                columns.push(`${x.column}: ${x.data_type}`)
-              );
-            }
-          }
-        } else {
-          for (const [_, child] of Object.entries(node.children)) {
-            if (child && "Node" in child) {
-              await checkCache.call(this, child.Node, node, parent);
-            } else if (child && "NodeVec" in child) {
-              for (const n of child.NodeVec) {
-                await checkCache.call(this, n, node, parent);
-              }
-            }
-          }
-        }
+    function replaceTableSuffix(s: string) {
+      return s.replace(/([^0-9])[0-9]{8}$/, "$1*");
+    }
+    const msgs: string[] = [];
+    const token = util.getTokenByRowColumn(
+      docInfo,
+      position.line + 1,
+      position.character + 1
+    );
+    const matchingResult = token.literal.match(/^`(.+)`$/);
+    if (matchingResult) {
+      const idents = matchingResult[1].split(".");
+      let queryResults: { column: string; data_type: string }[] = [];
+      if (idents.length === 3) {
+        // idents[0] is assumed to be project name
+        queryResults = await this.db.select(
+          `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
+          [idents[0], idents[1], replaceTableSuffix(idents[2])]
+        );
+      } else if (idents.length === 2) {
+        // idents[0] is assumed to be dataset name
+        queryResults = await this.db.select(
+          `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
+          [this.defaultProject, idents[0], replaceTableSuffix(idents[1])]
+        );
       }
+      queryResults.forEach((x) => {
+        msgs.push(`${x.column}: ${x.data_type}`);
+      });
     }
-    // TODO parallelize
-    for (const c of cst) {
-      await checkCache.call(this, c);
-    }
-    return { contents: columns };
+    return { contents: msgs };
   }
   private updateDocumentInfo(
     change: LSP.TextDocumentChangeEvent<TextDocument>
