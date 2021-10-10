@@ -7,8 +7,9 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 ⚠️ This extension is still a work in progress, so the behavior would change frequently.
 
 ## Quick Start
+ℹ️ If you OS is Windows, it is recommended to develop in WSL (See the [document](https://code.visualstudio.com/docs/remote/wsl)).
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
-2. run `gcloud auth application-default login`
+2. Run `gcloud auth application-default login`
 3. Install this extension from VSCode (`bq-extension-vscode`)
 
 ## Features
