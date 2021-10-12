@@ -15,19 +15,21 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 - Show table schema on hover
 - Show total bytes processed in status bar
 
-## Installation
+## Quick Start
 ℹ️ If your OS is Windows, it is recommended to develop in WSL (read the [document](https://code.visualstudio.com/docs/remote/wsl)).
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 2. Run `gcloud auth application-default login`
 3. Install this extension from VSCode (`bq-extension-vscode`)
+4. Open a file named `xxx.bq`
+5. Update cache (see the usage section)
 
 ## Usage
 ### Update Cache
 The first thing you should do after installation is to update cache.
 Run `BQExtensionVSCode: Update Cache` from command palette
 and the information about datasets and tables will be stored in local directory (`~/.bq_extension_vscode/`).
-In this process, this extension runs several queries against `INFROMATIN_SCHEMA`.
-Note that datasets which does not appear in the queries will be ignored to reduce cost.
+In this process, this extension runs several queries against [`INFROMATIN_SCHEMA`](https://cloud.google.com/bigquery/docs/information-schema-intro).
+Note that datasets which does not appear in your query will be ignored to reduce cost.
 
 ## Advanced Settings
 ### file extensions
