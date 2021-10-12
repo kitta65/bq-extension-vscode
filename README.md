@@ -6,19 +6,28 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 
 ⚠️ This extension is still a work in progress, so the behavior would change frequently.
 
-## Quick Start
-ℹ️ If you OS is Windows, it is recommended to develop in WSL (See the [document](https://code.visualstudio.com/docs/remote/wsl)).
+## Features
+- Complete column names (currently, only available in SELECT statement)
+- Dry run on save
+- Format source code using [prettier-plugin-bq](https://github.com/dr666m1/prettier-plugin-bq) (`Shift+Alt+F`)
+- Language configuration and syntax highlight (mostly based on [sql](https://github.com/microsoft/vscode/tree/main/extensions/sql), but slightly adjusted)
+- Highlight error
+- Show table schema on hover
+- Show total bytes processed in status bar
+
+## Installation
+ℹ️ If your OS is Windows, it is recommended to develop in WSL (read the [document](https://code.visualstudio.com/docs/remote/wsl)).
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 2. Run `gcloud auth application-default login`
 3. Install this extension from VSCode (`bq-extension-vscode`)
 
-## Features
-- Dry run on save
-- Highlight error
-- Show total bytes processed in status bar
-- Format source code using [prettier-plugin-bq](https://github.com/dr666m1/prettier-plugin-bq) (`Shift+Alt+F`)
-- Show table schema on hover
-- Language configuration and syntax highlight (mostly based on [sql](https://github.com/microsoft/vscode/tree/main/extensions/sql), but slightly adjusted)
+## Usage
+### Update Cache
+The first thing you should do after installation is to update cache.
+Run `BQExtensionVSCode: Update Cache` from command palette
+and the information about datasets and tables will be stored in local directory (`~/.bq_extension_vscode/`).
+In this process, this extension runs several queries against `INFROMATIN_SCHEMA`.
+Note that datasets which does not appear in the queries will be ignored to reduce cost.
 
 ## Advanced Settings
 ### file extensions
@@ -33,4 +42,3 @@ If you are editting a file named `xxx.sql`, you have to map `.sql` to bigquery t
   }
 }
 ```
-
