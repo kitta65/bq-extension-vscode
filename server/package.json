@@ -12,6 +12,7 @@
     "@dr666m1/prettier-plugin-bq": "^0.2.12",
     "@google-cloud/bigquery": "^5.7.0",
     "@types/prettier": "^2.3.2",
+    "dblite": "^1.1.4",
     "prettier": "^2.3.2",
     "sqlite3": "^4.2.0",
     "vscode-languageserver": "^7.0.0",

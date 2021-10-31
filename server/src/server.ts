@@ -301,8 +301,10 @@ export class BQLanguageServer {
       ];
     if (currCharacter === "`") {
       const projects = (
-        await this.db.select("SELECT DISTINCT project FROM projects;")
-      ).map((x) => x.project);
+        await this.db.query("SELECT DISTINCT project FROM projects;", [
+          "project",
+        ])
+      ).map((x: { project: string }) => x.project);
       for (const project of projects) {
         res.push({ label: project });
       }
@@ -315,22 +317,24 @@ export class BQLanguageServer {
         if (idents[0] === this.defaultProject) {
           // idents[0] is assumed to be project name
           if (length === 2) {
-            const datasets = (
-              await this.db.select(
+            const datasets: string[] = (
+              await this.db.query(
                 "SELECT DISTINCT dataset FROM datasets WHERE project = ?",
-                [this.defaultProject]
+                [this.defaultProject],
+                ["dataset"]
               )
-            ).map((x) => x.dataset);
+            ).map((x: { dataset: string }) => x.dataset);
             datasets.forEach((dataset) => {
               res.push({ label: dataset, kind: LSP.CompletionItemKind.Field });
             });
           } else if (length === 3) {
-            const tables = (
-              await this.db.select(
+            const tables: string[] = (
+              await this.db.query(
                 "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?",
-                [idents[0], idents[1]]
+                [idents[0], idents[1]],
+                ["table_name"]
               )
-            ).map((x) => x.table_name);
+            ).map((x: { table_name: string }) => x.table_name);
             tables.forEach((table) => {
               res.push({ label: table, kind: LSP.CompletionItemKind.Field });
             });
@@ -339,12 +343,13 @@ export class BQLanguageServer {
           }
         } else {
           // idents[0] is assumed to be dataset name
-          const tables = (
-            await this.db.select(
+          const tables: string[] = (
+            await this.db.query(
               "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?",
-              [this.defaultProject, idents[0]]
+              [this.defaultProject, idents[0]],
+              ["table_name"]
             )
-          ).map((x) => x.table_name);
+          ).map((x: { table_name: string }) => x.table_name);
           tables.forEach((table) => {
             res.push({ label: table, kind: LSP.CompletionItemKind.Field });
           });
@@ -662,15 +667,17 @@ export class BQLanguageServer {
       let queryResults: { column: string; data_type: string }[] = [];
       if (idents.length === 3) {
         // idents[0] is assumed to be project name
-        queryResults = await this.db.select(
+        queryResults = await this.db.query(
           `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-          [idents[0], idents[1], replaceTableSuffix(idents[2])]
+          [idents[0], idents[1], replaceTableSuffix(idents[2])],
+          ["column", "data_type"]
         );
       } else if (idents.length === 2) {
         // idents[0] is assumed to be dataset name
-        queryResults = await this.db.select(
+        queryResults = await this.db.query(
           `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-          [this.defaultProject, idents[0], replaceTableSuffix(idents[1])]
+          [this.defaultProject, idents[0], replaceTableSuffix(idents[1])],
+          ["column", "data_type"]
         );
       }
       queryResults.forEach((x) => {
@@ -822,14 +829,15 @@ export class BQLanguageServer {
           if (idents.length === 3) {
             // idents[0] is assumed to be project
             const columns = (
-              await this.db.select(
+              await this.db.query(
                 "SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
-                [idents[0], idents[1], idents[2]]
+                [idents[0], idents[1], idents[2]],
+                ["column", "data_type"]
               )
-            ).map((x) => {
+            ).map((x: { column: string; data_type: string }) => {
               return { name: x.column, type: x.data_type };
             });
-            columns.forEach((column) => {
+            columns.forEach((column: { name: string; type: string }) => {
               output.push({
                 name: column.name,
                 parent: explicitAlias || idents[2],
@@ -839,14 +847,15 @@ export class BQLanguageServer {
           } else if (idents.length == 2) {
             // idents[0] is assumed to be dataset
             const columns = (
-              await this.db.select(
+              await this.db.query(
                 "SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;",
-                [this.defaultProject, idents[0], idents[1]]
+                [this.defaultProject, idents[0], idents[1]],
+                ["column", "data_type"]
               )
-            ).map((x) => {
+            ).map((x: { column: string; data_type: string }) => {
               return { name: x.column, type: x.data_type };
             });
-            columns.forEach((column) => {
+            columns.forEach((column: { name: string; type: string }) => {
               output.push({
                 name: column.name,
                 parent: explicitAlias || idents[1],

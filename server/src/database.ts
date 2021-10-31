@@ -1,4 +1,4 @@
-import * as sqlite3 from "sqlite3";
+import dblite from "dblite";
 import * as fs from "fs";
 import { BigQuery } from "@google-cloud/bigquery";
 import { exec } from "child_process";
@@ -22,8 +22,6 @@ type ColumnRecord = {
   column: string;
   data_type: string;
 };
-
-sqlite3.verbose();
 
 const createTableProjects = `
 CREATE TABLE IF NOT EXISTS projects (
@@ -51,24 +49,23 @@ export class CacheDB {
   public static async initialize(filename: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
     const db = new CacheDB(filename);
-    db.db.configure("busyTimeout", 100 * 1000); // default value seems to be 10 * 1000 ms
     await Promise.all([
-      db.run(createTableProjects),
-      db.run(createTableDatasets),
-      db.run(createTableColumns),
+      db.query(createTableProjects),
+      db.query(createTableDatasets),
+      db.query(createTableColumns),
     ]);
     return db;
   }
 
-  private db: sqlite3.Database;
+  private db: SQLite;
   private bqClient = new BigQuery();
 
   private constructor(filename: string) {
-    this.db = new sqlite3.Database(filename);
+    this.db = dblite(filename);
   }
 
   public async clearCache() {
-    await this.exec(`
+    await this.query(`
 BEGIN;
 DROP TABLE projects;
 DROP TABLE datasets;
@@ -79,61 +76,35 @@ ${createTableColumns}
 COMMIT;`);
   }
 
-  private exec(sql: string) {
-    return new Promise<void>((resolve) => {
-      this.db.exec(sql, (_) => {
-        resolve();
-      });
-    });
-  }
-
   public close() {
-    if (this.db.open) {
-      this.db.close();
-    }
+    // if the db has already been closed, it does not throw error.
+    this.db.close();
   }
 
-  public select(sql: string, params?: any[]): Promise<any[]> {
-    if (params) {
-      return new Promise((resolve, reject) => {
-        this.db.all(sql, ...params, (err: Error | null, rows: any[]) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(rows);
-        });
-      });
-    } else {
-      return new Promise((resolve, reject) => {
-        this.db.all(sql, (err, rows) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(rows);
-        });
-      });
-    }
-  }
-
-  private run(sql: string, params?: any[]): Promise<void> {
+  public query(sql: string, paramsOrFields?: any[]): Promise<any[]>;
+  public query(sql: string, params?: any[], fields?: any[]): Promise<any[]>;
+  public query(sql: string, arg1?: any[], arg2?: any[]): Promise<any[]> {
     return new Promise((resolve, reject) => {
-      if (params) {
-        /* NOTE
-         * Type inference is a little confusiong here.
-         * The last argument (arrow function) is also considered as a part of `params`.
-         */
-        this.db.run(sql, ...params, (err: Error | null) => {
+      if (arg2) {
+        this.db.query(sql, arg1, arg2, (err: any, data: any[] | undefined) => {
           if (err) {
             reject(err);
           }
-          resolve();
+          resolve(data || []);
+        });
+      } else if (arg1) {
+        this.db.query(sql, arg1, (err: any, data: any[] | undefined) => {
+          if (err) {
+            reject(err);
+          }
+          resolve(data || []);
         });
       } else {
-        this.db.run(sql, (err) => {
+        this.db.query(sql, (err: any, data: any[] | undefined) => {
           if (err) {
             reject(err);
           }
-          resolve();
+          resolve(data || []);
         });
       }
     });
@@ -178,18 +149,20 @@ COMMIT;`);
   }
 
   public async updateCache(texts: string[]) {
-    const insertQueries: Promise<void>[] = [];
+    const insertQueries: Promise<any>[] = [];
 
     // cache projects
     const projects = await this.getAvailableProjects();
-    await this.exec(`
+    await this.query(`
 BEGIN;
 DROP TABLE projects;
 ${createTableProjects}
 COMMIT;`);
     projects.forEach((proj) => {
       insertQueries.push(
-        this.run(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [proj])
+        this.query(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [
+          proj,
+        ])
       );
     });
 
@@ -207,11 +180,11 @@ FROM \`${proj}\`.INFORMATION_SCHEMA.SCHEMATA
 LIMIT 10000;`,
         });
         const [rows] = await job.getQueryResults();
-        await this.run("DELETE FROM datasets WHERE project = ?", [proj]);
+        await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
         rows.forEach((row) => {
           datasetRecords.push(row);
           insertQueries.push(
-            this.run(
+            this.query(
               `INSERT OR IGNORE INTO datasets (project, dataset) VALUES (?, ?);`,
               [row.project, row.dataset]
             )
@@ -240,13 +213,15 @@ LIMIT 10000;`,
         });
         const [rows] = await job.getQueryResults();
         columnRecords = rows;
-        await this.run("DELETE FROM columns WHERE dataset = ?", [dataset]);
+        await this.query("DELETE FROM columns WHERE dataset = ?", [
+          dataset.dataset,
+        ]);
       } catch (err) {
         /* NOP */
       }
       columnRecords.forEach((c) =>
         insertQueries.push(
-          this.run(
+          this.query(
             "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
             [c.project, c.dataset, c.table, c.column, c.data_type]
           )
