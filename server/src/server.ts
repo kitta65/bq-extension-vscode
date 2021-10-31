@@ -314,13 +314,32 @@ export class BQLanguageServer {
         // in ``
         const idents = matchingResult[1].split(".");
         const length = idents.length;
-        if (idents[0] === this.defaultProject) {
+        const datasetsOfDefaultProject = (
+          await this.db.query(
+            "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
+            [this.defaultProject],
+            ["dataset"]
+          )
+        ).map((x) => x.dataset);
+        if (datasetsOfDefaultProject.some((x) => x === idents[0])) {
+          // idents[0] is assumed to be dataset name (of defaultProject)
+          const tables: string[] = (
+            await this.db.query(
+              "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?",
+              [this.defaultProject, idents[0]],
+              ["table_name"]
+            )
+          ).map((x: { table_name: string }) => x.table_name);
+          tables.forEach((table) => {
+            res.push({ label: table, kind: LSP.CompletionItemKind.Field });
+          });
+        } else {
           // idents[0] is assumed to be project name
           if (length === 2) {
             const datasets: string[] = (
               await this.db.query(
                 "SELECT DISTINCT dataset FROM datasets WHERE project = ?",
-                [this.defaultProject],
+                [idents[0]],
                 ["dataset"]
               )
             ).map((x: { dataset: string }) => x.dataset);
@@ -341,18 +360,6 @@ export class BQLanguageServer {
           } else {
             // something went wrong!
           }
-        } else {
-          // idents[0] is assumed to be dataset name
-          const tables: string[] = (
-            await this.db.query(
-              "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?",
-              [this.defaultProject, idents[0]],
-              ["table_name"]
-            )
-          ).map((x: { table_name: string }) => x.table_name);
-          tables.forEach((table) => {
-            res.push({ label: table, kind: LSP.CompletionItemKind.Field });
-          });
         }
       } else {
         // out of ``
