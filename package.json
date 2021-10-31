@@ -3,13 +3,14 @@
   "name": "bq-extension-vscode",
   "displayName": "BigQuery Extension for VSCode",
   "description": "Code completion / Code Formatting / Dry run / Hover information",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/dr666m1/bq-extension-vscode"
   },
   "author": "dr666m1",
   "license": "MIT",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "publisher": "dr666m1",
   "categories": [
     "Programming Languages",
