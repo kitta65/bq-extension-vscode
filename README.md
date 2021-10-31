@@ -19,7 +19,7 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 ℹ️ If your OS is Windows, it is recommended to develop in WSL (read the [document](https://code.visualstudio.com/docs/remote/wsl)).
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 2. Run `gcloud auth application-default login`
-3. Install this extension from VSCode (`bq-extension-vscode`)
+3. Install this extension from VSCode (`BigQuery Extension for VSCode`)
 4. Open a file named `xxx.bq`
 5. Update cache (see the usage section)
 

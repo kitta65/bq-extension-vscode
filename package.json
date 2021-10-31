@@ -1,14 +1,15 @@
 {
   "private": true,
   "name": "bq-extension-vscode",
-  "description": "Dry run / Format / Show table schema",
+  "displayName": "BigQuery Extension for VSCode",
+  "description": "Code completion / Code Formatting / Dry run / Hover information",
   "repository": {
     "type": "git",
     "url": "https://github.com/dr666m1/bq-extension-vscode"
   },
   "author": "dr666m1",
   "license": "MIT",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "publisher": "dr666m1",
   "categories": [
     "Programming Languages",
