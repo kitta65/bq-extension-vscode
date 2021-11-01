@@ -4,11 +4,6 @@ import { BigQuery } from "@google-cloud/bigquery";
 import { exec } from "child_process";
 import { dirname } from "path";
 import * as https from "https";
-declare module "sqlite3" {
-  interface Database {
-    open: boolean;
-  }
-}
 
 type DatasetRecord = {
   project: string;
