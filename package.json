@@ -150,8 +150,10 @@
     "@typescript-eslint/parser": "^4.23.0",
     "eslint": "^7.26.0",
     "eslint-config-prettier": "^8.3.0",
-    "mocha": "^9.1.1",
     "prettier": "^2.3.2",
     "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "mocha": "^9.1.3"
   }
 }
