@@ -106,40 +106,11 @@ COMMIT;`);
   }
 
   private async getAvailableProjects() {
-    const token = await this.getToken();
     return new Promise<string[]>((resolve) => {
-      https
-        .request(
-          "https://bigquery.googleapis.com/bigquery/v2/projects",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-          (res) => {
-            res.on("data", (chunk) => {
-              const json: {
-                projects: { projectReference: { projectId: string } }[];
-              } = JSON.parse("" + chunk);
-              const projects = json.projects.map((x) => {
-                return x.projectReference.projectId;
-              });
-              resolve(projects);
-            });
-          }
-        )
-        .end();
-    });
-  }
-
-  private async getToken() {
-    return new Promise<string>((resolve) => {
-      exec(
-        "gcloud auth application-default print-access-token",
-        (_, stdout) => {
-          resolve(stdout.trim()); // remove "\n"
-        }
-      );
+      exec("bq ls --projects=true --format=json", (_, stdout) => {
+        const projects = JSON.parse(stdout).map((x: { id: string }) => x.id);
+        resolve(projects);
+      });
     });
   }
 
