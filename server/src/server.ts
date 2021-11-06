@@ -872,7 +872,7 @@ export class BQLanguageServer {
           }
         } else if (with_) {
           const withQueries = with_.children.queries
-            .NodeVec as bq2cst.WithQuery[]; // TODO Improve type definition of bq2cst
+            .NodeVec as bq2cst.WithQuery[];
           const promises = withQueries.map((query) => {
             const alias = query.token.literal;
             if (alias === literal) {
@@ -899,7 +899,7 @@ export class BQLanguageServer {
             const expr = unknown as bq2cst.Expr; // to satisfy compiler
             if (expr.children.alias) {
               output.push({
-                name: expr.children.alias.Node.token!.literal, // TODO Improve type definition of bq2cst
+                name: expr.children.alias.Node.token!.literal,
                 parent: explicitAlias || parent, // `parent` is passed by withQuery
               });
             } else if (unknown.node_type === "Identifier") {
