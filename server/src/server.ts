@@ -8,6 +8,12 @@ import { CacheDB } from "./database";
 import { reservedKeywords, globalFunctions } from "./keywords";
 import { execSync } from "child_process";
 
+declare module "@dr666m1/bq2cst" {
+  interface BaseNode {
+    extendedWithQueries?: bq2cst.WithQuery[];
+  }
+}
+
 type CompletionItem = {
   parent?: string;
   type?: string;
@@ -595,7 +601,11 @@ export class BQLanguageServer {
         });
       }
     }
-    return res;
+
+    // get unique result
+    return Array.from(new Set(res.map((x) => JSON.stringify(x)))).map((x) =>
+      JSON.parse(x)
+    );
   }
 
   private onDidChangeConfiguration(_: LSP.DidChangeConfigurationParams) {
@@ -751,7 +761,9 @@ export class BQLanguageServer {
   }
 
   private async createNameSpaces(uri: string): Promise<NameSpace[]> {
-    const cst = this.uriToCst[uri];
+    const cst: bq2cst.UnknownNode[] = JSON.parse(
+      JSON.stringify(this.uriToCst[uri])
+    ); // deep copy
     const nameSpaces: NameSpace[] = [];
     const promises = cst.map((node) => {
       return this.pushNameSpaceOfNode(node, nameSpaces);
@@ -780,18 +792,24 @@ export class BQLanguageServer {
       if (!range) {
         throw new Error("something went wrong!");
       }
+      let with_: bq2cst.WithClause | undefined = undefined;
+      if (node.children.with) {
+        with_ = node.children.with.Node;
+        with_.children.queries.NodeVec.map((n, i) => {
+          const groupedStatement = n.children.stmt
+            .Node as bq2cst.GroupedStatement; // TODO Improve type definition of bq2cst.
+          groupedStatement.children.stmt.Node.extendedWithQueries =
+            with_!.children.queries.NodeVec.slice(0, i);
+        });
+      }
       const from = node.children.from;
       if (from && from.Node.node_type === "KeywordWithExpr") {
-        const with_ = node.children.with;
-        if (with_ && with_.Node.node_type === "WithClause") {
-          await this.findVariablesInsideSelectStatment(
-            variables,
-            from.Node,
-            with_.Node
-          );
-        } else {
-          await this.findVariablesInsideSelectStatment(variables, from.Node);
-        }
+        await this.findVariablesInsideSelectStatment(
+          variables,
+          from.Node,
+          with_,
+          node.extendedWithQueries
+        );
       }
       parent.push({
         start: range.start,
@@ -814,7 +832,8 @@ export class BQLanguageServer {
   private async findVariablesInsideSelectStatment(
     output: CompletionItem[],
     from: bq2cst.KeywordWithExpr,
-    with_?: bq2cst.WithClause
+    with_?: bq2cst.WithClause,
+    extendedWithQueries?: bq2cst.WithQuery[]
   ) {
     async function findVariable(
       this: BQLanguageServer,
@@ -830,9 +849,9 @@ export class BQLanguageServer {
           fromItem.children.alias && fromItem.children.alias.Node.token
             ? fromItem.children.alias.Node.token.literal
             : undefined;
-        const mattingResult = literal.match(/^`(.+)`$/);
-        if (mattingResult) {
-          const idents = mattingResult[1].split(".");
+        const matchingResult = literal.match(/^`(.+)`$/);
+        if (matchingResult) {
+          const idents = matchingResult[1].split(".");
           if (idents.length === 3) {
             // idents[0] is assumed to be project
             const columns = (
@@ -870,24 +889,31 @@ export class BQLanguageServer {
               });
             });
           }
-        } else if (with_) {
-          const withQueries = with_.children.queries
-            .NodeVec as bq2cst.WithQuery[];
-          const promises = withQueries.map((query) => {
-            const alias = query.token.literal;
-            if (alias === literal) {
-              return findVariable.call(
-                this,
-                query.children.stmt.Node,
-                explicitAlias || query.token.literal
-              );
-            } else {
-              return Promise.resolve();
+        } else {
+          const promises: Promise<void>[] = [];
+          const withQueryStatements: { [key: string]: bq2cst.UnknownNode } = {};
+          if (extendedWithQueries) {
+            // NOTE extendedWithQueries are overwritten by withClause
+            extendedWithQueries.forEach((query) => {
+              const alias = query.token.literal;
+              withQueryStatements[alias] = query.children.stmt.Node;
+            });
+          }
+          if (with_) {
+            with_.children.queries.NodeVec.forEach((query) => {
+              const alias = query.token.literal;
+              withQueryStatements[alias] = query.children.stmt.Node;
+            });
+          }
+          for (const [k, v] of Object.entries(withQueryStatements)) {
+            if (k === literal) {
+              promises.push(findVariable.call(this, v, explicitAlias || k));
             }
-          });
+          }
           await Promise.all(promises);
         }
       } else if (fromItem.node_type === "GroupedStatement") {
+        // in the case of subquery or with CTE (a statement in WITH clause)
         const stmt = fromItem.children.stmt.Node;
         const explicitAlias =
           fromItem.children.alias && fromItem.children.alias.Node.token
@@ -899,7 +925,7 @@ export class BQLanguageServer {
             const expr = unknown as bq2cst.Expr; // to satisfy compiler
             if (expr.children.alias) {
               output.push({
-                name: expr.children.alias.Node.token!.literal,
+                name: expr.children.alias.Node.token.literal,
                 parent: explicitAlias || parent, // `parent` is passed by withQuery
               });
             } else if (unknown.node_type === "Identifier") {

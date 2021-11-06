@@ -218,6 +218,25 @@ FROM tmp AS renamed`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "renamed"));
   });
+  it("column in leading with query", async function () {
+    const sql = `
+WITH
+  tmp1 AS (
+    SELECT 1 AS one
+  ),
+  tmp2 AS (
+    SELECT o
+    FROM tmp1
+  )
+SELECT 1`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(6, 12)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "one"));
+  });
   it("column leaded by table", async function () {
     const sql = `
 SELECT
