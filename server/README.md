@@ -25,12 +25,12 @@ npm install -g .
     "bigquery": {
       "command": "bq-language-server",
       "args": ["--stdio"],
-      "filetypes": ["sql", "bq"]
-    },
-    "settings": {
-      "bqExtensionVSCode": {
-        "diagnostic": {
-          "forVSCode": false
+      "filetypes": ["sql", "bq"],
+      "settings": {
+        "bqExtensionVSCode": {
+          "diagnostic": {
+            "forVSCode": false
+          }
         }
       }
     }
