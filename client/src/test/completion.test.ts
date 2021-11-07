@@ -93,7 +93,7 @@ FROM \`${util.project}.bq_extension_vscode_test.t\``;
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(2, 2)
+      new vscode.Position(2, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
@@ -108,7 +108,7 @@ WHERE
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(4, 2)
+      new vscode.Position(4, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
@@ -121,7 +121,7 @@ FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(2, 2)
+      new vscode.Position(2, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "tmp"));
   });
@@ -136,7 +136,7 @@ FROM
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(2, 2)
+      new vscode.Position(2, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "former"));
   });
@@ -151,7 +151,7 @@ FROM
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(2, 2)
+      new vscode.Position(2, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "latter"));
   });
@@ -166,7 +166,7 @@ FROM (
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(2, 2)
+      new vscode.Position(2, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
@@ -182,7 +182,7 @@ FROM tmp`;
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(5, 2)
+      new vscode.Position(5, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
@@ -198,7 +198,7 @@ FROM tmp`;
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(5, 2)
+      new vscode.Position(5, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "tmp"));
   });
@@ -214,7 +214,7 @@ FROM tmp AS renamed`;
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(5, 2)
+      new vscode.Position(5, 3)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "renamed"));
   });
@@ -294,13 +294,13 @@ WHERE EXISTS(
 )
 `;
     await util.insert(filename, new vscode.Position(0, 0), sql);
-    await util.insert(filename, new vscode.Position(6, 31), ".");
+    await util.insert(filename, new vscode.Position(6, 30), ".");
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(6, 32)
+      new vscode.Position(6, 31)
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "int"));
+    assert.ok(list.items.some((x) => x.label === "int2"));
   });
   it("deep struct", async function () {
     const sql = `
