@@ -251,6 +251,20 @@ FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+  it("column leaded by table end of statement", async function () {
+    const sql = `
+SELECT *
+FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp
+WHERE 0 < tmp`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    await util.insert(filename, new vscode.Position(3, 13), ".");
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 14)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str"));
+  });
   it("column leaded by table subquery", async function () {
     const sql = `
 SELECT *

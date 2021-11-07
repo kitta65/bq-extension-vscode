@@ -191,6 +191,9 @@ export class BQLanguageServer {
   }
 
   private getSmallestNameSpace(nameSpaces: NameSpace[]) {
+    if (nameSpaces.length === 0) {
+      return null;
+    }
     let smallestNameSpace = nameSpaces[0];
     for (let i = 1; i < nameSpaces.length; i++) {
       if (
@@ -380,7 +383,7 @@ export class BQLanguageServer {
         let nameSpaces = await this.createNameSpacesFromText(oldText);
         nameSpaces = nameSpaces.filter((ns) =>
           util.positionBetween(
-            { line: line, character: column },
+            { line: line, character: column - 1 }, // position of the character before `.`
             { line: ns.start.line, character: ns.start.column },
             { line: ns.end.line, character: ns.end.column }
           )
@@ -397,8 +400,9 @@ export class BQLanguageServer {
         } else {
           const parent = tokens[idx - 1].literal;
           let largestNameSpace: NameSpace = {
-            start: { line: line, column: column },
-            end: { line: line, column: column },
+            // position of the character before `.`
+            start: { line: line, column: column - 1 },
+            end: { line: line, column: column - 1 },
             variables: [],
           };
           for (const n of nameSpaces) {
@@ -424,32 +428,7 @@ export class BQLanguageServer {
               largestNameSpace = n;
             }
           }
-          const limitedNameSpaces = nameSpaces.filter(
-            (n) =>
-              util.positionBetween(
-                { line: n.start.line, character: n.start.column },
-                {
-                  line: largestNameSpace.start.line,
-                  character: largestNameSpace.start.column,
-                },
-                {
-                  line: largestNameSpace.end.line,
-                  character: largestNameSpace.end.column,
-                }
-              ) &&
-              util.positionBetween(
-                { line: n.end.line, character: n.end.column },
-                {
-                  line: largestNameSpace.start.line,
-                  character: largestNameSpace.start.column,
-                },
-                {
-                  line: largestNameSpace.end.line,
-                  character: largestNameSpace.end.column,
-                }
-              )
-          );
-          limitedNameSpaces.forEach((n) => {
+          nameSpaces.forEach((n) => {
             n.variables.forEach((v) => {
               if (v.parent === parent) {
                 res.push({
@@ -475,11 +454,16 @@ export class BQLanguageServer {
             }
             const nDots = (idx - ancestorIdx) / 2 + 1;
             ancestorIdx -= 1;
-            let variables: Variable[] = this.getSmallestNameSpace(
-              nameSpaces
-            ).variables.map((v) => {
-              return { label: v.name, type: v.type || "UNKNOWN" };
-            });
+            let variables: Variable[];
+            if (nameSpaces.length === 0) {
+              variables = [];
+            } else {
+              variables = this.getSmallestNameSpace(nameSpaces)!.variables.map(
+                (v) => {
+                  return { label: v.name, type: v.type || "UNKNOWN" };
+                }
+              );
+            }
             for (let i = 0; i < nDots; i++) {
               const newVariables: Variable[] = [];
               variables.forEach((v) => {
@@ -519,7 +503,7 @@ export class BQLanguageServer {
             const nDots = (idx - ancestorIdx) / 2 + 1;
             ancestorIdx -= 1;
             let variables: Variable[] = [];
-            limitedNameSpaces.forEach((n) => {
+            nameSpaces.forEach((n) => {
               n.variables.forEach((v) => {
                 if (v.parent === tokens[ancestorIdx].literal) {
                   variables.push({
@@ -569,12 +553,13 @@ export class BQLanguageServer {
         )
       );
       if (nameSpaces.length !== 0) {
-        const smallestNameSpace = this.getSmallestNameSpace(nameSpaces);
+        const smallestNameSpace = this.getSmallestNameSpace(nameSpaces)!;
         const parents = new Set(
           smallestNameSpace.variables.map((x) => x.parent)
         );
         parents.forEach((x) => {
-          if (x) {
+          if (x && !x.includes(".")) {
+            // remove `project.dataset.table`
             res.push({ label: x, kind: LSP.CompletionItemKind.Struct });
           }
         });
@@ -866,7 +851,7 @@ export class BQLanguageServer {
             columns.forEach((column: { name: string; type: string }) => {
               output.push({
                 name: column.name,
-                parent: explicitAlias || idents[2],
+                parent: explicitAlias || literal,
                 type: column.type,
               });
             });
@@ -884,7 +869,7 @@ export class BQLanguageServer {
             columns.forEach((column: { name: string; type: string }) => {
               output.push({
                 name: column.name,
-                parent: explicitAlias || idents[1],
+                parent: explicitAlias || literal,
                 type: column.type,
               });
             });
