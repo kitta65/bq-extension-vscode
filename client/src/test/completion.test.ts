@@ -349,6 +349,18 @@ UNION ALL
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+  it("with and group (column)", async function () {
+    const sql = `
+WITH tmp AS (SELECT 1 AS one)
+(SELECT o FROM tmp)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 9)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "one"));
+  });
   it("column in leading with query", async function () {
     const sql = `
 WITH

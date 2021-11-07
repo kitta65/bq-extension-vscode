@@ -786,8 +786,7 @@ export class BQLanguageServer {
       if (node.children.with) {
         with_ = node.children.with.Node;
         with_.children.queries.NodeVec.map((n, i) => {
-          const groupedStatement = n.children.stmt
-            .Node as bq2cst.GroupedStatement; // TODO Improve type definition of bq2cst.
+          const groupedStatement = n.children.stmt.Node;
           groupedStatement.children.stmt.Node.extendedWithQueries =
             with_!.children.queries.NodeVec.slice(0, i);
         });
@@ -811,8 +810,7 @@ export class BQLanguageServer {
       if (node.children.with) {
         const with_ = node.children.with.Node;
         with_.children.queries.NodeVec.map((n, i) => {
-          const groupedStatement = n.children.stmt
-            .Node as bq2cst.GroupedStatement; // TODO Improve type definition of bq2cst.
+          const groupedStatement = n.children.stmt.Node;
           groupedStatement.children.stmt.Node.extendedWithQueries =
             with_!.children.queries.NodeVec.slice(0, i);
         });
@@ -826,7 +824,16 @@ export class BQLanguageServer {
       }
     }
     if (node.node_type === "GroupedStatement") {
-      if (node.extendedWithQueries) {
+      if (node.children.with) {
+        const with_ = node.children.with.Node;
+        with_.children.queries.NodeVec.map((n, i) => {
+          const groupedStatement = n.children.stmt.Node;
+          groupedStatement.children.stmt.Node.extendedWithQueries =
+            with_!.children.queries.NodeVec.slice(0, i);
+        });
+        node.children.stmt.Node.extendedWithQueries =
+          node.children.with.Node.children.queries.NodeVec;
+      } else if (node.extendedWithQueries) {
         node.children.stmt.Node.extendedWithQueries = node.extendedWithQueries;
       }
     }
@@ -933,7 +940,7 @@ export class BQLanguageServer {
             ? fromItem.children.alias.Node.token.literal
             : undefined;
         if (stmt.node_type === "SetOperator") {
-          stmt = stmt.children.left.Node
+          stmt = stmt.children.left.Node;
         }
         if (stmt.node_type === "SelectStatement") {
           const unknowns = stmt.children.exprs.NodeVec;
