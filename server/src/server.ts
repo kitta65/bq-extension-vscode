@@ -807,6 +807,29 @@ export class BQLanguageServer {
         variables: variables,
       });
     }
+    if (node.node_type === "SetOperator") {
+      if (node.children.with) {
+        const with_ = node.children.with.Node;
+        with_.children.queries.NodeVec.map((n, i) => {
+          const groupedStatement = n.children.stmt
+            .Node as bq2cst.GroupedStatement; // TODO Improve type definition of bq2cst.
+          groupedStatement.children.stmt.Node.extendedWithQueries =
+            with_!.children.queries.NodeVec.slice(0, i);
+        });
+        node.children.left.Node.extendedWithQueries =
+          node.children.with.Node.children.queries.NodeVec;
+        node.children.right.Node.extendedWithQueries =
+          node.children.with.Node.children.queries.NodeVec;
+      } else if (node.extendedWithQueries) {
+        node.children.left.Node.extendedWithQueries = node.extendedWithQueries;
+        node.children.right.Node.extendedWithQueries = node.extendedWithQueries;
+      }
+    }
+    if (node.node_type === "GroupedStatement") {
+      if (node.extendedWithQueries) {
+        node.children.stmt.Node.extendedWithQueries = node.extendedWithQueries;
+      }
+    }
     for (const [_, v] of Object.entries(node.children)) {
       if (util.isNodeChild(v)) {
         await this.pushNameSpaceOfNode(v.Node, parent);
@@ -904,11 +927,14 @@ export class BQLanguageServer {
         }
       } else if (fromItem.node_type === "GroupedStatement") {
         // in the case of subquery or with CTE (a statement in WITH clause)
-        const stmt = fromItem.children.stmt.Node;
+        let stmt = fromItem.children.stmt.Node;
         const explicitAlias =
           fromItem.children.alias && fromItem.children.alias.Node.token
             ? fromItem.children.alias.Node.token.literal
             : undefined;
+        if (stmt.node_type === "SetOperator") {
+          stmt = stmt.children.left.Node
+        }
         if (stmt.node_type === "SelectStatement") {
           const unknowns = stmt.children.exprs.NodeVec;
           unknowns.forEach((unknown) => {
@@ -925,6 +951,12 @@ export class BQLanguageServer {
               });
             }
           });
+        } else if (stmt.node_type === "GroupedStatement") {
+          await findVariable.call(
+            this,
+            stmt, // you can ignore right
+            explicitAlias || parent
+          );
         }
       }
     }
