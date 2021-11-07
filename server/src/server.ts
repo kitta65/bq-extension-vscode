@@ -111,16 +111,17 @@ export class BQLanguageServer {
     } catch (e: any) {
       const msg = e.message;
       const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
-      if (matchResult) {
+      const range = util.getTokenRangeByRowColumn(
+        this.getDocInfo(uri),
+        Number(matchResult[1]),
+        Number(matchResult[2])
+      );
+      if (matchResult && range) {
         // in the case of message like below
         // Syntax error: Unexpected end of script at [1:7]
         diagnostic = {
           severity: LSP.DiagnosticSeverity.Error,
-          range: util.getTokenRangeByRowColumn(
-            this.getDocInfo(uri),
-            Number(matchResult[1]),
-            Number(matchResult[2])
-          ),
+          range: range,
           message: msg,
         };
       } else {
@@ -295,11 +296,16 @@ export class BQLanguageServer {
     // line, column... position of just typed character (1 based index)
     const line = position.position.line + 1;
     const column = position.position.character;
-    const currLiteral = util.getTokenByRowColumn(
+    const currToken = util.getTokenByRowColumn(
       this.getDocInfo(position.textDocument.uri),
       line,
       column
-    ).literal;
+    );
+    if (!currToken) {
+      return [];
+    }
+    const currLiteral = currToken.literal;
+
     const currCharacter =
       this.uriToText[position.textDocument.uri][
         util.getPositionByRowColumn(
@@ -599,15 +605,11 @@ export class BQLanguageServer {
 
   private async onHover(params: LSP.TextDocumentPositionParams) {
     const uri = params.textDocument.uri;
-    if (this.uriToCst[uri]) {
-      const res = await this.provideHoverMessage(
-        this.getDocInfo(uri),
-        params.position
-      );
-      return res;
-    } else {
-      return { contents: [] };
-    }
+    const res = await this.provideHoverMessage(
+      this.getDocInfo(uri),
+      params.position
+    );
+    return res;
   }
 
   private async onRequestClearCache(_: any) {
@@ -663,6 +665,9 @@ export class BQLanguageServer {
       position.line + 1,
       position.character + 1
     );
+    if (!token) {
+      return { contents: [] };
+    }
     const matchingResult = token.literal.match(/^`(.+)`$/);
     if (matchingResult) {
       const idents = matchingResult[1].split(".");

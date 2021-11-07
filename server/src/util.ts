@@ -147,7 +147,7 @@ export function getTokenRangeByRowColumn(
   docInfo: DocumentInfo,
   line: number,
   column: number
-): LSP.Range {
+): LSP.Range | null {
   // line, column... 1-based index
 
   // start position
@@ -155,6 +155,9 @@ export function getTokenRangeByRowColumn(
 
   // end position
   const token = getTokenByRowColumn(docInfo, line, column);
+  if (!token) {
+    return null;
+  }
   const splittedLiteral = token.literal.split("\n");
   let endLine;
   let endChacter;
@@ -193,7 +196,11 @@ export function getTokenByRowColumn(
 ) {
   // line, column... 1-based index
   const targetPosition = getPositionByRowColumn(docInfo, line, column);
-  let res = docInfo.tokens[docInfo.tokens.length - 1];
+  const tokens = docInfo.tokens;
+  if (tokens.length === 0) {
+    return null;
+  }
+  let res = tokens[docInfo.tokens.length - 1];
   for (let i = 1; i < docInfo.tokens.length; i++) {
     const token = docInfo.tokens[i];
     const tokenPosition = getPositionByRowColumn(
