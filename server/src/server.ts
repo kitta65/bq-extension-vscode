@@ -151,15 +151,22 @@ export class BQLanguageServer {
   }
 
   private getConfiguration(uri: string): Thenable<Configuration> {
-    function replace(defaultConfig: any, userConfig: any) {
-      for (const [k, v] of Object.entries(defaultConfig)) {
-        if (typeof v === "object") {
-          if (!userConfig) continue;
-          replace(defaultConfig[k], userConfig[k]);
-        } else {
-          if (userConfig && userConfig[k]) {
-            defaultConfig[k] = userConfig[k];
-          }
+    function replace(
+      defaultConfig: Record<string, unknown>,
+      userConfig: Record<string, unknown>
+    ) {
+      for (const k of Object.keys(defaultConfig)) {
+        if (
+          typeof defaultConfig[k] === "object" &&
+          k in userConfig &&
+          typeof userConfig[k] === "object"
+        ) {
+          replace(
+            defaultConfig[k] as Record<string, unknown>,
+            userConfig[k] as Record<string, unknown>
+          );
+        } else if (k in userConfig && typeof userConfig[k] !== "object") {
+          defaultConfig[k] = userConfig[k];
         }
       }
     }
