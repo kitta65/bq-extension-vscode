@@ -1,5 +1,8 @@
 **/*.ts
 **/*.map
 **/tsconfig.json
+.eslintignore
+.github/**
 .gitignore
+.prettierignore
 .vscode/**

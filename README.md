@@ -46,6 +46,6 @@ If you are editting a file named `xxx.sql`, you have to map `.sql` to bigquery t
 }
 ```
 
-## Contributing
-I'm not ready to accept PR, but your feedback is always welcome.
+## Feedback
+I'm not ready to accept pull requests, but your feedback is always welcome.
 If you find any bugs, please feel free to create an issue.
