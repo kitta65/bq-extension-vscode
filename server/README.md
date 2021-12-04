@@ -16,8 +16,9 @@ npm install -g .
 
 ## Usage
 ### Vim
-1. install [coc.nvim](https://github.com/neoclide/coc.nvim)
-2. add the following configuration to `coc-settings.json`
+1. Install [coc.nvim](https://github.com/neoclide/coc.nvim)
+2. Add `` inoremap ` `<left>` `` to your .vimrc or init.vim (optional but recommended)
+3. Add the following configuration to `coc-settings.json`
 
 ```json
 {
@@ -25,7 +26,7 @@ npm install -g .
     "bigquery": {
       "command": "bq-language-server",
       "args": ["--stdio"],
-      "filetypes": ["sql", "bq"],
+      "filetypes": ["sql", "bigquery"],
       "settings": {
         "bqExtensionVSCode": {
           "diagnostic": {
