@@ -296,7 +296,7 @@ export class BQLanguageServer {
      */
     const res: {
       label: string;
-      detail?: string;
+      documentation?: string;
       kind?: LSP.CompletionItemKind;
     }[] = [];
     const uri = position.textDocument.uri;
@@ -447,7 +447,7 @@ export class BQLanguageServer {
                 res.push({
                   label: v.name,
                   kind: LSP.CompletionItemKind.Field,
-                  detail: `Table: ${v.parent || "unknown"}, Type: ${
+                  documentation: `Table: ${v.parent || "unknown"}, Type: ${
                     v.type || "unknown"
                   }`,
                 });
@@ -499,7 +499,7 @@ export class BQLanguageServer {
             variables.forEach((v) => {
               res.push({
                 label: v.label,
-                detail: `Type: ${v.type}`,
+                documentation: `Type: ${v.type}`,
                 kind: LSP.CompletionItemKind.Field,
               });
             });
@@ -549,7 +549,7 @@ export class BQLanguageServer {
             variables.forEach((v) => {
               res.push({
                 label: v.label,
-                detail: `Type: ${v.type}`,
+                documentation: `Type: ${v.type}`,
                 kind: LSP.CompletionItemKind.Field,
               });
             });
@@ -580,7 +580,7 @@ export class BQLanguageServer {
           res.push({
             label: variable.name,
             kind: LSP.CompletionItemKind.Field,
-            detail: `Table: ${variable.parent || "unknown"}, Type: ${
+            documentation: `Table: ${variable.parent || "unknown"}, Type: ${
               variable.type || "unknown"
             }`,
           });
