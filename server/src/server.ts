@@ -13,9 +13,9 @@ declare module "@dr666m1/bq2cst" {
     extendedWithQueries?: bq2cst.WithQuery[];
     parent?: WeakRef<bq2cst.UnknownNode>;
     range: {
-      start: LSP.Position;
-      end: LSP.Position;
-    }
+      start: LSP.Position | null;
+      end: LSP.Position | null;
+    };
   }
 }
 
@@ -713,18 +713,70 @@ export class BQLanguageServer {
   private updateDocumentInfo(
     change: LSP.TextDocumentChangeEvent<TextDocument>
   ) {
-    function setParent(parent: bq2cst.UnknownNode) {
+    function setParentAndRange(parent: bq2cst.UnknownNode) {
       const weakref = new WeakRef(parent);
+      parent.range = {
+        start: null,
+        end: null,
+      };
+      const token = parent.token;
+      if (token) {
+        parent.range.start = { line: token.line, character: token.column };
+        const splittedLiteral = token.literal.split("\n");
+        parent.range.end = {
+          line: token.line + splittedLiteral.length - 1,
+          character:
+            splittedLiteral.length === 1
+              ? token.column + token.literal.length - 1
+              : splittedLiteral[splittedLiteral.length - 1].length,
+        };
+      }
       for (const [_, child] of Object.entries(parent.children)) {
         if (!child) {
           continue;
         } else if ("Node" in child) {
           child.Node.parent = weakref;
-          setParent(child.Node);
+          setParentAndRange(child.Node);
+          if (
+            parent.range.start &&
+            child.Node.range.start &&
+            util.positionFormer(child.Node.range.start, parent.range.start)
+          ) {
+            parent.range.start = child.Node.range.start;
+          } else if (!parent.range.start && child.Node.range.start) {
+            parent.range.start = child.Node.range.start;
+          }
+          if (
+            parent.range.end &&
+            child.Node.range.end &&
+            util.positionFormer(parent.range.end, child.Node.range.end)
+          ) {
+            parent.range.end = child.Node.range.end;
+          } else if (!parent.range.end && child.Node.range.end) {
+            parent.range.end = child.Node.range.end;
+          }
         } else {
           child.NodeVec.forEach((node) => {
             node.parent = weakref;
-            setParent(node);
+            setParentAndRange(node);
+            if (
+              parent.range.start &&
+              node.range.start &&
+              util.positionFormer(node.range.start, parent.range.start)
+            ) {
+              parent.range.start = node.range.start;
+            } else if (!parent.range.start && node.range.start) {
+              parent.range.start = node.range.start;
+            }
+            if (
+              parent.range.end &&
+              node.range.end &&
+              util.positionFormer(parent.range.end, node.range.end)
+            ) {
+              parent.range.end = node.range.end;
+            } else if (!parent.range.end && node.range.end) {
+              parent.range.end = node.range.end;
+            }
           });
         }
       }
@@ -735,7 +787,7 @@ export class BQLanguageServer {
     try {
       this.uriToTokens[uri] = bq2cst.tokenize(text);
       const csts = bq2cst.parse(text);
-      csts.forEach((cst) => setParent(cst));
+      csts.forEach((cst) => setParentAndRange(cst));
       this.uriToCst[uri] = csts;
       this.connection.sendDiagnostics({
         uri: uri,

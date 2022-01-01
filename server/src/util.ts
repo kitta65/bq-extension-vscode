@@ -101,6 +101,74 @@ function getLastNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
   return res;
 }
 
+export function getNodeByRowColumn(
+  docInfo: DocumentInfo,
+  line: number,
+  column: number
+) {
+  // line, column... 1-based index
+  function findNodeFromCst(cst: bq2cst.UnknownNode): bq2cst.UnknownNode | null {
+    if (
+      cst.range.start &&
+      cst.range.end &&
+      positionBetween(
+        { line: line, character: column },
+        cst.range.start,
+        cst.range.end
+      )
+    ) {
+      if (cst.token) {
+        const splittedLiteral = cst.token.literal.split("\n");
+        const startPosition = {
+          line: cst.token.line,
+          character: cst.token.column,
+        };
+        const endPosition = {
+          line: cst.token.line + splittedLiteral.length - 1,
+          character:
+            splittedLiteral.length === 1
+              ? cst.token.column + splittedLiteral[0].length - 1
+              : splittedLiteral[splittedLiteral.length - 1].length,
+        };
+        if (
+          positionBetween(
+            { line: line, character: column },
+            startPosition,
+            endPosition
+          )
+        ) {
+          return cst;
+        }
+      }
+      for (const [_, child] of Object.entries(cst.children)) {
+        if (child && "Node" in child) {
+          const res = findNodeFromCst(child.Node);
+          if (res) {
+            return res;
+          }
+        } else if (child) {
+          for (const node of child.NodeVec) {
+            const res = findNodeFromCst(node);
+            if (res) {
+              return res;
+            }
+          }
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+  const csts = docInfo.cst;
+  for (const cst of csts) {
+    const res = findNodeFromCst(cst);
+    if (res) {
+      return res;
+    }
+  }
+  return null;
+}
+
 export function getNodeRange(node: bq2cst.UnknownNode): {
   start: { line: number; column: number };
   end: { line: number; column: number };
@@ -253,4 +321,25 @@ export function positionBetween(
   if (position.line === end.line && end.character < position.character)
     return false;
   return true;
+}
+
+export function positionFormer(
+  position1: LSP.Position,
+  position2: LSP.Position
+) {
+  if (position1.line < position2.line) return true;
+  if (
+    position1.line === position2.line &&
+    position1.character < position2.character
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function positionLatter(
+  position1: LSP.Position,
+  position2: LSP.Position
+) {
+  return !positionFormer(position1, position2);
 }
