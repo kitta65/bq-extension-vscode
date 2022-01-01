@@ -11,18 +11,8 @@ describe("Completion", function () {
   afterEach(async function () {
     await util.deleteTextDocument(filename);
   });
-  it("reservedKeywords", async function () {
-    const sql = "S"; // NOTE Actually, any string is ok.
-    await util.insert(filename, new vscode.Position(0, 0), sql);
-    const list = (await vscode.commands.executeCommand(
-      "vscode.executeCompletionItemProvider",
-      util.getDocUri(filename),
-      new vscode.Position(0, sql.length)
-    )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "SELECT"));
-  });
   it("function", async function () {
-    const sql = "SELECT C";
+    const sql = "SELECT C"; // NOTE Actually, any string is OK.
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -187,24 +177,24 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
-// TODO fix parser
-//  it("column subquery and set operator and groupedStatement", async function () {
-//    const sql = `
-//SELECT
-//  o
-//FROM (
-//  (SELECT 1 AS one)
-//  UNION ALL
-//  SELECT 2
-//)`;
-//    await util.insert(filename, new vscode.Position(0, 0), sql);
-//    const list = (await vscode.commands.executeCommand(
-//      "vscode.executeCompletionItemProvider",
-//      util.getDocUri(filename),
-//      new vscode.Position(2, 3)
-//    )) as vscode.CompletionList;
-//    assert.ok(list.items.some((x) => x.label === "one"));
-//  });
+  // TODO fix parser
+  //  it("column subquery and set operator and groupedStatement", async function () {
+  //    const sql = `
+  //SELECT
+  //  o
+  //FROM (
+  //  (SELECT 1 AS one)
+  //  UNION ALL
+  //  SELECT 2
+  //)`;
+  //    await util.insert(filename, new vscode.Position(0, 0), sql);
+  //    const list = (await vscode.commands.executeCommand(
+  //      "vscode.executeCompletionItemProvider",
+  //      util.getDocUri(filename),
+  //      new vscode.Position(2, 3)
+  //    )) as vscode.CompletionList;
+  //    assert.ok(list.items.some((x) => x.label === "one"));
+  //  });
   it("column with", async function () {
     const sql = `
 WITH tmp AS (

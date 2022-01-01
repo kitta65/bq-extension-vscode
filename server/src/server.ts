@@ -5,7 +5,7 @@ import * as bq2cst from "@dr666m1/bq2cst";
 import * as prettier from "prettier";
 import * as util from "./util";
 import { CacheDB } from "./database";
-import { reservedKeywords, globalFunctions } from "./keywords";
+import { globalFunctions } from "./functions";
 import { execSync } from "child_process";
 
 declare module "@dr666m1/bq2cst" {
@@ -591,9 +591,6 @@ export class BQLanguageServer {
        * If they are suggested, it will be difficult to find the column you want.
        */
       if (res.length === 0 || !currCharacter.match(/^[, ]$/)) {
-        new Set(reservedKeywords).forEach((x) => {
-          res.push({ label: x, kind: LSP.CompletionItemKind.Keyword });
-        });
         globalFunctions.forEach((x) => {
           if (typeof x === "string") {
             res.push({ label: x, kind: LSP.CompletionItemKind.Function });
