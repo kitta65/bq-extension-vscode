@@ -200,6 +200,81 @@ FROM UNNEST(['foo', 'bar']) AS s`,
   SUM(i) -- 3
 FROM UNNEST([1, 2]) AS i`,
   },
+  // ----- statistical aggregate functions -----
+  {
+    ident: "CORR",
+    example: `SELECT
+  CORR(x, y) -- 1.0
+FROM UNNEST([
+  STRUCT(1 AS x, 2 AS y),
+        (2     , 4     ),
+        (3     , 6     )
+])`,
+  },
+  {
+    ident: "COVAR_POP",
+    example: `SELECT
+  COVAR_POP(x, y), -- 1.3333333333333333
+  COVAR_SAMP(x, y), -- 2.0
+FROM UNNEST([
+  STRUCT(1 AS x, 2 AS y),
+        (2     , 4     ),
+        (3     , 6     )
+])`,
+  },
+  {
+    ident: "COVAR_SAMP",
+    example: `SELECT
+  COVAR_SAMP(x, y), -- 2.0
+  COVAR_POP(x, y), -- 1.3333333333333333
+FROM UNNEST([
+  STRUCT(1 AS x, 2 AS y),
+        (2     , 4     ),
+        (3     , 6     )
+])`,
+  },
+  {
+    ident: "STDDEV_POP",
+    example: `SELECT
+  STDDEV_POP(x),  -- 0.816496580927726
+  STDDEV_SAMP(x), -- 1.0
+FROM UNNEST([1, 2, 3]) AS x`,
+  },
+  {
+    ident: "STDDEV_SAMP",
+    example: `SELECT
+  STDDEV_SAMP(x), -- 1.0
+  STDDEV_POP(x),  -- 0.816496580927726
+FROM UNNEST([1, 2, 3]) AS x`,
+  },
+  {
+    ident: "STDDEV",
+    example: `/* An alias of STDDEV_SAMP() */
+SELECT
+  STDDEV(x) -- 1.0
+FROM UNNEST([1, 2, 3]) AS x`,
+  },
+  {
+    ident: "VAR_POP",
+    example: `SELECT
+  VAR_SAMP(x), -- 1.0
+  VAR_POP(x),  -- 0.6666666666666666
+FROM UNNEST([1, 2, 3]) AS x`,
+  },
+  {
+    ident: "VAR_SAMP",
+    example: `SELECT
+  VAR_POP(x),  -- 0.6666666666666666
+  VAR_SAMP(x), -- 1.0
+FROM UNNEST([1, 2, 3]) AS x`,
+  },
+  {
+    ident: "VARIANCE",
+    example: `/* An alias of VAR_SAMP() */
+SELECT
+  VARIANCE(x), -- 1.0
+FROM UNNEST([1, 2, 3]) AS x`,
+  },
   // ----- approximate aggregate functions -----
   {
     ident: "APPROX_COUNT_DISTINCT",
@@ -239,102 +314,98 @@ FROM UNNEST([
         ('c'         , 1          )
 ])`,
   },
-  // ----- array functions -----
+  // ----- numbering functions -----
   {
-    ident: "ARRAY",
-    example: `SELECT
-  -- [1, 2]
-  ARRAY(
-    SELECT x
-    FROM UNNEST([1, 2]) AS x
-  )`,
+    ident: "RANK",
+    example: `/**
+ * x, rank
+ * 0,    1
+ * 1,    2
+ * 1,    2
+ * 2,    4
+ */
+SELECT
+  x,
+  RANK() OVER (ORDER BY x) AS rank
+FROM UNNEST([0, 1, 1, 2]) AS x
+ORDER BY x`,
   },
   {
-    ident: "ARRAY_CONCAT",
-    example: `SELECT
-  -- [1, 2, 3]
-  ARRAY_CONCAT([1], [2, 3])`,
+    ident: "DENSE_RANK",
+    example: `/**
+ * x, rank
+ * 0,    1
+ * 1,    2
+ * 1,    2
+ * 2,    3
+ */
+SELECT
+  x,
+  DENSE_RANK() OVER (ORDER BY x) AS rank
+FROM UNNEST([0, 1, 1, 2]) AS x
+ORDER BY x`,
   },
   {
-    ident: "ARRAY_LENGTH",
-    example: `SELECT
-  ARRAY_LENGTH([1, 2]) -- 2`,
+    ident: "PERCENT_RANK",
+    example: `/**
+ * x, percent
+ * 0, 0.0
+ * 1, 0.3333333333333333
+ * 1, 0.3333333333333333
+ * 2, 1.0
+ */
+SELECT
+  x,
+  PERCENT_RANK() OVER (ORDER BY x) AS percent
+FROM UNNEST([0, 1, 1, 2]) AS x
+ORDER BY x`,
   },
   {
-    ident: "ARRAY_TO_STRING",
-    example: `SELECT
-  -- 'a,b'
-  ARRAY_TO_STRING(
-    ['a', 'b', NULL],
-    ','
-  ),
-  -- 'abN!'
-  ARRAY_TO_STRING(
-    ['a', 'b', NULL],
-    '',
-    'N!'
-  ),`,
+    ident: "CUME_DIST",
+    example: `/**
+ * x, cume
+ * 0,  0.2
+ * 1,  0.6
+ * 1,  0.6
+ * 2,  0.8
+ * 3,  1.0
+ */
+SELECT
+  x,
+  CUME_DIST() OVER (ORDER BY x) AS cume
+FROM UNNEST([0, 1, 1, 2, 3]) AS x
+ORDER BY x`,
   },
   {
-    ident: "GENERATE_ARRAY",
-    example: `SELECT
-  -- [1, 2, 3, 4, 5]
-  GENERATE_ARRAY(1, 5),
-  -- [1, 3, 5]
-  GENERATE_ARRAY(1, 5, 2),`,
+    ident: "NTILE",
+    example: `/**
+ * x, ntile
+ * 0,     1
+ * 1,     1
+ * 1,     2
+ * 2,     2
+ * 3,     3
+ */
+SELECT
+  x,
+  NTILE(3) OVER (ORDER BY x) AS ntile
+FROM UNNEST([0, 1, 1, 2, 3]) AS x
+ORDER BY x`,
   },
   {
-    ident: "GENERATE_DATE_ARRAY",
-    example: `SELECT
-  -- ["2020-01-01", ..., "2020-01-31"]
-  GENERATE_DATE_ARRAY(
-    '2020-01-01',
-    '2020-01-31'
-  ),
-  -- ["2020-01-01", "2020-01-31"]
-  GENERATE_DATE_ARRAY(
-    '2020-01-01',
-    '2020-01-31',
-    INTERVAL 30 DAY
-  ),`,
-  },
-  {
-    ident: "GENERATE_TIMESTAMP_ARRAY",
-    example: `SELECT
-  -- ["2020-01-01 00:00:00", ...]
-  GENERATE_TIMESTAMP_ARRAY(
-    '2020-01-01 00:00:00',
-    '2020-01-02 00:00:00',
-    INTERVAL 6 HOUR
-  )`,
-  },
-  {
-    ident: "ARRAY_REVERSE",
-    example: `SELECT
-  -- [3, 2, 1]
-  ARRAY_REVERSE([1, 2, 3])`,
-  },
-  {
-    ident: "OFFSET",
-    example: `SELECT
-  [1, 2, 3][OFFSET(0)] -- 1`,
-  },
-  {
-    ident: "ORDINAL",
-    example: `SELECT
-  [1, 2, 3][ORDINAL(1)] -- 1`,
-  },
-  {
-    ident: "SAFE_OFFSET",
-    example: `SELECT
-  [1, 2, 3][SAFE_OFFSET(0)], -- 1
-  [1, 2, 3][SAFE_OFFSET(4)], -- NULL`,
-  },
-  {
-    ident: "SAFE_ORDINAL",
-    example: `SELECT
-  [1, 2, 3][SAFE_ORDINAL(1)], -- 1
-  [1, 2, 3][SAFE_ORDINAL(4)], -- NULL`,
+    ident: "ROW_NUMBER",
+    example: `/**
+ * x, num
+ * 0,   1
+ * 1,   2
+ * 1,   3
+ * 2,   4
+ */
+SELECT
+  x,
+  ROW_NUMBER() OVER (ORDER BY x) AS num
+FROM UNNEST([0, 1, 1, 2]) AS x
+ORDER BY x`,
   },
   // ----- bit functions -----
   {
@@ -379,447 +450,6 @@ FROM UNNEST([
     FORMAT 'YYYYMMDD'
   ), -- '20200101'
   SAFE_CAST('' AS DATE), -- NULL`,
-  },
-  // ----- date functions -----
-  {
-    ident: "CURRENT_DATE",
-    example: `SELECT
-  CURRENT_DATE() -- DATE '2021-01-01'`,
-  },
-  // "EXTRACT", // See timestamp function
-  {
-    ident: "DATE",
-    example: `SELECT
-  -- DATE '2020-01-01'
-  DATE(2020, 1, 1),
-  -- DATE '2020-01-01'
-  DATE(TIMESTAMP '2020-01-01'),
-  -- DATE '2019-12-31'
-  DATE(
-    TIMESTAMP '2020-01-01',
-    'America/New_York'
-  ),`,
-  },
-  {
-    ident: "DATE_ADD",
-    example: `SELECT
-  -- DATE '2020-01-04'
-  DATE_ADD('2020-01-01', INTERVAL 3 DAY)`,
-  },
-  {
-    ident: "DATE_SUB",
-    example: `SELECT
-  -- DATE '2019-12-29'
-  DATE_SUB('2020-01-01', INTERVAL 3 DAY)`,
-  },
-  {
-    ident: "DATE_DIFF",
-    example: `SELECT
-  DATE_DIFF(
-    '2020-01-01',
-    '2019-12-30',
-    DAY
-  ), -- 2
-  DATE_DIFF(
-    '2020-01-01',
-    '2019-12-30',
-    YEAR
-  ), -- 1`,
-  },
-  {
-    ident: "DATE_TRUNC",
-    example: `SELECT
-  -- DATE '2020-01-01'
-  DATE_TRUNC('2020-01-31', MONTH)`,
-  },
-  {
-    ident: "DATE_FROM_UNIX_DATE",
-    example: `SELECT
-  DATE_FROM_UNIX_DATE(0) -- '1970-01-01'`,
-  },
-  {
-    ident: "FORMAT_DATE",
-    example: `SELECT
-  -- '20200101'
-  FORMAT_DATE('%Y%m%d', '2020-01-01'),
-  -- '2020-01-01'
-  FORMAT_DATE('%F', '2020-01-01'),`,
-  },
-  {
-    ident: "LAST_DAY",
-    example: `SELECT
-  LAST_DAY(
-    '2020-01-01'
-  ), -- '2020-01-31'
-  LAST_DAY(
-    '2020-01-01',
-    YEAR
-  ), -- '2020-12-31'`,
-  },
-  {
-    ident: "PARSE_DATE",
-    example: `SELECT
-  -- DATE '2020-01-01'
-  PARSE_DATE('%Y%m%d', '20200101'),
-  -- DATE '2020-01-01'
-  parse_date('%F', '2020-01-01')`,
-  },
-  {
-    ident: "UNIX_DATE",
-    example: `SELECT
-  UNIX_DATE(DATE '1969-12-31'), -- -1
-  UNIX_DATE(DATE '1970-01-01'), --  0
-  UNIX_DATE(DATE '1970-01-02'), --  1`,
-  },
-  // ----- datetime functions -----
-  {
-    ident: "CURRENT_DATETIME",
-    example: `SELECT
-  -- DATETIME '2020-01-01 00:00:00'
-  CURRENT_DATETIME()`,
-  },
-  {
-    ident: "DATETIME",
-    example: `SELECT
-  -- DATETIME '2020-01-01 23:59:59'
-  DATETIME(2020, 1, 1, 23, 59, 59),
-  -- DATETIME '2020-01-01 23:59:59'
-  DATETIME(
-    DATE '2020-01-01',
-    TIME '23:59:59'
-  ),
-  -- DATETIME '2020-01-01 09:00:00'
-  DATETIME(
-    TIMESTAMP '2020-01-01 00:00:00 UTC',
-    'Asia/Tokyo'
-  ),`,
-  },
-  // "EXTRACT", // See timestamp function
-  {
-    ident: "DATETIME_ADD",
-    example: `SELECT
-  DATETIME_ADD(
-    DATETIME '2020-01-01 00:00:00',
-    INTERVAL 9 HOUR
-  ) -- DATETIME '2020-01-01 09:00:00'`,
-  },
-  {
-    ident: "DATETIME_SUB",
-    example: `SELECT
-  DATETIME_SUB(
-    DATETIME '2020-01-01 00:00:00',
-    INTERVAL 9 HOUR
-  ) -- DATETIME '2019-12-31 15:00:00'`,
-  },
-  {
-    ident: "DATETIME_DIFF",
-    example: `SELECT
-  DATETIME_DIFF(
-    DATETIME '2020-01-01 00:00:00',
-    DATETIME '2019-12-31 23:59:59',
-    YEAR
-  ) -- 1`,
-  },
-  {
-    ident: "DATETIME_TRUNC",
-    example: `SELECT
-  DATETIME_TRUNC(
-    DATETIME '2020-01-01 23:59:59',
-    HOUR
-  ) -- DATETIME '2020-01-01 23:00:00'`,
-  },
-  {
-    ident: "FORMAT_DATETIME",
-    example: `SELECT
-  FORMAT_DATETIME(
-    '%Y%m%d',
-    DATETIME '2020-01-01'
-  ), -- '20200101'
-  FORMAT_DATETIME(
-    '%F',
-    DATETIME '2020-01-01'
-  ), -- '2020-01-01'`,
-  },
-  // "LAST_DAY", // See date functions
-  {
-    ident: "PARSE_DATETIME",
-    example: `SELECT
-  PARSE_DATETIME(
-    '%F %T',
-    '2020-01-01 00:00:00'
-  ) -- DATETIME '2020-01-01 00:00:00'`,
-  },
-  // ----- debugging functions -----
-  { ident: "ERROR", example: `SELECT ERROR('error message!')` },
-  // ----- federated query functions -----
-  "EXTERNAL_QUERY",
-  // ----- geography functions -----
-  "S2_CELLIDFROMPOINT",
-  "S2_COVERINGCELLIDS",
-  "ST_ANGLE",
-  "ST_AREA",
-  "ST_ASBINARY",
-  "ST_ASGEOJSON",
-  "ST_ASTEXT",
-  "ST_AZIMUTH",
-  "ST_BOUNDARY",
-  "ST_BOUNDINGBOX",
-  "ST_BUFFER",
-  "ST_BUFFERWITHTOLERANCE",
-  "ST_CENTROID",
-  "ST_CENTROID_AGG",
-  "ST_CLOSESTPOINT",
-  "ST_CLUSTERDBSCAN",
-  "ST_CONTAINS",
-  "ST_CONVEXHULL",
-  "ST_COVEREDBY",
-  "ST_COVERS",
-  "ST_DIFFERENCE",
-  "ST_DIMENSION",
-  "ST_DISJOINT",
-  "ST_DISTANCE",
-  "ST_DUMP",
-  "ST_DWITHIN",
-  "ST_ENDPOINT",
-  "ST_EXTENT",
-  "ST_EQUALS",
-  "ST_EXTERIORRING",
-  "ST_GEOGFROM",
-  "ST_GEOGFROMGEOJSON",
-  "ST_GEOGFROMTEXT",
-  "ST_GEOGFROMWKB",
-  "ST_GEOGPOINT",
-  "ST_GEOGPOINTFROMGEOHASH",
-  "ST_GEOHASH",
-  "ST_GEOMETRYTYPE",
-  "ST_INTERIORRINGS",
-  "ST_INTERSECTION",
-  "ST_INTERSECTS",
-  "ST_INTERSECTSBOX",
-  "ST_ISCOLLECTION",
-  "ST_ISEMPTY",
-  "ST_LENGTH",
-  "ST_MAKELINE",
-  "ST_MAKEPOLYGON",
-  "ST_MAKEPOLYGONORIENTED",
-  "ST_MAXDISTANCE",
-  "ST_NPOINTS",
-  "ST_NUMGEOMETRIES",
-  "ST_NUMPOINTS",
-  "ST_PERIMETER",
-  "ST_POINTN",
-  "ST_SIMPLIFY",
-  "ST_SNAPTOGRID",
-  "ST_STARTPOINT",
-  "ST_TOUCHES",
-  "ST_UNION",
-  "ST_UNION_AGG",
-  "ST_WITHIN",
-  "ST_X",
-  "ST_Y",
-  // ----- hash functions -----
-  {
-    ident: "FARM_FINGERPRINT",
-    example: `SELECT
-  -- -7968278744132540956
-  FARM_FINGERPRINT('X'),
-  -- 8573515363966238755
-  FARM_FINGERPRINT('Y'),`,
-  },
-  {
-    ident: "MD5",
-    example: `SELECT
-  MD5('XXX') -- b'\\xf5a\\xaa...'`,
-  },
-  {
-    ident: "SHA1",
-    example: `SELECT
-  SHA1('xxx') -- b'\\xb6\\x0d...'`,
-  },
-  {
-    ident: "SHA256",
-    example: `SELECT
-  SHA256('xxx') -- b'\\xcd.\\xb0...'`,
-  },
-  {
-    ident: "SHA512",
-    example: `SELECT
-  SHA512('xxx') -- b'\\x90W\\xff'`,
-  },
-  // ----- json functions -----
-  {
-    ident: "JSON_EXTRACT",
-    example: `SELECT
-  JSON_EXTRACT(
-    '{"x": "xxx"}',
-    '$.x'
-  ), -- '"xxx"'
-  JSON_EXTRACT(
-    '{"x": "xxx"}',
-    '$.y'
-  ), -- NULL
-  JSON_EXTRACT(
-    '{"x": [1, 2]}',
-    '$.x[0]'
-  ), -- '1'
-  JSON_EXTRACT(
-    '{"x.y": [1, 2]}',
-    "$['x.y']"
-  ), -- '[1,2]'`,
-  },
-  {
-    ident: "JSON_QUERY",
-    example: `SELECT
-  JSON_QUERY(
-    '{"x": "xxx"}',
-    '$.x'
-  ), -- '"xxx"'
-  JSON_QUERY(
-    '{"x": "xxx"}',
-    '$.y'
-  ), -- NULL
-  JSON_QUERY(
-    '{"x": [1, 2]}',
-    '$.x[0]'
-  ), -- '1'
-  JSON_QUERY(
-    '{"x.y": [1, 2]}',
-    '$."x.y"'
-  ), -- '[1,2]'`,
-  },
-  {
-    ident: "JSON_EXTRACT_SCALAR",
-    example: `SELECT
-  JSON_EXTRACT_SCALAR(
-    '{"x": "xxx"}',
-    '$.x'
-  ), -- 'xxx'
-  JSON_EXTRACT_SCALAR(
-    '{"x": "xxx"}',
-    '$.y'
-  ), -- NULL
-  JSON_EXTRACT_SCALAR(
-    '{"x": [1, 2]}',
-    '$.x[0]'
-  ), -- '1'
-  JSON_EXTRACT_SCALAR(
-    '{"x.y": [1, 2]}',
-    "$['x.y']"
-  ), -- NULL`,
-  },
-  {
-    ident: "JSON_VALUE",
-    example: `SELECT
-  JSON_VALUE(
-    '{"x": "xxx"}',
-    '$.x'
-  ), -- 'xxx'
-  JSON_VALUE(
-    '{"x": "xxx"}',
-    '$.y'
-  ), -- NULL
-  JSON_VALUE(
-    '{"x": [1, 2]}',
-    '$.x[0]'
-  ), -- '1'
-  JSON_VALUE(
-    '{"x.y": [1, 2]}',
-    '$."x.y"'
-  ), -- NULL`,
-  },
-  {
-    ident: "JSON_EXTRACT_ARRAY",
-    example: `SELECT
-  -- ['"a"', '"b"']
-  JSON_EXTRACT_ARRAY('["a", "b"]'),
-  -- ['"a"', '"b"']
-  JSON_EXTRACT_ARRAY(
-    '{"x": ["a", "b"]}',
-    '$.x'
-  ),
-  -- NULL
-  JSON_EXTRACT_ARRAY(
-    '{"x": ["a", "b"]}',
-    '$.y'
-  ),
-  -- ['"a"', '"b"']
-  JSON_EXTRACT_ARRAY(
-    '{"x.y": ["a", "b"]}',
-    "$['x.y']"
-  ),`,
-  },
-  {
-    ident: "JSON_QUERY_ARRAY",
-    example: `SELECT
-  -- ['"a"', '"b"']
-  JSON_QUERY_ARRAY('["a", "b"]'),
-  -- ['"a"', '"b"']
-  JSON_QUERY_ARRAY(
-    '{"x": ["a", "b"]}',
-    '$.x'
-  ),
-  -- NULL
-  JSON_QUERY_ARRAY(
-    '{"x": ["a", "b"]}',
-    '$.y'
-  ),
-  -- ['"a"', '"b"']
-  JSON_QUERY_ARRAY(
-    '{"x.y": ["a", "b"]}',
-    '$."x.y"'
-  ),`,
-  },
-  {
-    ident: "JSON_EXTRACT_STRING_ARRAY",
-    example: `SELECT
-  -- ['a']
-  JSON_EXTRACT_STRING_ARRAY('["a"]'),
-  -- ['a']
-  JSON_EXTRACT_STRING_ARRAY(
-    '{"x": ["a"]}',
-    '$.x'
-  ),
-  -- NULL
-  JSON_EXTRACT_STRING_ARRAY(
-    '{"x": ["a"]}',
-    '$.y'
-  ),
-  -- ['a']
-  JSON_EXTRACT_STRING_ARRAY(
-    '{"x.y": ["a"]}',
-    "$['x.y']"
-  ),`,
-  },
-  {
-    ident: "JSON_VALUE_ARRAY",
-    example: `SELECT
-  -- ['a', 'b']
-  JSON_VALUE_ARRAY('["a", "b"]'),
-  -- ['a', 'b']
-  JSON_VALUE_ARRAY(
-    '{"x": ["a", "b"]}',
-    '$.x'
-  ),
-  -- NULL
-  JSON_VALUE_ARRAY(
-    '{"x": ["a", "b"]}',
-    '$.y'
-  ),
-  -- ['a', 'b']
-  JSON_VALUE_ARRAY(
-    '{"x.y": ["a", "b"]}',
-    '$."x.y"'
-  ),`,
-  },
-  {
-    ident: "TO_JSON_STRING",
-    example: `SELECT
-  -- '[1,2]'
-  TO_JSON_STRING([1, 2]),
-  -- '{"x":1}'
-  TO_JSON_STRING(STRUCT(1 AS x)),
-  -- '{\\n  "x": 1\\n}'
-  TO_JSON_STRING(STRUCT(1 AS x), true),`,
   },
   // ----- mathematical functions -----
   {
@@ -1133,179 +763,34 @@ SELECT
 FROM UNNEST([0, 1, 2, 3]) AS x
 LIMIT 1`,
   },
-  // ----- numbering functions -----
+  // ----- hash functions -----
   {
-    ident: "RANK",
-    example: `/**
- * x, rank
- * 0,    1
- * 1,    2
- * 1,    2
- * 2,    4
- */
-SELECT
-  x,
-  RANK() OVER (ORDER BY x) AS rank
-FROM UNNEST([0, 1, 1, 2]) AS x
-ORDER BY x`,
-  },
-  {
-    ident: "DENSE_RANK",
-    example: `/**
- * x, rank
- * 0,    1
- * 1,    2
- * 1,    2
- * 2,    3
- */
-SELECT
-  x,
-  DENSE_RANK() OVER (ORDER BY x) AS rank
-FROM UNNEST([0, 1, 1, 2]) AS x
-ORDER BY x`,
-  },
-  {
-    ident: "PERCENT_RANK",
-    example: `/**
- * x, percent
- * 0, 0.0
- * 1, 0.3333333333333333
- * 1, 0.3333333333333333
- * 2, 1.0
- */
-SELECT
-  x,
-  PERCENT_RANK() OVER (ORDER BY x) AS percent
-FROM UNNEST([0, 1, 1, 2]) AS x
-ORDER BY x`,
-  },
-  {
-    ident: "CUME_DIST",
-    example: `/**
- * x, cume
- * 0,  0.2
- * 1,  0.6
- * 1,  0.6
- * 2,  0.8
- * 3,  1.0
- */
-SELECT
-  x,
-  CUME_DIST() OVER (ORDER BY x) AS cume
-FROM UNNEST([0, 1, 1, 2, 3]) AS x
-ORDER BY x`,
-  },
-  {
-    ident: "NTILE",
-    example: `/**
- * x, ntile
- * 0,     1
- * 1,     1
- * 1,     2
- * 2,     2
- * 3,     3
- */
-SELECT
-  x,
-  NTILE(3) OVER (ORDER BY x) AS ntile
-FROM UNNEST([0, 1, 1, 2, 3]) AS x
-ORDER BY x`,
-  },
-  {
-    ident: "ROW_NUMBER",
-    example: `/**
- * x, num
- * 0,   1
- * 1,   2
- * 1,   3
- * 2,   4
- */
-SELECT
-  x,
-  ROW_NUMBER() OVER (ORDER BY x) AS num
-FROM UNNEST([0, 1, 1, 2]) AS x
-ORDER BY x`,
-  },
-  // ----- security functions -----
-  {
-    ident: "SESSION_USER",
+    ident: "FARM_FINGERPRINT",
     example: `SELECT
-  SESSION_USER() -- 'abc@example.com'`,
+  -- -7968278744132540956
+  FARM_FINGERPRINT('X'),
+  -- 8573515363966238755
+  FARM_FINGERPRINT('Y'),`,
   },
-  // ----- statistical aggregate functions -----
   {
-    ident: "CORR",
+    ident: "MD5",
     example: `SELECT
-  CORR(x, y) -- 1.0
-FROM UNNEST([
-  STRUCT(1 AS x, 2 AS y),
-        (2     , 4     ),
-        (3     , 6     )
-])`,
+  MD5('XXX') -- b'\\xf5a\\xaa...'`,
   },
   {
-    ident: "COVAR_POP",
+    ident: "SHA1",
     example: `SELECT
-  COVAR_POP(x, y), -- 1.3333333333333333
-  COVAR_SAMP(x, y), -- 2.0
-FROM UNNEST([
-  STRUCT(1 AS x, 2 AS y),
-        (2     , 4     ),
-        (3     , 6     )
-])`,
+  SHA1('xxx') -- b'\\xb6\\x0d...'`,
   },
   {
-    ident: "COVAR_SAMP",
+    ident: "SHA256",
     example: `SELECT
-  COVAR_SAMP(x, y), -- 2.0
-  COVAR_POP(x, y), -- 1.3333333333333333
-FROM UNNEST([
-  STRUCT(1 AS x, 2 AS y),
-        (2     , 4     ),
-        (3     , 6     )
-])`,
+  SHA256('xxx') -- b'\\xcd.\\xb0...'`,
   },
   {
-    ident: "STDDEV_POP",
+    ident: "SHA512",
     example: `SELECT
-  STDDEV_POP(x),  -- 0.816496580927726
-  STDDEV_SAMP(x), -- 1.0
-FROM UNNEST([1, 2, 3]) AS x`,
-  },
-  {
-    ident: "STDDEV_SAMP",
-    example: `SELECT
-  STDDEV_SAMP(x), -- 1.0
-  STDDEV_POP(x),  -- 0.816496580927726
-FROM UNNEST([1, 2, 3]) AS x`,
-  },
-  {
-    ident: "STDDEV",
-    example: `/* An alias of STDDEV_SAMP() */
-SELECT
-  STDDEV(x) -- 1.0
-FROM UNNEST([1, 2, 3]) AS x`,
-  },
-  {
-    ident: "VAR_POP",
-    example: `SELECT
-  VAR_SAMP(x), -- 1.0
-  VAR_POP(x),  -- 0.6666666666666666
-FROM UNNEST([1, 2, 3]) AS x`,
-  },
-  {
-    ident: "VAR_SAMP",
-    example: `SELECT
-  VAR_POP(x),  -- 0.6666666666666666
-  VAR_SAMP(x), -- 1.0
-FROM UNNEST([1, 2, 3]) AS x`,
-  },
-  {
-    ident: "VARIANCE",
-    example: `/* An alias of VAR_SAMP() */
-SELECT
-  VARIANCE(x), -- 1.0
-FROM UNNEST([1, 2, 3]) AS x`,
+  SHA512('xxx') -- b'\\x90W\\xff'`,
   },
   // ----- string functions -----
   { ident: "ASCII", example: `SELECT ASCII('A') -- 65` },
@@ -1645,6 +1130,447 @@ SELECT
   },
   { ident: "UNICODE", example: `SELECT UNICODE('é') -- 233` },
   { ident: "UPPER", example: `SELECT UPPER('BigQuery') -- 'BIGQUERY'` },
+  // ----- json functions -----
+  {
+    ident: "JSON_EXTRACT",
+    example: `SELECT
+  JSON_EXTRACT(
+    '{"x": "xxx"}',
+    '$.x'
+  ), -- '"xxx"'
+  JSON_EXTRACT(
+    '{"x": "xxx"}',
+    '$.y'
+  ), -- NULL
+  JSON_EXTRACT(
+    '{"x": [1, 2]}',
+    '$.x[0]'
+  ), -- '1'
+  JSON_EXTRACT(
+    '{"x.y": [1, 2]}',
+    "$['x.y']"
+  ), -- '[1,2]'`,
+  },
+  {
+    ident: "JSON_QUERY",
+    example: `SELECT
+  JSON_QUERY(
+    '{"x": "xxx"}',
+    '$.x'
+  ), -- '"xxx"'
+  JSON_QUERY(
+    '{"x": "xxx"}',
+    '$.y'
+  ), -- NULL
+  JSON_QUERY(
+    '{"x": [1, 2]}',
+    '$.x[0]'
+  ), -- '1'
+  JSON_QUERY(
+    '{"x.y": [1, 2]}',
+    '$."x.y"'
+  ), -- '[1,2]'`,
+  },
+  {
+    ident: "JSON_EXTRACT_SCALAR",
+    example: `SELECT
+  JSON_EXTRACT_SCALAR(
+    '{"x": "xxx"}',
+    '$.x'
+  ), -- 'xxx'
+  JSON_EXTRACT_SCALAR(
+    '{"x": "xxx"}',
+    '$.y'
+  ), -- NULL
+  JSON_EXTRACT_SCALAR(
+    '{"x": [1, 2]}',
+    '$.x[0]'
+  ), -- '1'
+  JSON_EXTRACT_SCALAR(
+    '{"x.y": [1, 2]}',
+    "$['x.y']"
+  ), -- NULL`,
+  },
+  {
+    ident: "JSON_VALUE",
+    example: `SELECT
+  JSON_VALUE(
+    '{"x": "xxx"}',
+    '$.x'
+  ), -- 'xxx'
+  JSON_VALUE(
+    '{"x": "xxx"}',
+    '$.y'
+  ), -- NULL
+  JSON_VALUE(
+    '{"x": [1, 2]}',
+    '$.x[0]'
+  ), -- '1'
+  JSON_VALUE(
+    '{"x.y": [1, 2]}',
+    '$."x.y"'
+  ), -- NULL`,
+  },
+  {
+    ident: "JSON_EXTRACT_ARRAY",
+    example: `SELECT
+  -- ['"a"', '"b"']
+  JSON_EXTRACT_ARRAY('["a", "b"]'),
+  -- ['"a"', '"b"']
+  JSON_EXTRACT_ARRAY(
+    '{"x": ["a", "b"]}',
+    '$.x'
+  ),
+  -- NULL
+  JSON_EXTRACT_ARRAY(
+    '{"x": ["a", "b"]}',
+    '$.y'
+  ),
+  -- ['"a"', '"b"']
+  JSON_EXTRACT_ARRAY(
+    '{"x.y": ["a", "b"]}',
+    "$['x.y']"
+  ),`,
+  },
+  {
+    ident: "JSON_QUERY_ARRAY",
+    example: `SELECT
+  -- ['"a"', '"b"']
+  JSON_QUERY_ARRAY('["a", "b"]'),
+  -- ['"a"', '"b"']
+  JSON_QUERY_ARRAY(
+    '{"x": ["a", "b"]}',
+    '$.x'
+  ),
+  -- NULL
+  JSON_QUERY_ARRAY(
+    '{"x": ["a", "b"]}',
+    '$.y'
+  ),
+  -- ['"a"', '"b"']
+  JSON_QUERY_ARRAY(
+    '{"x.y": ["a", "b"]}',
+    '$."x.y"'
+  ),`,
+  },
+  {
+    ident: "JSON_EXTRACT_STRING_ARRAY",
+    example: `SELECT
+  -- ['a']
+  JSON_EXTRACT_STRING_ARRAY('["a"]'),
+  -- ['a']
+  JSON_EXTRACT_STRING_ARRAY(
+    '{"x": ["a"]}',
+    '$.x'
+  ),
+  -- NULL
+  JSON_EXTRACT_STRING_ARRAY(
+    '{"x": ["a"]}',
+    '$.y'
+  ),
+  -- ['a']
+  JSON_EXTRACT_STRING_ARRAY(
+    '{"x.y": ["a"]}',
+    "$['x.y']"
+  ),`,
+  },
+  {
+    ident: "JSON_VALUE_ARRAY",
+    example: `SELECT
+  -- ['a', 'b']
+  JSON_VALUE_ARRAY('["a", "b"]'),
+  -- ['a', 'b']
+  JSON_VALUE_ARRAY(
+    '{"x": ["a", "b"]}',
+    '$.x'
+  ),
+  -- NULL
+  JSON_VALUE_ARRAY(
+    '{"x": ["a", "b"]}',
+    '$.y'
+  ),
+  -- ['a', 'b']
+  JSON_VALUE_ARRAY(
+    '{"x.y": ["a", "b"]}',
+    '$."x.y"'
+  ),`,
+  },
+  {
+    ident: "TO_JSON_STRING",
+    example: `SELECT
+  -- '[1,2]'
+  TO_JSON_STRING([1, 2]),
+  -- '{"x":1}'
+  TO_JSON_STRING(STRUCT(1 AS x)),
+  -- '{\\n  "x": 1\\n}'
+  TO_JSON_STRING(STRUCT(1 AS x), true),`,
+  },
+  // ----- array functions -----
+  {
+    ident: "ARRAY",
+    example: `SELECT
+  -- [1, 2]
+  ARRAY(
+    SELECT x
+    FROM UNNEST([1, 2]) AS x
+  )`,
+  },
+  {
+    ident: "ARRAY_CONCAT",
+    example: `SELECT
+  -- [1, 2, 3]
+  ARRAY_CONCAT([1], [2, 3])`,
+  },
+  {
+    ident: "ARRAY_LENGTH",
+    example: `SELECT
+  ARRAY_LENGTH([1, 2]) -- 2`,
+  },
+  {
+    ident: "ARRAY_TO_STRING",
+    example: `SELECT
+  -- 'a,b'
+  ARRAY_TO_STRING(
+    ['a', 'b', NULL],
+    ','
+  ),
+  -- 'abN!'
+  ARRAY_TO_STRING(
+    ['a', 'b', NULL],
+    '',
+    'N!'
+  ),`,
+  },
+  {
+    ident: "GENERATE_ARRAY",
+    example: `SELECT
+  -- [1, 2, 3, 4, 5]
+  GENERATE_ARRAY(1, 5),
+  -- [1, 3, 5]
+  GENERATE_ARRAY(1, 5, 2),`,
+  },
+  {
+    ident: "GENERATE_DATE_ARRAY",
+    example: `SELECT
+  -- ["2020-01-01", ..., "2020-01-31"]
+  GENERATE_DATE_ARRAY(
+    '2020-01-01',
+    '2020-01-31'
+  ),
+  -- ["2020-01-01", "2020-01-31"]
+  GENERATE_DATE_ARRAY(
+    '2020-01-01',
+    '2020-01-31',
+    INTERVAL 30 DAY
+  ),`,
+  },
+  {
+    ident: "GENERATE_TIMESTAMP_ARRAY",
+    example: `SELECT
+  -- ["2020-01-01 00:00:00", ...]
+  GENERATE_TIMESTAMP_ARRAY(
+    '2020-01-01 00:00:00',
+    '2020-01-02 00:00:00',
+    INTERVAL 6 HOUR
+  )`,
+  },
+  {
+    ident: "ARRAY_REVERSE",
+    example: `SELECT
+  -- [3, 2, 1]
+  ARRAY_REVERSE([1, 2, 3])`,
+  },
+  {
+    ident: "OFFSET",
+    example: `SELECT
+  [1, 2, 3][OFFSET(0)] -- 1`,
+  },
+  {
+    ident: "ORDINAL",
+    example: `SELECT
+  [1, 2, 3][ORDINAL(1)] -- 1`,
+  },
+  {
+    ident: "SAFE_OFFSET",
+    example: `SELECT
+  [1, 2, 3][SAFE_OFFSET(0)], -- 1
+  [1, 2, 3][SAFE_OFFSET(4)], -- NULL`,
+  },
+  {
+    ident: "SAFE_ORDINAL",
+    example: `SELECT
+  [1, 2, 3][SAFE_ORDINAL(1)], -- 1
+  [1, 2, 3][SAFE_ORDINAL(4)], -- NULL`,
+  },
+  // ----- date functions -----
+  {
+    ident: "CURRENT_DATE",
+    example: `SELECT
+  CURRENT_DATE() -- DATE '2021-01-01'`,
+  },
+  // "EXTRACT", // See timestamp function
+  {
+    ident: "DATE",
+    example: `SELECT
+  -- DATE '2020-01-01'
+  DATE(2020, 1, 1),
+  -- DATE '2020-01-01'
+  DATE(TIMESTAMP '2020-01-01'),
+  -- DATE '2019-12-31'
+  DATE(
+    TIMESTAMP '2020-01-01',
+    'America/New_York'
+  ),`,
+  },
+  {
+    ident: "DATE_ADD",
+    example: `SELECT
+  -- DATE '2020-01-04'
+  DATE_ADD('2020-01-01', INTERVAL 3 DAY)`,
+  },
+  {
+    ident: "DATE_SUB",
+    example: `SELECT
+  -- DATE '2019-12-29'
+  DATE_SUB('2020-01-01', INTERVAL 3 DAY)`,
+  },
+  {
+    ident: "DATE_DIFF",
+    example: `SELECT
+  DATE_DIFF(
+    '2020-01-01',
+    '2019-12-30',
+    DAY
+  ), -- 2
+  DATE_DIFF(
+    '2020-01-01',
+    '2019-12-30',
+    YEAR
+  ), -- 1`,
+  },
+  {
+    ident: "DATE_TRUNC",
+    example: `SELECT
+  -- DATE '2020-01-01'
+  DATE_TRUNC('2020-01-31', MONTH)`,
+  },
+  {
+    ident: "DATE_FROM_UNIX_DATE",
+    example: `SELECT
+  DATE_FROM_UNIX_DATE(0) -- '1970-01-01'`,
+  },
+  {
+    ident: "FORMAT_DATE",
+    example: `SELECT
+  -- '20200101'
+  FORMAT_DATE('%Y%m%d', '2020-01-01'),
+  -- '2020-01-01'
+  FORMAT_DATE('%F', '2020-01-01'),`,
+  },
+  {
+    ident: "LAST_DAY",
+    example: `SELECT
+  LAST_DAY(
+    '2020-01-01'
+  ), -- '2020-01-31'
+  LAST_DAY(
+    '2020-01-01',
+    YEAR
+  ), -- '2020-12-31'`,
+  },
+  {
+    ident: "PARSE_DATE",
+    example: `SELECT
+  -- DATE '2020-01-01'
+  PARSE_DATE('%Y%m%d', '20200101'),
+  -- DATE '2020-01-01'
+  parse_date('%F', '2020-01-01')`,
+  },
+  {
+    ident: "UNIX_DATE",
+    example: `SELECT
+  UNIX_DATE(DATE '1969-12-31'), -- -1
+  UNIX_DATE(DATE '1970-01-01'), --  0
+  UNIX_DATE(DATE '1970-01-02'), --  1`,
+  },
+  // ----- datetime functions -----
+  {
+    ident: "CURRENT_DATETIME",
+    example: `SELECT
+  -- DATETIME '2020-01-01 00:00:00'
+  CURRENT_DATETIME()`,
+  },
+  {
+    ident: "DATETIME",
+    example: `SELECT
+  -- DATETIME '2020-01-01 23:59:59'
+  DATETIME(2020, 1, 1, 23, 59, 59),
+  -- DATETIME '2020-01-01 23:59:59'
+  DATETIME(
+    DATE '2020-01-01',
+    TIME '23:59:59'
+  ),
+  -- DATETIME '2020-01-01 09:00:00'
+  DATETIME(
+    TIMESTAMP '2020-01-01 00:00:00 UTC',
+    'Asia/Tokyo'
+  ),`,
+  },
+  // "EXTRACT", // See timestamp function
+  {
+    ident: "DATETIME_ADD",
+    example: `SELECT
+  DATETIME_ADD(
+    DATETIME '2020-01-01 00:00:00',
+    INTERVAL 9 HOUR
+  ) -- DATETIME '2020-01-01 09:00:00'`,
+  },
+  {
+    ident: "DATETIME_SUB",
+    example: `SELECT
+  DATETIME_SUB(
+    DATETIME '2020-01-01 00:00:00',
+    INTERVAL 9 HOUR
+  ) -- DATETIME '2019-12-31 15:00:00'`,
+  },
+  {
+    ident: "DATETIME_DIFF",
+    example: `SELECT
+  DATETIME_DIFF(
+    DATETIME '2020-01-01 00:00:00',
+    DATETIME '2019-12-31 23:59:59',
+    YEAR
+  ) -- 1`,
+  },
+  {
+    ident: "DATETIME_TRUNC",
+    example: `SELECT
+  DATETIME_TRUNC(
+    DATETIME '2020-01-01 23:59:59',
+    HOUR
+  ) -- DATETIME '2020-01-01 23:00:00'`,
+  },
+  {
+    ident: "FORMAT_DATETIME",
+    example: `SELECT
+  FORMAT_DATETIME(
+    '%Y%m%d',
+    DATETIME '2020-01-01'
+  ), -- '20200101'
+  FORMAT_DATETIME(
+    '%F',
+    DATETIME '2020-01-01'
+  ), -- '2020-01-01'`,
+  },
+  // "LAST_DAY", // See date functions
+  {
+    ident: "PARSE_DATETIME",
+    example: `SELECT
+  PARSE_DATETIME(
+    '%F %T',
+    '2020-01-01 00:00:00'
+  ) -- DATETIME '2020-01-01 00:00:00'`,
+  },
   // ----- time functions -----
   {
     ident: "CURRENT_TIME",
@@ -1888,38 +1814,6 @@ SELECT
   -- 1640995200000000
   UNIX_MICROS(TIMESTAMP '2022-01-01')`,
   },
-  // ----- uuid functions -----
-  {
-    ident: "GENERATE_UUID",
-    example: `SELECT
-    -- 'a9fd30f7-3f80-...'
-    GENERATE_UUID()`,
-  },
-  // ----- conditional -----
-  {
-    ident: "COALESCE",
-    example: `SELECT
-  COALESCE('A', 'B'), -- 'A'
-  COALESCE(NULL, 'A', 'B'), -- 'A'`,
-  },
-  {
-    ident: "IF",
-    example: `SELECT
-  IF(true, 'A', 'B'), -- 'A'
-  IF(false, 'A', 'B'), -- 'B'`,
-  },
-  {
-    ident: "IFNULL",
-    example: `SELECT
-  IFNULL(NULL, 0), -- 0
-  IFNULL(1, 0), -- 1`,
-  },
-  {
-    ident: "NULLIF",
-    example: `SELECT
-  NULLIF(1, 1), -- NULL
-  NULLIF(0, 1), -- 0`,
-  },
   // ----- interval functions -----
   {
     ident: "MAKE_INTERVAL",
@@ -1955,6 +1849,112 @@ SELECT
     YEAR TO SECOND
   )`,
   },
+  // ----- geography functions -----
+  "S2_CELLIDFROMPOINT",
+  "S2_COVERINGCELLIDS",
+  "ST_ANGLE",
+  "ST_AREA",
+  "ST_ASBINARY",
+  "ST_ASGEOJSON",
+  "ST_ASTEXT",
+  "ST_AZIMUTH",
+  "ST_BOUNDARY",
+  "ST_BOUNDINGBOX",
+  "ST_BUFFER",
+  "ST_BUFFERWITHTOLERANCE",
+  "ST_CENTROID",
+  "ST_CENTROID_AGG",
+  "ST_CLOSESTPOINT",
+  "ST_CLUSTERDBSCAN",
+  "ST_CONTAINS",
+  "ST_CONVEXHULL",
+  "ST_COVEREDBY",
+  "ST_COVERS",
+  "ST_DIFFERENCE",
+  "ST_DIMENSION",
+  "ST_DISJOINT",
+  "ST_DISTANCE",
+  "ST_DUMP",
+  "ST_DWITHIN",
+  "ST_ENDPOINT",
+  "ST_EXTENT",
+  "ST_EQUALS",
+  "ST_EXTERIORRING",
+  "ST_GEOGFROM",
+  "ST_GEOGFROMGEOJSON",
+  "ST_GEOGFROMTEXT",
+  "ST_GEOGFROMWKB",
+  "ST_GEOGPOINT",
+  "ST_GEOGPOINTFROMGEOHASH",
+  "ST_GEOHASH",
+  "ST_GEOMETRYTYPE",
+  "ST_INTERIORRINGS",
+  "ST_INTERSECTION",
+  "ST_INTERSECTS",
+  "ST_INTERSECTSBOX",
+  "ST_ISCOLLECTION",
+  "ST_ISEMPTY",
+  "ST_LENGTH",
+  "ST_MAKELINE",
+  "ST_MAKEPOLYGON",
+  "ST_MAKEPOLYGONORIENTED",
+  "ST_MAXDISTANCE",
+  "ST_NPOINTS",
+  "ST_NUMGEOMETRIES",
+  "ST_NUMPOINTS",
+  "ST_PERIMETER",
+  "ST_POINTN",
+  "ST_SIMPLIFY",
+  "ST_SNAPTOGRID",
+  "ST_STARTPOINT",
+  "ST_TOUCHES",
+  "ST_UNION",
+  "ST_UNION_AGG",
+  "ST_WITHIN",
+  "ST_X",
+  "ST_Y",
+  // ----- security functions -----
+  {
+    ident: "SESSION_USER",
+    example: `SELECT
+  SESSION_USER() -- 'abc@example.com'`,
+  },
+  // ----- uuid functions -----
+  {
+    ident: "GENERATE_UUID",
+    example: `SELECT
+    -- 'a9fd30f7-3f80-...'
+    GENERATE_UUID()`,
+  },
+  // ----- conditional -----
+  {
+    ident: "COALESCE",
+    example: `SELECT
+  COALESCE('A', 'B'), -- 'A'
+  COALESCE(NULL, 'A', 'B'), -- 'A'`,
+  },
+  {
+    ident: "IF",
+    example: `SELECT
+  IF(true, 'A', 'B'), -- 'A'
+  IF(false, 'A', 'B'), -- 'B'`,
+  },
+  {
+    ident: "IFNULL",
+    example: `SELECT
+  IFNULL(NULL, 0), -- 0
+  IFNULL(1, 0), -- 1`,
+  },
+  {
+    ident: "NULLIF",
+    example: `SELECT
+  NULLIF(1, 1), -- NULL
+  NULLIF(0, 1), -- 0`,
+  },
+  // ----- debugging functions -----
+  { ident: "ERROR", example: `SELECT ERROR('error message!')` },
+  // ----- federated query functions -----
+  "EXTERNAL_QUERY",
 ];
 
 export const keysFunctions = [
