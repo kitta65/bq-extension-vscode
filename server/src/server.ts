@@ -296,7 +296,7 @@ export class BQLanguageServer {
      */
     const res: {
       label: string;
-      documentation?: string;
+      documentation?: string | LSP.MarkupContent;
       kind?: LSP.CompletionItemKind;
     }[] = [];
     const uri = position.textDocument.uri;
@@ -595,7 +595,15 @@ export class BQLanguageServer {
           res.push({ label: x, kind: LSP.CompletionItemKind.Keyword });
         });
         globalFunctions.forEach((x) => {
-          res.push({ label: x, kind: LSP.CompletionItemKind.Function });
+          if (typeof x === "string") {
+            res.push({ label: x, kind: LSP.CompletionItemKind.Function });
+          } else {
+            res.push({
+              label: x.ident,
+              kind: LSP.CompletionItemKind.Function,
+              documentation: util.convert2MarkdownContent(x.example),
+            });
+          }
         });
       }
     }

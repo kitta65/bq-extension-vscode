@@ -20,6 +20,13 @@ export function breakdownTokens(tokens: bq2cst.Token[]) {
   return res;
 }
 
+export function convert2MarkdownContent(code: string): LSP.MarkupContent {
+  return {
+    kind: "markdown",
+    value: ["```sql", code, "```"].join("\n"),
+  };
+}
+
 export function formatBytes(bytes: number) {
   if (bytes < 1024) {
     return `${bytes}B`;
