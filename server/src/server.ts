@@ -11,6 +11,11 @@ import { execSync } from "child_process";
 declare module "@dr666m1/bq2cst" {
   interface BaseNode {
     extendedWithQueries?: bq2cst.WithQuery[];
+    parent?: WeakRef<bq2cst.UnknownNode>;
+    range: {
+      start: LSP.Position;
+      end: LSP.Position;
+    }
   }
 }
 
@@ -708,12 +713,30 @@ export class BQLanguageServer {
   private updateDocumentInfo(
     change: LSP.TextDocumentChangeEvent<TextDocument>
   ) {
+    function setParent(parent: bq2cst.UnknownNode) {
+      const weakref = new WeakRef(parent);
+      for (const [_, child] of Object.entries(parent.children)) {
+        if (!child) {
+          continue;
+        } else if ("Node" in child) {
+          child.Node.parent = weakref;
+          setParent(child.Node);
+        } else {
+          child.NodeVec.forEach((node) => {
+            node.parent = weakref;
+            setParent(node);
+          });
+        }
+      }
+    }
     const uri = change.document.uri;
     this.uriToText[uri] = change.document.getText();
     const text = change.document.getText();
     try {
       this.uriToTokens[uri] = bq2cst.tokenize(text);
-      this.uriToCst[uri] = bq2cst.parse(text);
+      const csts = bq2cst.parse(text);
+      csts.forEach((cst) => setParent(cst));
+      this.uriToCst[uri] = csts;
       this.connection.sendDiagnostics({
         uri: uri,
         diagnostics: [],
