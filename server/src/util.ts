@@ -43,16 +43,36 @@ export function formatBytes(bytes: number) {
   }
 }
 
-function getFirstNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
-  const candidates = [];
-  for (const [_, v] of Object.entries(node.children)) {
-    if (isNodeChild(v)) {
-      candidates.push(getFirstNode(v.Node));
-    } else if (isNodeVecChild(v)) {
-      // NOTE maybe you don't have to check 2nd, 3rd, or latter node
-      v.NodeVec.forEach((x) => candidates.push(getFirstNode(x)));
+export function getAllDescendants(node: bq2cst.UnknownNode): bq2cst.UnknownNode[] {
+  const res: bq2cst.UnknownNode[] = [];
+  function pushDescendants(node: bq2cst.UnknownNode) {
+    const children = getAllChildren(node)
+    children.forEach(c => {
+      pushDescendants(c)
+      res.push(c)
+    })
+  }
+  pushDescendants(node)
+  return res;
+}
+
+export function getAllChildren(node: bq2cst.UnknownNode): bq2cst.UnknownNode[] {
+  const res: bq2cst.UnknownNode[] = [];
+  for (const [_, child] of Object.entries(node.children)) {
+    if (!child) {
+      continue;
+    } else if ("Node" in child) {
+      res.push(child.Node);
+    } else {
+      child.NodeVec.forEach((n) => res.push(n));
     }
   }
+  return res;
+}
+
+function getFirstNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
+  // NOTE maybe you can limit candidates using UnknownNode.range .
+  const candidates = getAllDescendants(node);
   let res = node;
   for (const c of candidates) {
     if (!c.token) {
@@ -73,15 +93,8 @@ function getFirstNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
 }
 
 function getLastNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
-  const candidates = [];
-  for (const [_, v] of Object.entries(node.children)) {
-    if (isNodeChild(v)) {
-      candidates.push(getLastNode(v.Node));
-    } else if (isNodeVecChild(v)) {
-      // NOTE maybe you don't have to check 2nd, 3rd, or latter node
-      v.NodeVec.forEach((x) => candidates.push(getLastNode(x)));
-    }
-  }
+  // NOTE maybe you can limit candidates using UnknownNode.range .
+  const candidates = getAllDescendants(node);
   let res = node;
   for (const c of candidates) {
     if (!c.token) {
