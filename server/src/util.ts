@@ -153,7 +153,6 @@ export function getNodeByRowColumn(
               return res;
             }
           }
-          return null;
         }
       }
     }

@@ -5,7 +5,7 @@ import * as bq2cst from "@dr666m1/bq2cst";
 import * as prettier from "prettier";
 import * as util from "./util";
 import { CacheDB } from "./database";
-import { globalFunctions } from "./functions";
+import { globalFunctions, notGlobalFunctions } from "./functions";
 import { execSync } from "child_process";
 
 declare module "@dr666m1/bq2cst" {
@@ -673,6 +673,54 @@ export class BQLanguageServer {
     docInfo: util.DocumentInfo,
     position: LSP.Position
   ) {
+    // hover about functions
+    const node = util.getNodeByRowColumn(
+      docInfo,
+      position.line + 1,
+      position.character + 1
+    );
+    if (!node || !node.token) {
+      // unexpected case!
+      return { contents: [] };
+    }
+    const literal = node.token.literal.toUpperCase();
+    if (node.parent) {
+      const dotOperator = node.parent.deref();
+      if (
+        dotOperator &&
+        dotOperator.node_type === "DotOperator" &&
+        dotOperator.children.left.Node.node_type !== "DotOperator"
+      ) {
+        const key = dotOperator.children.left.Node.token.literal.toUpperCase();
+        if (key in notGlobalFunctions) {
+          const functions = notGlobalFunctions[key];
+          for (const f of functions) {
+            if (typeof f === "string") {
+              if (literal === f) {
+                return { contents: [] };
+              }
+            } else {
+              if (literal === f.ident) {
+                return { contents: util.convert2MarkdownContent(f.example) };
+              }
+            }
+          }
+        }
+      }
+    }
+    for (const f of globalFunctions) {
+      if (typeof f === "string") {
+        if (literal === f) {
+          return { contents: [] };
+        }
+      } else {
+        if (literal === f.ident) {
+          return { contents: util.convert2MarkdownContent(f.example) };
+        }
+      }
+    }
+
+    // hover about table
     function replaceTableSuffix(s: string) {
       return s.replace(/([^0-9])[0-9]{8}$/, "$1*");
     }

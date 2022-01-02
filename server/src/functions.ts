@@ -1859,90 +1859,88 @@ SELECT
   "EXTERNAL_QUERY",
 ];
 
-export const keysFunctions = [
-  // ----- AEAD encryption functions -----
-  "NEW_KEYSET",
-  "ADD_KEY_FROM_RAW_BYTES",
-  "KEYSET_FROM_JSON",
-  "KEYSET_TO_JSON",
-  "ROTATE_KEYSET",
-  "KEYSET_LENGTH",
-];
-
-export const aeadFunctions = [
-  // ----- AEAD encryption functions -----
-  "DECRYPT_BYTES",
-  "DECRYPT_STRING",
-  "ENCRYPT",
-];
-
-export const hllCountFunctions = [
-  // ----- HLL functions -----
-  "INIT",
-  "MERGE",
-  "MERGE_PARTIAL",
-  "EXTRACT",
-];
-
-export const netFunctions = [
-  // ----- net functions -----
-  {
-    ident: "IP_FROM_STRING",
-    example: `SELECT
+export const notGlobalFunctions: { [key: string]: Func[] } = {
+  KEYS: [
+    // ----- AEAD encryption functions -----
+    "NEW_KEYSET",
+    "ADD_KEY_FROM_RAW_BYTES",
+    "KEYSET_FROM_JSON",
+    "KEYSET_TO_JSON",
+    "ROTATE_KEYSET",
+    "KEYSET_LENGTH",
+  ],
+  AEAD: [
+    // ----- AEAD encryption functions -----
+    "DECRYPT_BYTES",
+    "DECRYPT_STRING",
+    "ENCRYPT",
+  ],
+  HLL_COUNT: [
+    // ----- HLL functions -----
+    "INIT",
+    "MERGE",
+    "MERGE_PARTIAL",
+    "EXTRACT",
+  ],
+  NET: [
+    // ----- net functions -----
+    {
+      ident: "IP_FROM_STRING",
+      example: `SELECT
   -- b'\\xc0\\x00\\x02\\x00'
   NET.IP_FROM_STRING('192.0.2.0'),
   -- b' \\x01\\x0d\\xb8\\x00\\x00\\x00\\x00...'
   NET.IP_FROM_STRING('2001:db8::0'),`,
-  },
-  {
-    ident: "SAFE_IP_FROM_STRING",
-    example: `SELECT
+    },
+    {
+      ident: "SAFE_IP_FROM_STRING",
+      example: `SELECT
   -- b'\\xc0\\x00\\x02\\x00'
   NET.SAFE_IP_FROM_STRING('192.0.2.0'),
   -- b' \\x01\\x0d\\xb8\\x00\\x00\\x00\\x00...'
   NET.SAFE_IP_FROM_STRING('2001:db8::0'),
   -- NULL
   NET.SAFE_IP_FROM_STRING('invalid'),`,
-  },
-  {
-    ident: "IP_TO_STRING",
-    example: `SELECT
+    },
+    {
+      ident: "IP_TO_STRING",
+      example: `SELECT
   -- '0.0.0.0'
   NET.IP_TO_STRING(b'\\x00\\x00\\x00\\x00')`,
-  },
-  {
-    ident: "IP_NET_MASK",
-    example: `SELECT
+    },
+    {
+      ident: "IP_NET_MASK",
+      example: `SELECT
   -- b'\\xff\\x00\\x00\\x00'
   NET.IP_NET_MASK(4,8),
   -- b'\\xff\\x00\\x00\\x00\\x00...'
   NET.IP_NET_MASK(16,8),`,
-  },
-  {
-    ident: "IP_TRUNC",
-    example: `SELECT
+    },
+    {
+      ident: "IP_TRUNC",
+      example: `SELECT
   -- b'\\xc6\\x00\\x00\\x00'
   NET.IP_TRUNC(b'\\xc6\\x33\\x64\\xff', 8)`,
-  },
-  {
-    ident: "IPV4_FROM_INT64",
-    example: `SELECT
+    },
+    {
+      ident: "IPV4_FROM_INT64",
+      example: `SELECT
   -- b'\\x00\\x00\\x00\\x00'
   NET.IPV4_FROM_INT64(0),
   -- b'\\xc0\\x00\\x02\\x00'
   NET.IPV4_FROM_INT64(3221225984),`,
-  },
-  {
-    ident: "IPV4_TO_INT64",
-    example: `SELECT
+    },
+    {
+      ident: "IPV4_TO_INT64",
+      example: `SELECT
   -- 0
   NET.IPV4_TO_INT64(b'\\x00\\x00\\x00\\x00'),
   -- 3221225984
   NET.IPV4_TO_INT64(b'\\xc0\\x00\\x02\\x00'),`,
-  },
-  {
-    ident: "HOST",
-    example: `SELECT
+    },
+    {
+      ident: "HOST",
+      example: `SELECT
   NET.HOST(
     'https://cloud.google.com/'
   ), -- 'cloud.google.com'
@@ -1952,10 +1950,10 @@ export const netFunctions = [
   NET.REG_DOMAIN(
     'https://cloud.google.com'
   ), -- 'google.com'`,
-  },
-  {
-    ident: "PUBLIC_SUFFIX",
-    example: `SELECT
+    },
+    {
+      ident: "PUBLIC_SUFFIX",
+      example: `SELECT
   NET.HOST(
     'https://cloud.google.com/'
   ), -- 'cloud.google.com'
@@ -1965,10 +1963,10 @@ export const netFunctions = [
   NET.REG_DOMAIN(
     'https://cloud.google.com'
   ), -- 'google.com'`,
-  },
-  {
-    ident: "REG_DOMAIN",
-    example: `SELECT
+    },
+    {
+      ident: "REG_DOMAIN",
+      example: `SELECT
   NET.HOST(
     'https://cloud.google.com/'
   ), -- 'cloud.google.com'
@@ -1978,5 +1976,6 @@ export const netFunctions = [
   NET.REG_DOMAIN(
     'https://cloud.google.com'
   ), -- 'google.com'`,
-  },
-];
+    },
+  ],
+};
