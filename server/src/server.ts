@@ -91,17 +91,18 @@ export class BQLanguageServer {
   private async dryRun(uri: LSP.URI): Promise<void> {
     let diagnostic: LSP.Diagnostic;
     try {
+      // See https://cloud.google.com/bigquery/docs/dry-run-queries
       let msg;
-      const [_, apiResponse] = await this.bqClient.createQueryJob({
+      const [job] = await this.bqClient.createQueryJob({
         query: this.uriToText[uri],
         dryRun: true,
       });
       if (
-        apiResponse.statistics &&
-        apiResponse.statistics.totalBytesProcessed
+        job.metadata.statistics &&
+        job.metadata.statistics.totalBytesProcessed
       ) {
         msg = util.formatBytes(
-          Number(apiResponse.statistics.totalBytesProcessed)
+          Number(job.metadata.statistics.totalBytesProcessed)
         );
       } else {
         msg = "???B";
