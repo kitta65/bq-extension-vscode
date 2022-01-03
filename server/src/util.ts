@@ -27,6 +27,14 @@ export function convert2MarkdownContent(code: string): LSP.MarkupContent {
   };
 }
 
+export function convert2MarkdownItems(items: string[]): LSP.MarkupContent {
+  const value = items.map((i) => "* " + i).join("\n");
+  return {
+    kind: "markdown",
+    value: value,
+  };
+}
+
 export function formatBytes(bytes: number) {
   if (bytes < 1024) {
     return `${bytes}B`;

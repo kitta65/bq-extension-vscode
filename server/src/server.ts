@@ -673,7 +673,6 @@ export class BQLanguageServer {
     docInfo: util.DocumentInfo,
     position: LSP.Position
   ) {
-    // hover about functions
     const node = util.getNodeByRowColumn(
       docInfo,
       position.line + 1,
@@ -684,6 +683,8 @@ export class BQLanguageServer {
       return { contents: [] };
     }
     const idents = util.parseIdentifier(node);
+
+    // hover about functions
     if (idents.length === 1) {
       const i = idents[0].toUpperCase();
       for (const f of globalFunctions) {
@@ -699,7 +700,7 @@ export class BQLanguageServer {
       }
     } else if (idents.length === 2) {
       const key = idents[0].toUpperCase();
-      const i = idents[1].toUpperCase()
+      const i = idents[1].toUpperCase();
       if (key in notGlobalFunctions) {
         const functions = notGlobalFunctions[key];
         for (const f of functions) {
@@ -717,43 +718,46 @@ export class BQLanguageServer {
     }
 
     // hover about table
+    type QueryResult = {
+      column: string;
+      data_type: string;
+    };
     function replaceTableSuffix(s: string) {
       return s.replace(/([^0-9])[0-9]{8}$/, "$1*");
     }
-    const msgs: string[] = [];
-    const token = util.getTokenByRowColumn(
-      docInfo,
-      position.line + 1,
-      position.character + 1
-    );
-    if (!token) {
-      return { contents: [] };
+    if (idents.length === 1) {
+      // TODO support default dataset
+    } else if (idents.length === 2) {
+      const dataset = idents[0];
+      const table = replaceTableSuffix(idents[1]);
+      const queryResults: QueryResult[] = await this.db.query(
+        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
+        [this.defaultProject, dataset, table],
+        ["column", "data_type"]
+      );
+      return {
+        contents: util.convert2MarkdownItems(
+          queryResults.map((row) => `${row.column}: ${row.data_type}`)
+        ),
+      };
+    } else if (idents.length === 3) {
+      const project = idents[0];
+      const dataset = idents[1];
+      const table = replaceTableSuffix(idents[2]);
+      const queryResults: QueryResult[] = await this.db.query(
+        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
+        [project, dataset, table],
+        ["column", "data_type"]
+      );
+      return {
+        contents: util.convert2MarkdownItems(
+          queryResults.map((row) => `${row.column}: ${row.data_type}`)
+        ),
+      };
     }
-    const matchingResult = token.literal.match(/^`(.+)`$/);
-    if (matchingResult) {
-      const idents = matchingResult[1].split(".");
-      let queryResults: { column: string; data_type: string }[] = [];
-      if (idents.length === 3) {
-        // idents[0] is assumed to be project name
-        queryResults = await this.db.query(
-          `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-          [idents[0], idents[1], replaceTableSuffix(idents[2])],
-          ["column", "data_type"]
-        );
-      } else if (idents.length === 2) {
-        // idents[0] is assumed to be dataset name
-        queryResults = await this.db.query(
-          `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-          [this.defaultProject, idents[0], replaceTableSuffix(idents[1])],
-          ["column", "data_type"]
-        );
-      }
-      queryResults.forEach((x) => {
-        msgs.push(`${x.column}: ${x.data_type}`);
-      });
-    }
-    return { contents: msgs };
+    return { contents: [] };
   }
+
   private updateDocumentInfo(
     change: LSP.TextDocumentChangeEvent<TextDocument>
   ) {

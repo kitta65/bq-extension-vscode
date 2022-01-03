@@ -14,7 +14,7 @@ describe("Hover", function () {
   afterEach(async function () {
     await util.deleteTextDocument(filename);
   });
-  it("t", async function () {
+  it("`project.dataset.t`", async function () {
     const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.t\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
@@ -25,9 +25,35 @@ describe("Hover", function () {
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
-    assert.ok(items.some((x) => x === "str: STRING"));
+    assert.ok(items.some((x) => x.includes("str: STRING")));
   });
-  it("u_*", async function () {
+  it("project.dataset.t", async function () {
+    const sql = `SELECT * FROM ${util.project}.bq_extension_vscode_test.t`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const hover: Hover = (
+      await vscode.commands.executeCommand(
+        "vscode.executeHoverProvider",
+        util.getDocUri(filename),
+        new vscode.Position(0, sql.length - 1)
+      )
+    )[0];
+    const items = hover.contents.map((x) => x.value);
+    assert.ok(items.some((x) => x.includes("str: STRING")));
+  });
+  it("`dataset.t`", async function () {
+    const sql = `SELECT * FROM \`bq_extension_vscode_test.t\``;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const hover: Hover = (
+      await vscode.commands.executeCommand(
+        "vscode.executeHoverProvider",
+        util.getDocUri(filename),
+        new vscode.Position(0, sql.length - 1)
+      )
+    )[0];
+    const items = hover.contents.map((x) => x.value);
+    assert.ok(items.some((x) => x.includes("str: STRING")));
+  });
+  it("`project.dataset.u_*`", async function () {
     const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.u_*\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
@@ -38,9 +64,9 @@ describe("Hover", function () {
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
-    assert.ok(items.some((x) => x === "str: STRING"));
+    assert.ok(items.some((x) => x.includes("str: STRING")));
   });
-  it("u_20210101", async function () {
+  it("`project.dataset.u_20210101`", async function () {
     const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.u_20210101\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
@@ -51,7 +77,7 @@ describe("Hover", function () {
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
-    assert.ok(items.some((x) => x === "str: STRING"));
+    assert.ok(items.some((x) => x.includes("str: STRING")));
   });
   it("cast()", async function () {
     const sql = `
