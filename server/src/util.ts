@@ -43,16 +43,18 @@ export function formatBytes(bytes: number) {
   }
 }
 
-export function getAllDescendants(node: bq2cst.UnknownNode): bq2cst.UnknownNode[] {
+export function getAllDescendants(
+  node: bq2cst.UnknownNode
+): bq2cst.UnknownNode[] {
   const res: bq2cst.UnknownNode[] = [];
   function pushDescendants(node: bq2cst.UnknownNode) {
-    const children = getAllChildren(node)
-    children.forEach(c => {
-      pushDescendants(c)
-      res.push(c)
-    })
+    const children = getAllChildren(node);
+    children.forEach((c) => {
+      pushDescendants(c);
+      res.push(c);
+    });
   }
-  pushDescendants(node)
+  pushDescendants(node);
   return res;
 }
 
