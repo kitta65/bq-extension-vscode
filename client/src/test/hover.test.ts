@@ -67,7 +67,7 @@ SELECT cast('1' AS INT64)`;
     const items = hover.contents.map((x) => x.value);
     assert.ok(items.some((x) => x.includes("CAST")));
   });
-  it("net.ipv4_from_int64()", async function () {
+  it("net.ipv4_from_int64() (ipvr_from_int64)", async function () {
     const sql = `
 SELECT net.ipv4_from_int64(0)`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -76,6 +76,20 @@ SELECT net.ipv4_from_int64(0)`;
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
         new vscode.Position(1, 11)
+      )
+    )[0];
+    const items = hover.contents.map((x) => x.value);
+    assert.ok(items.some((x) => x.includes("IPV4_FROM_INT64")));
+  });
+  it("net.ipv4_from_int64() (net)", async function () {
+    const sql = `
+SELECT net.ipv4_from_int64(0)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const hover: Hover = (
+      await vscode.commands.executeCommand(
+        "vscode.executeHoverProvider",
+        util.getDocUri(filename),
+        new vscode.Position(1, 7)
       )
     )[0];
     const items = hover.contents.map((x) => x.value);

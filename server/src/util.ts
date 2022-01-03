@@ -305,6 +305,54 @@ export function getTokenByRowColumn(
   return res;
 }
 
+export function parseIdentifier(node: bq2cst.UnknownNode): string[] {
+  function parseUntilLeaf(node: bq2cst.UnknownNode): string[] {
+    if (node.node_type === "Identifier") {
+      // identifier or `project.dataset.table`
+      const quoted = node.token.literal.match(/^`([^`]*)`$/);
+      if (quoted) {
+        return quoted[1].split(".");
+      } else {
+        return [node.token.literal];
+      }
+    } else if (node.node_type === "MultiTokenIdentifier") {
+      // identifier-with-dash
+      let concatenatedLiteral = node.token.literal;
+      for (const child of node.children.trailing_idents.NodeVec) {
+        concatenatedLiteral = concatenatedLiteral + child.token.literal;
+      }
+      return concatenatedLiteral.split(".");
+    } else if (node.node_type === "DotOperator") {
+      // .
+      const res: string[] = [];
+      parseUntilLeaf(node.children.left.Node).forEach((n) => res.push(n));
+      parseUntilLeaf(node.children.right.Node).forEach((n) => res.push(n));
+      return res;
+    } else {
+      if (node.token) {
+        return [node.token.literal];
+      }
+      return [];
+    }
+  }
+
+  let root = node;
+  for (;;) {
+    if (!root.parent) break;
+    const parent = root.parent.deref();
+    if (!parent) break;
+    if (
+      parent.node_type === "DotOperator" ||
+      parent.node_type === "MultiTokenIdentifier"
+    ) {
+      root = parent;
+    } else {
+      break;
+    }
+  }
+  return parseUntilLeaf(root);
+}
+
 export function parseType(str: string) {
   let depth = 0;
   let start = 0;

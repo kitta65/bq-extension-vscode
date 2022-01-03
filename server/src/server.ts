@@ -683,39 +683,35 @@ export class BQLanguageServer {
       // unexpected case!
       return { contents: [] };
     }
-    const literal = node.token.literal.toUpperCase();
-    if (node.parent) {
-      const dotOperator = node.parent.deref();
-      if (
-        dotOperator &&
-        dotOperator.node_type === "DotOperator" &&
-        dotOperator.children.left.Node.node_type !== "DotOperator"
-      ) {
-        const key = dotOperator.children.left.Node.token.literal.toUpperCase();
-        if (key in notGlobalFunctions) {
-          const functions = notGlobalFunctions[key];
-          for (const f of functions) {
-            if (typeof f === "string") {
-              if (literal === f) {
-                return { contents: [] };
-              }
-            } else {
-              if (literal === f.ident) {
-                return { contents: util.convert2MarkdownContent(f.example) };
-              }
-            }
+    const idents = util.parseIdentifier(node);
+    if (idents.length === 1) {
+      const i = idents[0].toUpperCase();
+      for (const f of globalFunctions) {
+        if (typeof f === "string") {
+          if (i === f) {
+            return { contents: [] };
+          }
+        } else {
+          if (i === f.ident) {
+            return { contents: util.convert2MarkdownContent(f.example) };
           }
         }
       }
-    }
-    for (const f of globalFunctions) {
-      if (typeof f === "string") {
-        if (literal === f) {
-          return { contents: [] };
-        }
-      } else {
-        if (literal === f.ident) {
-          return { contents: util.convert2MarkdownContent(f.example) };
+    } else if (idents.length === 2) {
+      const key = idents[0].toUpperCase();
+      const i = idents[1].toUpperCase()
+      if (key in notGlobalFunctions) {
+        const functions = notGlobalFunctions[key];
+        for (const f of functions) {
+          if (typeof f === "string") {
+            if (i === f) {
+              return { contents: [] };
+            }
+          } else {
+            if (i === f.ident) {
+              return { contents: util.convert2MarkdownContent(f.example) };
+            }
+          }
         }
       }
     }
