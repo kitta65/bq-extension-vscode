@@ -51,9 +51,9 @@ export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
     db: CacheDB,
-    params: LSP.InitializeParams
+    capabilities: Record<string, boolean>
   ): Promise<BQLanguageServer> {
-    return new BQLanguageServer(connection, db, params);
+    return new BQLanguageServer(connection, db, capabilities);
   }
   private bqClient = new BigQuery();
   public capabilities: LSP.InitializeResult = {
@@ -78,15 +78,12 @@ export class BQLanguageServer {
   private constructor(
     private connection: LSP.Connection,
     private db: CacheDB,
-    params: LSP.InitializeParams
+    capabilities: Record<string, boolean>
   ) {
-    const capabilities = params.capabilities;
     this.defaultProject = (
       execSync(" gcloud config get-value project") + ""
     ).trim();
-    this.hasConfigurationCapability = !!(
-      capabilities.workspace && capabilities.workspace.configuration
-    );
+    this.hasConfigurationCapability = capabilities.hasConfigurationCapability;
   }
   private async dryRun(uri: LSP.URI): Promise<void> {
     let diagnostic: LSP.Diagnostic;
