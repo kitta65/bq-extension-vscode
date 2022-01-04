@@ -19,6 +19,7 @@ npm install -g .
 
 ```jsonc
 // coc-settings.json
+// You may have to restart Vim or run `:CocRestart` after modification.
 {
   "languageserver": {
     "bigquery": {
