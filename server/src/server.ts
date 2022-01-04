@@ -938,8 +938,7 @@ export class BQLanguageServer {
         end: range.end,
         variables: variables,
       });
-    }
-    if (node.node_type === "SetOperator") {
+    } else if (node.node_type === "SetOperator") {
       if (node.children.with) {
         const with_ = node.children.with.Node;
         with_.children.queries.NodeVec.map((n, i) => {
@@ -955,8 +954,7 @@ export class BQLanguageServer {
         node.children.left.Node.extendedWithQueries = node.extendedWithQueries;
         node.children.right.Node.extendedWithQueries = node.extendedWithQueries;
       }
-    }
-    if (node.node_type === "GroupedStatement") {
+    } else if (node.node_type === "GroupedStatement") {
       if (node.children.with) {
         const with_ = node.children.with.Node;
         with_.children.queries.NodeVec.map((n, i) => {
@@ -970,16 +968,10 @@ export class BQLanguageServer {
         node.children.stmt.Node.extendedWithQueries = node.extendedWithQueries;
       }
     }
-    for (const [_, v] of Object.entries(node.children)) {
-      if (util.isNodeChild(v)) {
-        await this.pushNameSpaceOfNode(v.Node, parent);
-      } else if (util.isNodeVecChild(v)) {
-        const promises = v.NodeVec.map((n) =>
-          this.pushNameSpaceOfNode(n, parent)
-        );
-        await Promise.all(promises);
-      }
-    }
+    const promises = util.getAllChildren(node).map((child) => {
+      return this.pushNameSpaceOfNode(child, parent);
+    });
+    await Promise.all(promises);
   }
 
   private async findVariablesInsideSelectStatment(
