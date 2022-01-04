@@ -3,8 +3,6 @@
 Some features might be ignored by other client.
 
 ## Install
-This package has not been published to any registry yet.
-
 ```bash
 git clone https://github.com/dr666m1/bq-extension-vscode.git
 cd bq-extension-vscode
@@ -17,10 +15,10 @@ npm install -g .
 ## Usage
 ### Vim
 1. Install [coc.nvim](https://github.com/neoclide/coc.nvim)
-2. Add `` inoremap ` `<left>` `` to your .vimrc or init.vim (optional but recommended)
-3. Add the following configuration to `coc-settings.json`
+2. Modify `coc-settings.json` and `.vimrc` (See the examples below)
 
-```json
+```jsonc
+// coc-settings.json
 {
   "languageserver": {
     "bigquery": {
@@ -39,4 +37,10 @@ npm install -g .
 }
 ```
 
-You can use `CocRequestAsync` instead of VSCode commands (e.g. `:call CocRequestAsync("bigquery", "bq/updateCache")`).
+```vim
+" .vimrc
+inoremap ` `<left>`
+command! BQUpdateCache call CocRequestAsync("bigquery", "bq/updateCache")
+command! BQClearCache call CocRequestAsync("bigquery", "bq/clearCache")
+command! BQDryRun call CocRequestAsync("bigquery", "bq/dryRun", {"uri": "file://" . expand("%:p")})
+```
