@@ -22,12 +22,12 @@ describe("Completion", function () {
     assert.ok(list.items.some((x) => x.label === "CURRENT_TIMESTAMP"));
   });
   it("project", async function () {
-    const sql = "SELECT * FROM `";
+    const sql = "SELECT * FROM ``";
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(0, sql.length)
+      new vscode.Position(0, sql.length - 1)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === util.project));
   });

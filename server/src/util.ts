@@ -27,12 +27,26 @@ export function convert2MarkdownContent(code: string): LSP.MarkupContent {
   };
 }
 
-export function convert2MarkdownItems(items: string[]): LSP.MarkupContent {
-  const value = items.map((i) => "* " + i).join("\n");
-  return {
-    kind: "markdown",
-    value: value,
-  };
+export function convert2MarkdownItems(arg: string[]): LSP.MarkupContent;
+export function convert2MarkdownItems(
+  arg: Record<string, string>
+): LSP.MarkupContent;
+export function convert2MarkdownItems(
+  arg: string[] | Record<string, string>
+): LSP.MarkupContent {
+  if (Array.isArray(arg)) {
+    const value = arg.map((i) => "* " + i).join("\n");
+    return {
+      kind: "markdown",
+      value: value,
+    };
+  } else {
+    const items = [];
+    for (const [k, v] of Object.entries(arg)) {
+      items.push(`* ${k}: ${v}`);
+    }
+    return { kind: "markdown", value: items.join("\n") };
+  }
 }
 
 export function formatBytes(bytes: number) {
