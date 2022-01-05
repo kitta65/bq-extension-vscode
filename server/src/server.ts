@@ -47,6 +47,11 @@ const defaultConfiguration: Configuration = {
   formatting: {},
 };
 
+type QueryResult = {
+  column: string;
+  data_type: string;
+};
+
 export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
@@ -716,43 +721,15 @@ export class BQLanguageServer {
     }
 
     // hover about table
-    type QueryResult = {
-      column: string;
-      data_type: string;
-    };
-    function replaceTableSuffix(s: string) {
-      return s.replace(/([^0-9])[0-9]{8}$/, "$1*");
-    }
-    if (idents.length === 1) {
-      // TODO support default dataset
-    } else if (idents.length === 2) {
-      const dataset = idents[0];
-      const table = replaceTableSuffix(idents[1]);
-      const queryResults: QueryResult[] = await this.db.query(
-        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-        [this.defaultProject, dataset, table],
-        ["column", "data_type"]
-      );
-      return {
-        contents: util.convert2MarkdownItems(
-          queryResults.map((row) => `${row.column}: ${row.data_type}`)
-        ),
-      };
-    } else if (idents.length === 3) {
-      const project = idents[0];
-      const dataset = idents[1];
-      const table = replaceTableSuffix(idents[2]);
-      const queryResults: QueryResult[] = await this.db.query(
-        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-        [project, dataset, table],
-        ["column", "data_type"]
-      );
+    const queryResults = await this.queryTableInfo(idents);
+    if (queryResults.length > 0) {
       return {
         contents: util.convert2MarkdownItems(
           queryResults.map((row) => `${row.column}: ${row.data_type}`)
         ),
       };
     }
+
     return { contents: [] };
   }
 
@@ -1094,5 +1071,36 @@ export class BQLanguageServer {
     }
     const fromItem = from.children.expr.Node;
     await findVariable.call(this, fromItem);
+  }
+  private async queryTableInfo(idents: string[]): Promise<QueryResult[]> {
+    function replaceTableSuffix(s: string) {
+      return s.replace(/([^0-9])[0-9]{8,}$/, "$1*");
+    }
+
+    if (idents.length === 1) {
+      // TODO support default dataset
+      return [];
+    } else if (idents.length === 2) {
+      const dataset = idents[0];
+      const table = replaceTableSuffix(idents[1]);
+      const queryResults: QueryResult[] = await this.db.query(
+        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
+        [this.defaultProject, dataset, table],
+        ["column", "data_type"]
+      );
+      return queryResults;
+    } else if (idents.length === 3) {
+      const project = idents[0];
+      const dataset = idents[1];
+      const table = replaceTableSuffix(idents[2]);
+      const queryResults: QueryResult[] = await this.db.query(
+        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
+        [project, dataset, table],
+        ["column", "data_type"]
+      );
+      return queryResults;
+    } else {
+      return [];
+    }
   }
 }
