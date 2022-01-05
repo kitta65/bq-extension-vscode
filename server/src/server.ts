@@ -207,14 +207,27 @@ export class BQLanguageServer {
     };
   }
 
-  //private getSmallestNameSpaces(nameSpaces: NameSpace[]) {
-  //  let range = {
-  //  }
-  //  if (nameSpaces.length === 0) {
-  //    return [];
-  //  }
-  //  return smallestNameSpaces;
-  //}
+  private getSmallestNameSpaces(nameSpaces: NameSpace[]) {
+    if (nameSpaces.length <= 1) {
+      return nameSpaces;
+    }
+
+    let res = [nameSpaces[0]];
+    for (let i = 1; i < nameSpaces.length; i++) {
+      if (util.rangeContains(res[0], nameSpaces[i])) {
+        // nameSpaces[i] is bigger
+        continue;
+      }
+      if (util.rangeContains(nameSpaces[i], res[0])) {
+        // nameSpaces[i] has the same range
+        res.push(nameSpaces[i]);
+      } else {
+        // nameSpaces[i] is smaller
+        res = [nameSpaces[i]];
+      }
+    }
+    return res;
+  }
 
   public register() {
     this.documents.listen(this.connection);
@@ -278,10 +291,9 @@ export class BQLanguageServer {
           column
         )
       ];
-    if (!node || !node.token) return [];
-    if (char === "[" && node.node_type === "ArrayAccessing") {
+    if (char === "[" && node && node.node_type === "ArrayAccessing") {
       // TODO arr[OFFSET]
-    } else if (char === ".") {
+    } else if (char === "." && node) {
       if (node.node_type === "Identifier") {
         // `project.dataset.`
         const match = node.token.literal.match(/^`(.+)`$/);
@@ -336,7 +348,7 @@ export class BQLanguageServer {
       } else {
         // table.column | struct.field | prefix.function
       }
-    } else if (char === "`" && node.node_type === "Identifier") {
+    } else if (char === "`" && node && node.node_type === "Identifier") {
       const projects = (
         await this.db.query("SELECT DISTINCT project FROM projects;", [
           "project",
@@ -365,21 +377,6 @@ export class BQLanguageServer {
       }
       // TODO support default dataset (suggest table_name)
     } else {
-      globalFunctions.forEach((f) => {
-        if (typeof f === "string") {
-          res.push({
-            label: f,
-            kind: LSP.CompletionItemKind.Function,
-            documentation: util.convert2MarkdownItems({ kind: "function" }),
-          });
-        } else {
-          res.push({
-            label: f.ident,
-            kind: LSP.CompletionItemKind.Function,
-            documentation: util.convert2MarkdownContent(f.example),
-          });
-        }
-      });
       const namespaces = (await this.createNameSpaces(uri)).filter((ns) =>
         util.arrangedInThisOrder(
           true,
@@ -388,8 +385,33 @@ export class BQLanguageServer {
           ns.end
         )
       );
-      namespaces
-      // const smallestNameSpaces = this.getSmallestNameSpaces(namespaces)
+      this.getSmallestNameSpaces(namespaces).forEach((ns) => {
+        ns.variables.forEach((v) => {
+          res.push({
+            label: v.label,
+            kind: v.kind,
+            documentation: util.convert2MarkdownItems(v.info),
+          });
+        });
+      });
+      // functions are not suggested until you type first character
+      if (node && node.node_type === "Identifier") {
+        globalFunctions.forEach((f) => {
+          if (typeof f === "string") {
+            res.push({
+              label: f,
+              kind: LSP.CompletionItemKind.Function,
+              documentation: util.convert2MarkdownItems({ kind: "function" }),
+            });
+          } else {
+            res.push({
+              label: f.ident,
+              kind: LSP.CompletionItemKind.Function,
+              documentation: util.convert2MarkdownContent(f.example),
+            });
+          }
+        });
+      }
     }
 
     // get unique result
@@ -542,7 +564,11 @@ export class BQLanguageServer {
           if (
             parent.range.start &&
             child.Node.range.start &&
-            util.arrangedInThisOrder(false, child.Node.range.start, parent.range.start)
+            util.arrangedInThisOrder(
+              false,
+              child.Node.range.start,
+              parent.range.start
+            )
           ) {
             parent.range.start = child.Node.range.start;
           } else if (!parent.range.start && child.Node.range.start) {
@@ -551,7 +577,11 @@ export class BQLanguageServer {
           if (
             parent.range.end &&
             child.Node.range.end &&
-            util.arrangedInThisOrder(false, parent.range.end, child.Node.range.end)
+            util.arrangedInThisOrder(
+              false,
+              parent.range.end,
+              child.Node.range.end
+            )
           ) {
             parent.range.end = child.Node.range.end;
           } else if (!parent.range.end && child.Node.range.end) {
@@ -564,7 +594,11 @@ export class BQLanguageServer {
             if (
               parent.range.start &&
               node.range.start &&
-              util.arrangedInThisOrder(false, node.range.start, parent.range.start)
+              util.arrangedInThisOrder(
+                false,
+                node.range.start,
+                parent.range.start
+              )
             ) {
               parent.range.start = node.range.start;
             } else if (!parent.range.start && node.range.start) {
