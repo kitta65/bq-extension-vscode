@@ -52,6 +52,19 @@ type QueryResult = {
   data_type: string;
 };
 
+type NameSpace2 = {
+  start: LSP.Position;
+  end: LSP.Position;
+  name?: string;
+  variables: CompletionItem2[];
+};
+
+type CompletionItem2 = {
+  label: string;
+  documentation: string | LSP.MarkupContent;
+  kind: LSP.CompletionItemKind;
+};
+
 export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
@@ -302,6 +315,13 @@ export class BQLanguageServer {
      * VSCode's default completion works.
      * https://github.com/microsoft/vscode/issues/21611
      */
+    try {
+      const namespaces = this.createNameSpaces2(position.textDocument.uri);
+      console.log(namespaces);
+    } catch (err) {
+      console.log(err);
+    }
+
     const res: {
       label: string;
       documentation?: string | LSP.MarkupContent;
@@ -857,6 +877,101 @@ export class BQLanguageServer {
           });
         });
       }
+    }
+  }
+  private createNameSpaces2(uri: string): NameSpace2[] {
+    const res: NameSpace2[] = [];
+    for (const cst of this.uriToCst[uri]) {
+      this.createNameSpacesFromNode(res, cst);
+    }
+    return res;
+  }
+
+  private createNameSpacesFromNode(
+    res: NameSpace2[],
+    node: bq2cst.UnknownNode,
+    namespace?: NameSpace2
+  ): void {
+    if (node.node_type === "SelectStatement") {
+      if (node.children.with) {
+        const withQueries = node.children.with.Node.children.queries.NodeVec;
+        withQueries.forEach((w, i, ws) => {
+          if (!node.range.start || !node.range.end) return;
+          let start: LSP.Position = {
+            line: node.token.line,
+            character: node.token.column,
+          }; // Do not use node.range.start here!
+          if (ws.length - 1 !== i) {
+            const nextWithQuery = ws[i + 1];
+            if (nextWithQuery.range.start) {
+              start = nextWithQuery.range.start;
+            }
+          }
+          const ns: NameSpace2 = {
+            start: start,
+            end: node.range.end,
+            name: w.token.literal,
+            variables: [],
+          };
+          this.createNameSpacesFromNode(res, w, ns);
+          if (ns.variables.length > 0) res.push(ns);
+        });
+      }
+      if (node.children.from && node.range.start && node.range.end) {
+        const ns: NameSpace2 = {
+          start: {
+            line: node.token.line,
+            character: node.token.column,
+          }, // Do not use node.range.start here!
+          end: node.range.end,
+          name: undefined,
+          variables: [],
+        };
+        this.createNameSpacesFromNode(res, node.children.from.Node, ns);
+        if (ns.variables.length > 0) res.push(ns);
+      }
+      if (namespace) {
+        node.children.exprs.NodeVec.forEach((n) => {
+          const expr = n as bq2cst.Expr; // to satisfy compiler
+          // TODO support idents without alias
+          if (expr.children.alias) {
+            namespace.variables.push({
+              label: expr.children.alias.Node.token.literal,
+              documentation: "SelectStatement",
+              kind: LSP.CompletionItemKind.Field,
+            });
+          }
+        });
+      }
+    } else if (node.node_type === "Identifier") {
+      if (namespace) {
+        if (node.children.alias) {
+          const ns: NameSpace2 = {
+            start: namespace.start,
+            end: namespace.end,
+            name: node.children.alias.Node.token.literal,
+            variables: [],
+          };
+          ns.variables.push({
+            label: "foo",
+            documentation: "fromSQLite",
+            kind: LSP.CompletionItemKind.Field,
+          });
+          if (ns.variables.length > 0) res.push(ns);
+        } else {
+          namespace.variables.push({
+            label: "foo",
+            documentation: "fromSQLite",
+            kind: LSP.CompletionItemKind.Field,
+          });
+        }
+      }
+    } else if (node.node_type === "CallingUnnest") {
+      // TODO
+    } else {
+      util.getAllChildren(node).forEach((child) => {
+        this.createNameSpacesFromNode(res, child, namespace);
+      });
     }
   }
 

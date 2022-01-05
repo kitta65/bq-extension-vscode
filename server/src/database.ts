@@ -3,7 +3,6 @@ import * as fs from "fs";
 import { BigQuery } from "@google-cloud/bigquery";
 import { exec } from "child_process";
 import { dirname } from "path";
-import * as https from "https";
 
 type DatasetRecord = {
   project: string;
@@ -171,7 +170,7 @@ LIMIT 10000;`,
 SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
-  REGEXP_REPLACE(table_name, r"([^0-9])[0-9]{8}$", r"\\1*") AS table,
+  REGEXP_REPLACE(table_name, r"([^0-9])[0-9]{8,}$", r"\\1*") AS table,
   column_name AS column,
   data_type,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
