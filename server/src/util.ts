@@ -148,9 +148,10 @@ export function getNodeByRowColumn(
     if (
       cst.range.start &&
       cst.range.end &&
-      positionBetween(
-        { line: line, character: column },
+      arrangedInThisOrder(
+        true,
         cst.range.start,
+        { line: line, character: column },
         cst.range.end
       )
     ) {
@@ -168,9 +169,10 @@ export function getNodeByRowColumn(
               : splittedLiteral[splittedLiteral.length - 1].length,
         };
         if (
-          positionBetween(
-            { line: line, character: column },
+          arrangedInThisOrder(
+            true,
             startPosition,
+            { line: line, character: column },
             endPosition
           )
         ) {
@@ -393,37 +395,41 @@ export function parseType(str: string) {
   return res.map((x) => x.trim());
 }
 
-export function positionBetween(
-  position: LSP.Position,
-  start: LSP.Position,
-  end: LSP.Position
+export function arrangedInThisOrder(
+  allowEqual: boolean,
+  ...positions: LSP.Position[]
 ) {
-  if (position.line < start.line) return false;
-  if (position.line === start.line && position.character < start.character)
-    return false;
-  if (end.line < position.line) return false;
-  if (position.line === end.line && end.character < position.character)
-    return false;
+  for (let i = 1; i < positions.length; i++) {
+    const prev = positions[i - 1];
+    const next = positions[i];
+    if (prev.line < next.line) {
+      continue;
+    } else if (prev.line > next.line) {
+      return false;
+    }
+    // prev.line === next.line
+    if (allowEqual && prev.character > next.character) {
+      return false;
+    } else if (!allowEqual && prev.character >= next.character) {
+      return false;
+    }
+  }
   return true;
 }
 
-export function positionFormer(
-  position1: LSP.Position,
-  position2: LSP.Position
-) {
-  if (position1.line < position2.line) return true;
-  if (
-    position1.line === position2.line &&
-    position1.character < position2.character
-  ) {
-    return true;
+export function rangeContains(
+  range1: { start: LSP.Position; end: LSP.Position },
+  range2: { start: LSP.Position; end: LSP.Position }
+): boolean {
+  // validation
+  for (const r of [range1, range2]) {
+    if (arrangedInThisOrder(false, r.end, r.start)) {
+      throw new Error("invalid range");
+    }
   }
-  return false;
-}
 
-export function positionLatter(
-  position1: LSP.Position,
-  position2: LSP.Position
-) {
-  return !positionFormer(position1, position2);
+  if (arrangedInThisOrder(false, range2.start, range1.start)) return false;
+  if (arrangedInThisOrder(false, range1.end, range2.end)) return false;
+
+  return true;
 }

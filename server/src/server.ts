@@ -207,47 +207,14 @@ export class BQLanguageServer {
     };
   }
 
-  private getSmallestNameSpace(nameSpaces: NameSpace[]) {
-    if (nameSpaces.length === 0) {
-      return null;
-    }
-    let smallestNameSpace = nameSpaces[0];
-    for (let i = 1; i < nameSpaces.length; i++) {
-      if (
-        util.positionBetween(
-          {
-            line: nameSpaces[i].start.line,
-            character: nameSpaces[i].start.character,
-          },
-          {
-            line: smallestNameSpace.start.line,
-            character: smallestNameSpace.start.character,
-          },
-          {
-            line: smallestNameSpace.end.line,
-            character: smallestNameSpace.end.character,
-          }
-        ) &&
-        util.positionBetween(
-          {
-            line: nameSpaces[i].end.line,
-            character: nameSpaces[i].end.character,
-          },
-          {
-            line: smallestNameSpace.start.line,
-            character: smallestNameSpace.start.character,
-          },
-          {
-            line: smallestNameSpace.end.line,
-            character: smallestNameSpace.end.character,
-          }
-        )
-      ) {
-        smallestNameSpace = nameSpaces[i];
-      }
-    }
-    return smallestNameSpace;
-  }
+  //private getSmallestNameSpaces(nameSpaces: NameSpace[]) {
+  //  let range = {
+  //  }
+  //  if (nameSpaces.length === 0) {
+  //    return [];
+  //  }
+  //  return smallestNameSpaces;
+  //}
 
   public register() {
     this.documents.listen(this.connection);
@@ -413,7 +380,16 @@ export class BQLanguageServer {
           });
         }
       });
-      const namespaces = await this.createNameSpaces(uri)
+      const namespaces = (await this.createNameSpaces(uri)).filter((ns) =>
+        util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: line, character: column },
+          ns.end
+        )
+      );
+      namespaces
+      // const smallestNameSpaces = this.getSmallestNameSpaces(namespaces)
     }
 
     // get unique result
@@ -566,7 +542,7 @@ export class BQLanguageServer {
           if (
             parent.range.start &&
             child.Node.range.start &&
-            util.positionFormer(child.Node.range.start, parent.range.start)
+            util.arrangedInThisOrder(false, child.Node.range.start, parent.range.start)
           ) {
             parent.range.start = child.Node.range.start;
           } else if (!parent.range.start && child.Node.range.start) {
@@ -575,7 +551,7 @@ export class BQLanguageServer {
           if (
             parent.range.end &&
             child.Node.range.end &&
-            util.positionFormer(parent.range.end, child.Node.range.end)
+            util.arrangedInThisOrder(false, parent.range.end, child.Node.range.end)
           ) {
             parent.range.end = child.Node.range.end;
           } else if (!parent.range.end && child.Node.range.end) {
@@ -588,7 +564,7 @@ export class BQLanguageServer {
             if (
               parent.range.start &&
               node.range.start &&
-              util.positionFormer(node.range.start, parent.range.start)
+              util.arrangedInThisOrder(false, node.range.start, parent.range.start)
             ) {
               parent.range.start = node.range.start;
             } else if (!parent.range.start && node.range.start) {
@@ -597,7 +573,7 @@ export class BQLanguageServer {
             if (
               parent.range.end &&
               node.range.end &&
-              util.positionFormer(parent.range.end, node.range.end)
+              util.arrangedInThisOrder(false, parent.range.end, node.range.end)
             ) {
               parent.range.end = node.range.end;
             } else if (!parent.range.end && node.range.end) {
@@ -628,9 +604,10 @@ export class BQLanguageServer {
           character: splittedText[splittedText.length - 1].length - 1,
         };
         if (
-          !util.positionBetween(
-            errorPosition,
+          !util.arrangedInThisOrder(
+            true,
             { line: 0, character: 0 },
+            errorPosition,
             finalCharaPosition
           )
         ) {
