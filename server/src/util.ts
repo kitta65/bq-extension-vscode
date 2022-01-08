@@ -384,22 +384,40 @@ export function parseIdentifier(node: bq2cst.UnknownNode): string[] {
   return parseUntilLeaf(root);
 }
 
-export function parseType(str: string) {
+export function parseStruct(
+  str: string,
+  prefix: string[]
+): { type: string; path: string[] }[] {
+  // str... STRUCT<arr ARRAY<INT64>, str STRING, nested STRUCT<nested2 STRUCT<str2 STRING>, int INT64>>
+  const match = str.match(/^\s*STRUCT<(.*)>\s*$/);
+  if (!match) return [];
+
+  const insideAngleBracket = match[1];
+  const fields: string[] = [];
   let depth = 0;
   let start = 0;
-  const res: string[] = [];
-  for (let i = 0; i < str.length; i++) {
-    if (str[i] === "<") {
+  for (let i = 0; i < insideAngleBracket.length; i++) {
+    if (insideAngleBracket[i] === "<") {
       depth += 1;
-    } else if (str[i] === ">") {
+    } else if (insideAngleBracket[i] === ">") {
       depth -= 1;
-    } else if (str[i] === "," && depth === 0) {
-      res.push(str.substring(start, i));
+    } else if (insideAngleBracket[i] === "," && depth === 0) {
+      fields.push(insideAngleBracket.substring(start, i));
       start = i + 1;
     }
   }
-  res.push(str.substring(start)); // last item
-  return res.map((x) => x.trim());
+  fields.push(insideAngleBracket.substring(start)); // last field
+
+  const res: { type: string; path: string[] }[] = [];
+  fields.forEach((f) => {
+    const match = f.match(/^\s*(\S+)\s(.*)$/);
+    if (match) {
+      res.push({ type: match[2], path: [...prefix, match[1]] });
+      res.push(...parseStruct(match[2], [...prefix, match[1]]));
+    }
+  });
+
+  return res;
 }
 
 export function arrangedInThisOrder(

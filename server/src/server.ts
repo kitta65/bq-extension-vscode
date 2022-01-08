@@ -419,6 +419,40 @@ export class BQLanguageServer {
             }
           }
         }
+        // struct
+        const structs: { type: string; path: string[] }[] = [];
+        nameSpaces.forEach((ns) =>
+          ns.variables.forEach((v) => {
+            if (ns.name && "type" in v.info) {
+              structs.push(
+                ...util.parseStruct(v.info.type, [ns.name, v.label])
+              );
+            }
+          })
+        );
+        this.getSmallestNameSpaces(nameSpaces).forEach((ns) => {
+          ns.variables.forEach((v) => {
+            if ("type" in v.info) {
+              structs.push(...util.parseStruct(v.info.type, [v.label]));
+            }
+          });
+        });
+        structs
+          .filter((struct) => {
+            if (struct.path.length !== idents.length + 1) return false;
+            for (let i = 0; i < idents.length; i++) {
+              if (struct.path[i] !== idents[i]) return false;
+            }
+            return true;
+          })
+          .forEach((struct) => {
+            const label = struct.path[struct.path.length - 1];
+            res.push({
+              label: label,
+              kind: LSP.CompletionItemKind.Field,
+              documentation: util.convert2MarkdownItems({ type: struct.type }),
+            });
+          });
       }
     } else if (char === "`" && node && node.node_type === "Identifier") {
       const projects = (
@@ -791,7 +825,7 @@ export class BQLanguageServer {
         const queryResults = await this.queryTableInfo(idents);
         const name = node.children.alias
           ? node.children.alias.Node.token.literal
-          : idents[0];
+          : idents[idents.length - 1];
         const ns: NameSpace = {
           start: namespace.start,
           end: namespace.end,
