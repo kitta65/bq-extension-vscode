@@ -34,17 +34,17 @@ export function convert2MarkdownItems(
 export function convert2MarkdownItems(
   arg: string[] | Record<string, string>
 ): LSP.MarkupContent {
+  function escape(str: string) {
+    return str.replace("<", "\\<").replace(">", "\\>");
+  }
+
+  let value = "";
   if (Array.isArray(arg)) {
-    let value;
     if (arg.length === 0) {
       value = "* Unknown";
     } else {
       value = arg.map((i) => "* " + i).join("\n");
     }
-    return {
-      kind: "markdown",
-      value: value,
-    };
   } else {
     const items = [];
     for (const [k, v] of Object.entries(arg)) {
@@ -53,8 +53,9 @@ export function convert2MarkdownItems(
     if (items.length === 0) {
       items.push("* Unknown");
     }
-    return { kind: "markdown", value: items.join("\n") };
+    value = items.join("\n");
   }
+  return { kind: "markdown", value: escape(value) };
 }
 
 export function formatBytes(bytes: number) {
