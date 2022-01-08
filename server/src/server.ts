@@ -274,12 +274,11 @@ export class BQLanguageServer {
   private async onCompletion(
     position: LSP.CompletionParams
   ): Promise<LSP.CompletionItem[]> {
-    let res: {
+    const res: {
       label: string;
       documentation?: LSP.MarkupContent;
       kind: LSP.CompletionItemKind;
     }[] = [];
-    res = [];
     const uri = position.textDocument.uri;
     const line = position.position.line + 1;
     const column = position.position.character;
@@ -386,17 +385,39 @@ export class BQLanguageServer {
         if (!prevNode) return [];
         const idents = util.parseIdentifier(prevNode);
         if (idents.length === 1) {
+          const ident = idents[0];
           this.getSmallestNameSpaces(
-            nameSpaces.filter((ns) => ns.name && ns.name === idents[0])
+            nameSpaces.filter((ns) => ns.name && ns.name === ident)
           ).forEach((ns) => {
-            ns.variables.forEach((v) => {
-              res.push({
-                label: v.label,
-                kind: v.kind,
-                documentation: util.convert2MarkdownItems(v.info),
-              });
-            });
+            res.push(
+              ...ns.variables.map((v) => {
+                return {
+                  label: v.label,
+                  kind: v.kind,
+                  documentation: util.convert2MarkdownItems(v.info),
+                };
+              })
+            );
           });
+          if (ident.toUpperCase() in notGlobalFunctions) {
+            for (const f of notGlobalFunctions[ident.toUpperCase()]) {
+              if (typeof f === "string") {
+                res.push({
+                  label: f,
+                  kind: LSP.CompletionItemKind.Function,
+                  documentation: util.convert2MarkdownItems({
+                    kind: "function",
+                  }),
+                });
+              } else {
+                res.push({
+                  label: f.ident,
+                  kind: LSP.CompletionItemKind.Function,
+                  documentation: util.convert2MarkdownContent(f.example),
+                });
+              }
+            }
+          }
         }
       }
     } else if (char === "`" && node && node.node_type === "Identifier") {

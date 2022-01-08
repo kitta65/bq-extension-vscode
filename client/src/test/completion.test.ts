@@ -21,6 +21,16 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "CURRENT_TIMESTAMP"));
   });
+  it("not global function", async function () {
+    const sql = "SELECT net."; // NOTE Actually, any string is OK.
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(0, sql.length)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "IPV4_FROM_INT64"));
+  });
   it("project", async function () {
     const sql = "SELECT * FROM ``";
     await util.insert(filename, new vscode.Position(0, 0), sql);
