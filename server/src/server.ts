@@ -298,12 +298,18 @@ export class BQLanguageServer {
       ];
     if (char === "[" && node && node.node_type === "ArrayAccessing") {
       // TODO arr[OFFSET(1)]
-    } else if (char === "." && node) {
-      if (node.node_type === "Identifier") {
+    } else if (char === ".") {
+      // NOTE Check not cst but token here because `.` often breaks cst.
+      const token = util.getTokenByRowColumn(
+        this.getDocInfo(uri),
+        line,
+        column
+      );
+      if (!token) return [];
+      const quoted = token.literal.match(/^`(.+)`$/);
+      if (quoted) {
         // `project.dataset.`
-        const match = node.token.literal.match(/^`(.+)`$/);
-        if (!match) return [];
-        const idents = match[1].split(".");
+        const idents = quoted[1].split(".");
         idents.pop();
         if (idents.length === 1) {
           const datasets = (
@@ -360,10 +366,15 @@ export class BQLanguageServer {
         const currText = this.uriToText[uri];
         const prevText =
           currText.substring(0, currIndex) + currText.substring(currIndex + 1);
-        const prevCsts = util.parseSQL(prevText);
+        let prevCsts;
+        try {
+          prevCsts = util.parseSQL(prevText);
+        } catch (_) {
+          return [];
+        }
         const nameSpaces = (await this.createNameSpaces(prevCsts)).filter(
           (ns) => {
-            util.arrangedInThisOrder(
+            return util.arrangedInThisOrder(
               true,
               ns.start,
               { line: line, character: column - 1 }, // 1-character before "."
@@ -656,7 +667,13 @@ export class BQLanguageServer {
     node: bq2cst.UnknownNode,
     namespace?: NameSpace
   ): Promise<void> {
-    if (node.node_type === "SelectStatement") {
+    async function createNameSpacesFromWithClause(
+      this: BQLanguageServer,
+      node:
+        | bq2cst.SelectStatement
+        | bq2cst.GroupedStatement
+        | bq2cst.SetOperator
+    ) {
       if (node.children.with) {
         const withQueries = node.children.with.Node.children.queries.NodeVec;
         for (let i = 0; i < withQueries.length; i++) {
@@ -682,6 +699,10 @@ export class BQLanguageServer {
           if (ns.variables.length > 0) res.push(ns);
         }
       }
+    }
+
+    if (node.node_type === "SelectStatement") {
+      await createNameSpacesFromWithClause.call(this, node);
       if (node.children.from && node.range.start && node.range.end) {
         const ns: NameSpace = {
           start: {
@@ -708,24 +729,37 @@ export class BQLanguageServer {
           }
         });
       }
-    } else if (
-      node.node_type === "GroupedStatement" &&
-      node.children.alias &&
-      namespace
-    ) {
-      const originalNameSpace = namespace;
-      const newNameSpace: NameSpace = {
-        start: originalNameSpace.start,
-        end: originalNameSpace.end,
-        name: node.children.alias.Node.token.literal,
-        variables: [],
-      };
+    } else if (node.node_type === "SetOperator") {
+      await createNameSpacesFromWithClause.call(this, node);
       await this.createNameSpacesFromNode(
         res,
-        node.children.stmt.Node,
-        newNameSpace
+        node.children.left.Node,
+        namespace
       );
-      if (newNameSpace.variables.length > 0) res.push(newNameSpace);
+      await this.createNameSpacesFromNode(res, node.children.right.Node);
+    } else if (node.node_type === "GroupedStatement") {
+      await createNameSpacesFromWithClause.call(this, node);
+      if (node.children.alias && namespace) {
+        const originalNameSpace = namespace;
+        const newNameSpace: NameSpace = {
+          start: originalNameSpace.start,
+          end: originalNameSpace.end,
+          name: node.children.alias.Node.token.literal,
+          variables: [],
+        };
+        await this.createNameSpacesFromNode(
+          res,
+          node.children.stmt.Node,
+          newNameSpace
+        );
+        if (newNameSpace.variables.length > 0) res.push(newNameSpace);
+      } else {
+        await this.createNameSpacesFromNode(
+          res,
+          node.children.stmt.Node,
+          namespace
+        );
+      }
     } else if (
       node.node_type === "Identifier" ||
       node.node_type === "DotOperator" ||
@@ -734,45 +768,36 @@ export class BQLanguageServer {
       if (namespace) {
         const idents = util.parseIdentifier(node);
         const queryResults = await this.queryTableInfo(idents);
-        // TODO support with clause
-        if (node.children.alias) {
-          const ns: NameSpace = {
-            start: namespace.start,
-            end: namespace.end,
-            name: node.children.alias.Node.token.literal,
-            variables: [],
-          };
+        const name = node.children.alias
+          ? node.children.alias.Node.token.literal
+          : idents[0];
+        const ns: NameSpace = {
+          start: namespace.start,
+          end: namespace.end,
+          name: name,
+          variables: [],
+        };
 
-          // with clause
-          if (idents.length === 1) {
-            const ident = idents[0];
-            const namespaces = this.getSmallestNameSpaces(
-              res.filter((ns) => ns.name && ns.name === ident)
-            );
-            namespaces.forEach((namespace) => {
-              ns.variables.push(...namespace.variables);
-            });
-          }
-
-          // sqlite
-          queryResults.forEach((row) => {
-            ns.variables.push({
-              label: row.column,
-              info: { type: row.data_type },
-              kind: LSP.CompletionItemKind.Field,
-            });
-          });
-          if (ns.variables.length > 0) res.push(ns);
-        } else {
-          // TODO idents[idents.length - 1] may be a better name.
-          queryResults.forEach((row) => {
-            namespace.variables.push({
-              label: row.column,
-              info: { type: row.data_type },
-              kind: LSP.CompletionItemKind.Field,
-            });
+        // check with clause
+        if (idents.length === 1) {
+          const ident = idents[0];
+          const namespaces = this.getSmallestNameSpaces(
+            res.filter((ns) => ns.name && ns.name === ident)
+          );
+          namespaces.forEach((namespace) => {
+            ns.variables.push(...namespace.variables);
           });
         }
+
+        // check sqlite
+        queryResults.forEach((row) => {
+          ns.variables.push({
+            label: row.column,
+            info: { type: row.data_type },
+            kind: LSP.CompletionItemKind.Field,
+          });
+        });
+        if (ns.variables.length > 0) res.push(ns);
       }
     } else if (node.node_type === "CallingUnnest") {
       if (namespace && node.children.alias) {
