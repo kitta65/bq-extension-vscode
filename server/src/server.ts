@@ -215,17 +215,18 @@ export class BQLanguageServer {
     let res = [nameSpaces[0]];
     for (let i = 1; i < nameSpaces.length; i++) {
       if (util.rangeContains(res[0], nameSpaces[i])) {
-        // nameSpaces[i] is bigger
+        if (util.rangeContains(nameSpaces[i], res[0])) {
+          // nameSpaces[i] has the same range
+          res.push(nameSpaces[i]);
+        } else {
+          // nameSpaces[i] is smaller
+          res = [nameSpaces[i]];
+        }
+      } else {
         continue;
       }
-      if (util.rangeContains(nameSpaces[i], res[0])) {
-        // nameSpaces[i] has the same range
-        res.push(nameSpaces[i]);
-      } else {
-        // nameSpaces[i] is smaller
-        res = [nameSpaces[i]];
-      }
     }
+
     return res;
   }
 
@@ -282,7 +283,11 @@ export class BQLanguageServer {
     const uri = position.textDocument.uri;
     const line = position.position.line + 1;
     const column = position.position.character;
-    const node = util.getNodeByRowColumn(this.getDocInfo(uri), line, column);
+    const node = util.getNodeByRowColumn(
+      this.getDocInfo(uri).cst,
+      line,
+      column
+    );
     const char =
       this.uriToText[position.textDocument.uri][
         util.getPositionByRowColumn(
@@ -292,7 +297,7 @@ export class BQLanguageServer {
         )
       ];
     if (char === "[" && node && node.node_type === "ArrayAccessing") {
-      // TODO arr[OFFSET]
+      // TODO arr[OFFSET(1)]
     } else if (char === "." && node) {
       if (node.node_type === "Identifier") {
         // `project.dataset.`
@@ -347,6 +352,41 @@ export class BQLanguageServer {
         }
       } else {
         // table.column | struct.field | prefix.function
+        const currIndex = util.getPositionByRowColumn(
+          this.getDocInfo(uri),
+          line,
+          column
+        );
+        const currText = this.uriToText[uri];
+        const prevText =
+          currText.substring(0, currIndex) + currText.substring(currIndex + 1);
+        const prevCsts = util.parseSQL(prevText);
+        const nameSpaces = (await this.createNameSpaces(prevCsts)).filter(
+          (ns) => {
+            util.arrangedInThisOrder(
+              true,
+              ns.start,
+              { line: line, character: column - 1 }, // 1-character before "."
+              ns.end
+            );
+          }
+        );
+        const prevNode = util.getNodeByRowColumn(prevCsts, line, column - 1);
+        if (!prevNode) return [];
+        const idents = util.parseIdentifier(prevNode);
+        if (idents.length === 1) {
+          this.getSmallestNameSpaces(
+            nameSpaces.filter((ns) => ns.name && ns.name === idents[0])
+          ).forEach((ns) => {
+            ns.variables.forEach((v) => {
+              res.push({
+                label: v.label,
+                kind: v.kind,
+                documentation: util.convert2MarkdownItems(v.info),
+              });
+            });
+          });
+        }
       }
     } else if (char === "`" && node && node.node_type === "Identifier") {
       const projects = (
@@ -377,7 +417,9 @@ export class BQLanguageServer {
       }
       // TODO support default dataset (suggest table_name)
     } else {
-      const namespaces = (await this.createNameSpaces(uri)).filter((ns) =>
+      const namespaces = (
+        await this.createNameSpaces(this.uriToCst[uri])
+      ).filter((ns) =>
         util.arrangedInThisOrder(
           true,
           ns.start,
@@ -385,6 +427,12 @@ export class BQLanguageServer {
           ns.end
         )
       );
+      namespaces.forEach((ns) => {
+        // NOTE You may push the same name twice or more.
+        if (ns.name) {
+          res.push({ label: ns.name, kind: LSP.CompletionItemKind.Struct });
+        }
+      });
       this.getSmallestNameSpaces(namespaces).forEach((ns) => {
         ns.variables.forEach((v) => {
           res.push({
@@ -478,7 +526,7 @@ export class BQLanguageServer {
     position: LSP.Position
   ) {
     const node = util.getNodeByRowColumn(
-      docInfo,
+      docInfo.cst,
       position.line + 1,
       position.character + 1
     );
@@ -537,93 +585,12 @@ export class BQLanguageServer {
   private updateDocumentInfo(
     change: LSP.TextDocumentChangeEvent<TextDocument>
   ) {
-    function setParentAndRange(parent: bq2cst.UnknownNode) {
-      const weakref = new WeakRef(parent);
-      parent.range = {
-        start: null,
-        end: null,
-      };
-      const token = parent.token;
-      if (token) {
-        parent.range.start = { line: token.line, character: token.column };
-        const splittedLiteral = token.literal.split("\n");
-        parent.range.end = {
-          line: token.line + splittedLiteral.length - 1,
-          character:
-            splittedLiteral.length === 1
-              ? token.column + token.literal.length - 1
-              : splittedLiteral[splittedLiteral.length - 1].length,
-        };
-      }
-      for (const [_, child] of Object.entries(parent.children)) {
-        if (!child) {
-          continue;
-        } else if ("Node" in child) {
-          child.Node.parent = weakref;
-          setParentAndRange(child.Node);
-          if (
-            parent.range.start &&
-            child.Node.range.start &&
-            util.arrangedInThisOrder(
-              false,
-              child.Node.range.start,
-              parent.range.start
-            )
-          ) {
-            parent.range.start = child.Node.range.start;
-          } else if (!parent.range.start && child.Node.range.start) {
-            parent.range.start = child.Node.range.start;
-          }
-          if (
-            parent.range.end &&
-            child.Node.range.end &&
-            util.arrangedInThisOrder(
-              false,
-              parent.range.end,
-              child.Node.range.end
-            )
-          ) {
-            parent.range.end = child.Node.range.end;
-          } else if (!parent.range.end && child.Node.range.end) {
-            parent.range.end = child.Node.range.end;
-          }
-        } else {
-          child.NodeVec.forEach((node) => {
-            node.parent = weakref;
-            setParentAndRange(node);
-            if (
-              parent.range.start &&
-              node.range.start &&
-              util.arrangedInThisOrder(
-                false,
-                node.range.start,
-                parent.range.start
-              )
-            ) {
-              parent.range.start = node.range.start;
-            } else if (!parent.range.start && node.range.start) {
-              parent.range.start = node.range.start;
-            }
-            if (
-              parent.range.end &&
-              node.range.end &&
-              util.arrangedInThisOrder(false, parent.range.end, node.range.end)
-            ) {
-              parent.range.end = node.range.end;
-            } else if (!parent.range.end && node.range.end) {
-              parent.range.end = node.range.end;
-            }
-          });
-        }
-      }
-    }
     const uri = change.document.uri;
     this.uriToText[uri] = change.document.getText();
     const text = change.document.getText();
     try {
       this.uriToTokens[uri] = bq2cst.tokenize(text);
-      const csts = bq2cst.parse(text);
-      csts.forEach((cst) => setParentAndRange(cst));
+      const csts = util.parseSQL(text);
       this.uriToCst[uri] = csts;
       this.connection.sendDiagnostics({
         uri: uri,
@@ -674,9 +641,11 @@ export class BQLanguageServer {
     }
   }
 
-  private async createNameSpaces(uri: string): Promise<NameSpace[]> {
+  private async createNameSpaces(
+    csts: bq2cst.UnknownNode[]
+  ): Promise<NameSpace[]> {
     const res: NameSpace[] = [];
-    for (const cst of this.uriToCst[uri]) {
+    for (const cst of csts) {
       await this.createNameSpacesFromNode(res, cst);
     }
     return res;
@@ -740,6 +709,24 @@ export class BQLanguageServer {
         });
       }
     } else if (
+      node.node_type === "GroupedStatement" &&
+      node.children.alias &&
+      namespace
+    ) {
+      const originalNameSpace = namespace;
+      const newNameSpace: NameSpace = {
+        start: originalNameSpace.start,
+        end: originalNameSpace.end,
+        name: node.children.alias.Node.token.literal,
+        variables: [],
+      };
+      await this.createNameSpacesFromNode(
+        res,
+        node.children.stmt.Node,
+        newNameSpace
+      );
+      if (newNameSpace.variables.length > 0) res.push(newNameSpace);
+    } else if (
       node.node_type === "Identifier" ||
       node.node_type === "DotOperator" ||
       node.node_type === "MultiTokenIdentifier"
@@ -755,6 +742,19 @@ export class BQLanguageServer {
             name: node.children.alias.Node.token.literal,
             variables: [],
           };
+
+          // with clause
+          if (idents.length === 1) {
+            const ident = idents[0];
+            const namespaces = this.getSmallestNameSpaces(
+              res.filter((ns) => ns.name && ns.name === ident)
+            );
+            namespaces.forEach((namespace) => {
+              ns.variables.push(...namespace.variables);
+            });
+          }
+
+          // sqlite
           queryResults.forEach((row) => {
             ns.variables.push({
               label: row.column,

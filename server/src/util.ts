@@ -35,7 +35,12 @@ export function convert2MarkdownItems(
   arg: string[] | Record<string, string>
 ): LSP.MarkupContent {
   if (Array.isArray(arg)) {
-    const value = arg.map((i) => "* " + i).join("\n");
+    let value;
+    if (arg.length === 0) {
+      value = "* Unknown";
+    } else {
+      value = arg.map((i) => "* " + i).join("\n");
+    }
     return {
       kind: "markdown",
       value: value,
@@ -44,6 +49,9 @@ export function convert2MarkdownItems(
     const items = [];
     for (const [k, v] of Object.entries(arg)) {
       items.push(`* ${k}: ${v}`);
+    }
+    if (items.length === 0) {
+      items.push("* Unknown");
     }
     return { kind: "markdown", value: items.join("\n") };
   }
@@ -139,7 +147,7 @@ function getLastNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
 }
 
 export function getNodeByRowColumn(
-  docInfo: DocumentInfo,
+  csts: bq2cst.UnknownNode[],
   line: number,
   column: number
 ) {
@@ -197,7 +205,6 @@ export function getNodeByRowColumn(
     }
     return null;
   }
-  const csts = docInfo.cst;
   for (const cst of csts) {
     const res = findNodeFromCst(cst);
     if (res) {
@@ -432,4 +439,81 @@ export function rangeContains(
   if (arrangedInThisOrder(false, range1.end, range2.end)) return false;
 
   return true;
+}
+
+export function parseSQL(sql: string): bq2cst.UnknownNode[] {
+  function setParentAndRange(parent: bq2cst.UnknownNode) {
+    const weakref = new WeakRef(parent);
+    parent.range = {
+      start: null,
+      end: null,
+    };
+    const token = parent.token;
+    if (token) {
+      parent.range.start = { line: token.line, character: token.column };
+      const splittedLiteral = token.literal.split("\n");
+      parent.range.end = {
+        line: token.line + splittedLiteral.length - 1,
+        character:
+          splittedLiteral.length === 1
+            ? token.column + token.literal.length - 1
+            : splittedLiteral[splittedLiteral.length - 1].length,
+      };
+    }
+    for (const [_, child] of Object.entries(parent.children)) {
+      if (!child) {
+        continue;
+      } else if ("Node" in child) {
+        child.Node.parent = weakref;
+        setParentAndRange(child.Node);
+        if (
+          parent.range.start &&
+          child.Node.range.start &&
+          arrangedInThisOrder(false, child.Node.range.start, parent.range.start)
+        ) {
+          parent.range.start = child.Node.range.start;
+        } else if (!parent.range.start && child.Node.range.start) {
+          parent.range.start = child.Node.range.start;
+        }
+        if (
+          parent.range.end &&
+          child.Node.range.end &&
+          arrangedInThisOrder(false, parent.range.end, child.Node.range.end)
+        ) {
+          parent.range.end = child.Node.range.end;
+        } else if (!parent.range.end && child.Node.range.end) {
+          parent.range.end = child.Node.range.end;
+        }
+      } else {
+        child.NodeVec.forEach((node) => {
+          node.parent = weakref;
+          setParentAndRange(node);
+          if (
+            parent.range.start &&
+            node.range.start &&
+            arrangedInThisOrder(false, node.range.start, parent.range.start)
+          ) {
+            parent.range.start = node.range.start;
+          } else if (!parent.range.start && node.range.start) {
+            parent.range.start = node.range.start;
+          }
+          if (
+            parent.range.end &&
+            node.range.end &&
+            arrangedInThisOrder(false, parent.range.end, node.range.end)
+          ) {
+            parent.range.end = node.range.end;
+          } else if (!parent.range.end && node.range.end) {
+            parent.range.end = node.range.end;
+          }
+        });
+      }
+    }
+  }
+
+  const csts = bq2cst.parse(sql);
+  csts.forEach((cst) => {
+    setParentAndRange(cst);
+  });
+  return csts;
 }
