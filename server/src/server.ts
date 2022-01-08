@@ -773,14 +773,25 @@ export class BQLanguageServer {
       }
       if (namespace) {
         node.children.exprs.NodeVec.forEach((n) => {
-          const expr = n as bq2cst.Expr; // to satisfy compiler
-          // TODO support idents without explicit alias
+          const expr = n as bq2cst.Expr & bq2cst.UnknownNode;
           if (expr.children.alias) {
             namespace.variables.push({
               label: expr.children.alias.Node.token.literal,
               info: {},
               kind: LSP.CompletionItemKind.Field,
             });
+          } else if (
+            expr.node_type === "Identifier" ||
+            expr.node_type === "DotOperator"
+          ) {
+            const idents = util.parseIdentifier(expr);
+            if (idents.length > 0) {
+              namespace.variables.push({
+                label: idents[idents.length - 1],
+                info: {},
+                kind: LSP.CompletionItemKind.Field,
+              });
+            }
           }
         });
       }

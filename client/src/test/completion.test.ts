@@ -112,6 +112,38 @@ WHERE
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+  it("column (not explicit alias)", async function () {
+    const sql = `
+SELECT
+  *,
+  o
+FROM (SELECT sub.one FROM (SELECT 1 AS one) AS sub)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 3)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "one"));
+  });
+  it("column (from with clause in subquery)", async function () {
+    const sql = `
+WITH abc AS (SELECT 1 AS one)
+SELECT *
+FROM (
+  SELECT
+    *,
+    o
+  FROM abc
+)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(6, 5)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "one"));
+  });
   it("table alias", async function () {
     const sql = `
 SELECT
@@ -187,24 +219,23 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
-  // TODO fix parser
-  //  it("column subquery and set operator and groupedStatement", async function () {
-  //    const sql = `
-  //SELECT
-  //  o
-  //FROM (
-  //  (SELECT 1 AS one)
-  //  UNION ALL
-  //  SELECT 2
-  //)`;
-  //    await util.insert(filename, new vscode.Position(0, 0), sql);
-  //    const list = (await vscode.commands.executeCommand(
-  //      "vscode.executeCompletionItemProvider",
-  //      util.getDocUri(filename),
-  //      new vscode.Position(2, 3)
-  //    )) as vscode.CompletionList;
-  //    assert.ok(list.items.some((x) => x.label === "one"));
-  //  });
+  it("column subquery and set operator and groupedStatement", async function () {
+    const sql = `
+SELECT
+  o
+FROM (
+  (SELECT 1 AS one)
+  UNION ALL
+  SELECT 2
+)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 3)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "one"));
+  });
   it("column with", async function () {
     const sql = `
 WITH tmp AS (
