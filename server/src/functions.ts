@@ -38,20 +38,36 @@ FROM UNNEST([1, 2, NULL]) AS i`,
   {
     ident: "BIT_AND",
     example: `SELECT
-  BIT_AND(b) -- 1
-FROM UNNEST([0x1, 0x1]) AS b`,
+  BIT_AND(x), -- 0
+  BIT_AND(y), -- 2
+FROM UNNEST([
+  STRUCT(0x0 AS x, 0x2 AS y),
+        (0x1     , 0x3     ),
+        (0x1     , 0x6     )
+])`,
   },
   {
     ident: "BIT_OR",
     example: `SELECT
-  BIT_OR(b) -- 1
-FROM UNNEST([0x0, 0x1]) AS b`,
+  BIT_OR(x), -- 1
+  BIT_OR(y), -- 7
+FROM UNNEST([
+  STRUCT(0x0 AS x, 0x1 AS y),
+        (0x1     , 0x2     ),
+        (0x1     , 0x4     )
+])`,
   },
   {
     ident: "BIT_XOR",
     example: `SELECT
-  BIT_XOR(b) -- 0
-FROM UNNEST([0x1, 0x1]) AS b`,
+  BIT_XOR(x), -- 0
+  BIT_XOR(y), -- 1
+  BIT_XOR(z), -- 7
+FROM UNNEST([
+  STRUCT(0x0 AS x, 0x0 AS y, 0x1 AS z),
+        (0x1     , 0x0     , 0x2     ),
+        (0x1     , 0x1     , 0x4     )
+])`,
   },
   {
     ident: "COUNT",
