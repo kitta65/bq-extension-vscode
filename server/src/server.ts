@@ -454,7 +454,7 @@ export class BQLanguageServer {
             });
           });
       }
-    } else if (char === "`" && node && node.node_type === "Identifier") {
+    } else if (char === "`") {
       const projects = (
         await this.db.query("SELECT DISTINCT project FROM projects;", [
           "project",
