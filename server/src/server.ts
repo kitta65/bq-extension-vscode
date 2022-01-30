@@ -295,9 +295,7 @@ export class BQLanguageServer {
           column
         )
       ];
-    if (char === "[" && node && node.node_type === "ArrayAccessing") {
-      // TODO arr[OFFSET(1)]
-    } else if (char === ".") {
+    if (char === ".") {
       // NOTE Check not cst but token here because `.` often breaks cst.
       const token = util.getTokenByRowColumn(
         this.getDocInfo(uri),
