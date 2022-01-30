@@ -117,6 +117,14 @@ export class BQLanguageServer {
       this.connection.sendNotification("bq/totalBytesProcessed", {
         totalBytesProcessed: msg,
       });
+      const config = await this.getConfiguration(uri);
+      if (!config.diagnostic.forVSCode) {
+        const params: LSP.ShowMessageParams = {
+          message: `This query will process ${msg} when run.`,
+          type: LSP.MessageType.Info,
+        };
+        this.connection.sendNotification("window/showMessage", params);
+      }
     } catch (e: any) {
       const msg = e.message;
       const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
