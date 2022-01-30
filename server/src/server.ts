@@ -483,6 +483,18 @@ export class BQLanguageServer {
       }
       // TODO support default dataset (suggest table_name)
     } else {
+      if (node && node.parent) {
+        const parent = node.parent.deref();
+        if (
+          parent &&
+          "alias" in parent.children &&
+          parent.children.alias &&
+          parent.children.alias.Node === node
+        ) {
+          return [];
+        }
+      }
+
       const namespaces = (
         await this.createNameSpaces(this.uriToCst[uri])
       ).filter((ns) =>
