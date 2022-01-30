@@ -611,25 +611,35 @@ export class BQLanguageServer {
     const config = await this.getConfiguration(params.textDocument.uri);
     const originalText = this.uriToText[params.textDocument.uri];
     const splittedOriginalText = originalText.split("\n");
-    const formattedText = prettier
-      .format(originalText, {
-        parser: "sql-parse",
-        ...config.formatting,
-      })
-      .slice(0, -1); // remove unnecessary \n
-    return [
-      {
-        range: {
-          start: { line: 0, character: 0 },
-          end: {
-            line: splittedOriginalText.length - 1,
-            character:
-              splittedOriginalText[splittedOriginalText.length - 1].length, // `-1` is not needed
+    let formattedText;
+    try {
+      formattedText = prettier
+        .format(originalText, {
+          parser: "sql-parse",
+          ...config.formatting,
+        })
+        .slice(0, -1); // remove unnecessary \n
+      return [
+        {
+          range: {
+            start: { line: 0, character: 0 },
+            end: {
+              line: splittedOriginalText.length - 1,
+              character:
+                splittedOriginalText[splittedOriginalText.length - 1].length, // `-1` is not needed
+            },
           },
+          newText: formattedText,
         },
-        newText: formattedText,
-      },
-    ];
+      ];
+    } catch (_) {
+      const params: LSP.ShowMessageParams = {
+        message: "Cannot format the query. Try `Dry Run` command.",
+        type: LSP.MessageType.Error,
+      };
+      this.connection.sendNotification("window/showMessage", params);
+      return [];
+    }
   }
 
   private async onRequestUpdateCache(_: any) {
