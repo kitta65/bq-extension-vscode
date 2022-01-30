@@ -732,7 +732,7 @@ export class BQLanguageServer {
       if (node.children.with) {
         const withQueries = node.children.with.Node.children.queries.NodeVec;
         for (let i = 0; i < withQueries.length; i++) {
-          const currWithQuery = withQueries[0];
+          const currWithQuery = withQueries[i];
           if (!node.range.start || !node.range.end) return;
           let start: LSP.Position = {
             line: node.token.line,
