@@ -97,6 +97,20 @@ FROM \`${util.project}.bq_extension_vscode_test.t\``;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+  it("column without first character", async function () {
+    // NOTE `s` is neeeded to parse sql!
+    const sql = `
+SELECT
+
+FROM \`${util.project}.bq_extension_vscode_test.t\``;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 0)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str"));
+  });
   it("column end of statement", async function () {
     // NOTE `s` is neeeded to parse sql!
     const sql = `

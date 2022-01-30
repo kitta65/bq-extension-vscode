@@ -480,6 +480,46 @@ export class BQLanguageServer {
         });
       }
       // TODO support default dataset (suggest table_name)
+    } else if (char.match(/^\s$/)) {
+      const currIndex = util.getPositionByRowColumn(
+        this.getDocInfo(uri),
+        line,
+        column
+      );
+      const currText = this.uriToText[uri];
+      const newText =
+        currText.substring(0, currIndex) +
+        "\nident\n" +
+        currText.substring(currIndex + 1);
+      let newCsts;
+      try {
+        newCsts = util.parseSQL(newText);
+      } catch (_) {
+        return [];
+      }
+      const namespaces = (await this.createNameSpaces(newCsts)).filter((ns) => {
+        return util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: line + 1, character: 0 }, // position of inserted ident
+          ns.end
+        );
+      });
+      namespaces.forEach((ns) => {
+        // NOTE You may push the same name twice or more.
+        if (ns.name) {
+          res.push({ label: ns.name, kind: LSP.CompletionItemKind.Struct });
+        }
+      });
+      this.getSmallestNameSpaces(namespaces).forEach((ns) => {
+        ns.variables.forEach((v) => {
+          res.push({
+            label: v.label,
+            kind: v.kind,
+            documentation: util.convert2MarkdownItems(v.info),
+          });
+        });
+      });
     } else {
       if (node && node.parent) {
         const parent = node.parent.deref();
