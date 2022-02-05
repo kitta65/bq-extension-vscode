@@ -425,6 +425,64 @@ SELECT 1`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+  it("with alias recursive", async function () {
+    const sql = `
+WITH RECURSIVE
+  temp AS (
+    SELECT 1 as n
+    UNION ALL
+    SELECT 1 + n
+    FROM 
+    WHERE n < 3
+  )
+SELECT * FROM T1
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(6, 9)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "temp"));
+  });
+  it("column with recursive", async function () {
+    const sql = `
+WITH RECURSIVE
+  temp AS (
+    SELECT 1 as n
+    UNION ALL
+    SELECT 1 + n
+    FROM temp
+    WHERE 
+  )
+SELECT * FROM T1
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(7, 10)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "temp"));
+  });
+  it("column with recursive", async function () {
+    const sql = `
+WITH RECURSIVE
+  temp1 AS (
+    SELECT n
+    FROM 
+  ),
+  temp2 AS (SELECT 1 AS n)
+SELECT * FROM temp1
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(4, 9)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "temp2"));
+  });
   it("column leaded by table", async function () {
     const sql = `
 SELECT

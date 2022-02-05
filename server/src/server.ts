@@ -799,17 +799,23 @@ export class BQLanguageServer {
     ) {
       if (node.children.with) {
         const withQueries = node.children.with.Node.children.queries.NodeVec;
+        const isRecursive = !!node.children.with.Node.children.recursive;
         for (let i = 0; i < withQueries.length; i++) {
           const currWithQuery = withQueries[i];
           if (!node.range.start || !node.range.end) return;
-          let start: LSP.Position = {
-            line: node.token.line,
-            character: node.token.column,
-          }; // Do not use node.range.start here!
-          if (withQueries.length - 1 !== i) {
-            const nextWithQuery = withQueries[i + 1];
-            if (nextWithQuery.range.start) {
-              start = nextWithQuery.range.start;
+          let start: LSP.Position;
+          if (isRecursive) {
+            start = node.range.start; // position of WITH
+          } else {
+            start = {
+              line: node.token.line,
+              character: node.token.column,
+            }; // position of SELECT
+            if (withQueries.length - 1 !== i) {
+              const nextWithQuery = withQueries[i + 1];
+              if (nextWithQuery.range.start) {
+                start = nextWithQuery.range.start;
+              }
             }
           }
           const ns: NameSpace = {
