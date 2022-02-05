@@ -6,3 +6,5 @@
 .gitignore
 .prettierignore
 .vscode/**
+client/out/test/**
+README_TEST.md
