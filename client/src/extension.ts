@@ -73,14 +73,9 @@ async function clearCache(this: LanguageClient): Promise<void> {
 
 async function dryRun(this: LanguageClient): Promise<void> {
   const uri = vscode.window.activeTextEditor.document.uri;
-  const response = await this.sendRequest("bq/dryRun", {
+  await this.sendRequest("bq/dryRun", {
     uri: uri.toString(),
   });
-  if (typeof response === "string") {
-    vscode.window.showInformationMessage(response);
-  } else {
-    vscode.window.showInformationMessage("done!");
-  }
 }
 
 async function updateCache(this: LanguageClient): Promise<void> {
@@ -91,4 +86,3 @@ async function updateCache(this: LanguageClient): Promise<void> {
     vscode.window.showInformationMessage("done!");
   }
 }
-

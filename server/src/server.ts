@@ -92,7 +92,6 @@ export class BQLanguageServer {
     this.hasConfigurationCapability = capabilities.hasConfigurationCapability;
   }
   private async dryRun(uri: LSP.URI): Promise<void> {
-    let diagnostic: LSP.Diagnostic;
     try {
       // See https://cloud.google.com/bigquery/docs/dry-run-queries
       let msg;
@@ -127,36 +126,34 @@ export class BQLanguageServer {
       }
     } catch (e: any) {
       const msg = e.message;
-      const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
-      const range = util.getTokenRangeByRowColumn(
-        this.getDocInfo(uri),
-        Number(matchResult[1]),
-        Number(matchResult[2])
-      );
-      if (matchResult && range) {
-        // in the case of message like below
-        // Syntax error: Unexpected end of script at [1:7]
-        diagnostic = {
-          severity: LSP.DiagnosticSeverity.Error,
-          range: range,
-          message: msg,
-        };
-      } else {
-        // in the case of message like below
-        // Table name "abc" missing dataset while no default dataset is set in the request
-        const splittedText = this.uriToText[uri].split("\n");
-        diagnostic = {
-          severity: LSP.DiagnosticSeverity.Error,
-          range: {
-            start: { line: 0, character: 0 },
-            end: {
-              line: splittedText.length - 1,
-              character: splittedText[splittedText.length - 1].length,
-            },
+
+      // in the case of message like below
+      // Table name "abc" missing dataset while no default dataset is set in the request
+      const splittedText = this.uriToText[uri].split("\n");
+      const diagnostic = {
+        severity: LSP.DiagnosticSeverity.Error,
+        range: {
+          start: { line: 0, character: 0 },
+          end: {
+            line: splittedText.length - 1,
+            character: splittedText[splittedText.length - 1].length,
           },
-          message: msg,
-        };
+        },
+        message: msg,
+      };
+
+      // in the case of message like below
+      // Syntax error: Unexpected end of script at [1:7]
+      const matchResult = msg.match(/\[([0-9]+):([0-9]+)\]/);
+      if (matchResult) {
+        const range = util.getTokenRangeByRowColumn(
+          this.getDocInfo(uri),
+          Number(matchResult[1]),
+          Number(matchResult[2])
+        );
+        if (range) diagnostic.range = range;
       }
+
       this.connection.sendDiagnostics({
         uri: uri,
         diagnostics: [diagnostic],
