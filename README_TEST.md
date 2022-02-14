@@ -18,6 +18,7 @@ CREATE OR REPLACE TABLE bq_extension_vscode_test.t (
   int INT64,
   float FLOAT64,
   bool BOOLEAN,
+  arr ARRAY<INT64>,
   nested STRUCT<
     arr2 ARRAY<INT64>,
     str2 STRING,
