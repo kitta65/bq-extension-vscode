@@ -29,7 +29,7 @@ export async function activate(context: vscode.ExtensionContext) {
     },
   };
   const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: "file", language: "bigquery" }],
+    documentSelector: [{ language: "bigquery" }],
   };
   client = new LanguageClient(
     "bqExtensionVSCode",
