@@ -7,6 +7,7 @@ import { dirname } from "path";
 type DatasetRecord = {
   project: string;
   dataset: string;
+  location: string;
 };
 
 type ColumnRecord = {
@@ -26,6 +27,7 @@ const createTableDatasets = `
 CREATE TABLE IF NOT EXISTS datasets (
   project TEXT,
   dataset TEXT,
+  location TEXT,
   PRIMARY KEY (project, dataset)
 );`;
 const createTableColumns = `
@@ -113,6 +115,29 @@ COMMIT;`);
     });
   }
 
+  private async getAvailableDatasets(project: string) {
+    return new Promise<DatasetRecord[]>((resolve) => {
+      exec(
+        `bq ls --datasets=true --project_id='${project}' --format=json`,
+        (_, stdout) => {
+          const datasets = JSON.parse(stdout).map(
+            (x: {
+              datasetReference: { projectId: string; datasetId: string };
+              location: string;
+            }) => {
+              return {
+                project: x.datasetReference.projectId,
+                dataset: x.datasetReference.datasetId,
+                location: x.location,
+              };
+            }
+          );
+          resolve(datasets);
+        }
+      );
+    });
+  }
+
   public async updateCache(texts: string[]) {
     const insertQueries: Promise<any>[] = [];
 
@@ -136,22 +161,14 @@ COMMIT;`);
     for (const proj of projects) {
       if (!texts.some((txt) => txt.includes(proj))) continue;
       try {
-        const [job] = await this.bqClient.createQueryJob({
-          query: `
-SELECT
-  catalog_name AS project,
-  schema_name AS dataset,
-FROM \`${proj}\`.INFORMATION_SCHEMA.SCHEMATA
-LIMIT 10000;`,
-        });
-        const [rows] = await job.getQueryResults();
+        const rows = await this.getAvailableDatasets(proj);
         await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
         rows.forEach((row) => {
           datasetRecords.push(row);
           insertQueries.push(
             this.query(
-              `INSERT OR IGNORE INTO datasets (project, dataset) VALUES (?, ?);`,
-              [row.project, row.dataset]
+              `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
+              [row.project, row.dataset, row.location]
             )
           );
         });
@@ -165,7 +182,7 @@ LIMIT 10000;`,
       let columnRecords: ColumnRecord[] = [];
       if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
       try {
-        const [job] = await this.bqClient.createQueryJob({
+        const options = {
           query: `
 SELECT DISTINCT
   table_catalog AS project,
@@ -175,7 +192,9 @@ SELECT DISTINCT
   data_type,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
 LIMIT 10000;`,
-        });
+          location: dataset.location,
+        };
+        const [job] = await this.bqClient.createQueryJob(options);
         const [rows] = await job.getQueryResults();
         columnRecords = rows;
         await this.query("DELETE FROM columns WHERE dataset = ?", [

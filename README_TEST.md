@@ -10,9 +10,10 @@ gcloud auth application-default login
 
 ### dataset and table
 Run the following query to creat dataset and table.
+If you get an error, check data location in query settings.
 
-```
-CREATE SCHEMA IF NOT EXISTS bq_extension_vscode_test;
+```sql
+CREATE SCHEMA IF NOT EXISTS bq_extension_vscode_test OPTIONS (location='US');
 CREATE OR REPLACE TABLE bq_extension_vscode_test.t (
   str STRING,
   int INT64,
@@ -28,6 +29,11 @@ CREATE OR REPLACE TABLE bq_extension_vscode_test.t (
 );
 CREATE OR REPLACE TABLE bq_extension_vscode_test.u_20210101 (str STRING);
 CREATE OR REPLACE TABLE bq_extension_vscode_test.u_20210102 (str STRING);
+```
+
+```sql
+CREATE SCHEMA IF NOT EXISTS bq_extension_vscode_test_asia OPTIONS (location='asia-northeast1');
+CREATE OR REPLACE TABLE bq_extension_vscode_test_asia.v (str STRING);
 ```
 
 ## How to execute tests?

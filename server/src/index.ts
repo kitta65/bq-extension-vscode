@@ -14,7 +14,8 @@ connection.onInitialize(async (params: LSP.InitializeParams) => {
   );
 
   const db = await CacheDB.initialize(
-    `${process.env.HOME}/.bq_extension_vscode/cache.sqlite`
+    // file name will be updated on every breaking change
+    `${process.env.HOME}/.bq_extension_vscode/cache_00_00_17.sqlite`
   );
   // in the case that the client does not request shutdown
   process.on("SIGTERM", () => {
