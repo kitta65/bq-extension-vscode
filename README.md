@@ -16,7 +16,7 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 ## Quick Start
 ℹ️ If your OS is Windows, it is recommended to develop in WSL (read the [document](https://code.visualstudio.com/docs/remote/wsl)).
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
-2. Run `gcloud auth application-default login`
+2. Run `gcloud auth login` `gcloud auth application-default login`
 3. Install sqlite3
 4. Install this extension from VSCode
 5. Open a file (`xxx.bq` or `xxx.bigquery`)
