@@ -108,7 +108,7 @@ COMMIT;`);
 
   private async getAvailableProjects() {
     return new Promise<string[]>((resolve) => {
-      exec("bq ls --projects=true --format=json", (_, stdout) => {
+      exec("bq ls --projects=true --format=json --max_results=1000", (_, stdout) => {
         const projects = JSON.parse(stdout).map((x: { id: string }) => x.id);
         resolve(projects);
       });
@@ -118,7 +118,7 @@ COMMIT;`);
   private async getAvailableDatasets(project: string) {
     return new Promise<DatasetRecord[]>((resolve) => {
       exec(
-        `bq ls --datasets=true --project_id='${project}' --format=json`,
+        `bq ls --datasets=true --project_id='${project}' --format=json --max_results=1000`,
         (_, stdout) => {
           const datasets = JSON.parse(stdout).map(
             (x: {
@@ -159,7 +159,6 @@ COMMIT;`);
     // cache datasets
     const datasetRecords: DatasetRecord[] = [];
     for (const proj of projects) {
-      if (!texts.some((txt) => txt.includes(proj))) continue;
       try {
         const rows = await this.getAvailableDatasets(proj);
         await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
