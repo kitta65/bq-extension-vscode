@@ -106,21 +106,38 @@ COMMIT;`);
     });
   }
 
-  private async getAvailableProjects() {
-    return new Promise<string[]>((resolve) => {
-      exec("bq ls --projects=true --format=json --max_results=1000", (_, stdout) => {
-        const projects = JSON.parse(stdout).map((x: { id: string }) => x.id);
-        resolve(projects);
-      });
+  private getAvailableProjects() {
+    return new Promise<string[]>((resolve, reject) => {
+      exec(
+        "bq ls --projects=true --format=json --max_results=1000",
+        (_, stdout) => {
+          let obj;
+          try {
+            obj = JSON.parse(stdout);
+          } catch (_) {
+            reject(new Error("Cannot parse stdout!"));
+            return
+          }
+          const projects = obj.map((x: { id: string }) => x.id);
+          resolve(projects);
+        }
+      );
     });
   }
 
-  private async getAvailableDatasets(project: string) {
-    return new Promise<DatasetRecord[]>((resolve) => {
+  private getAvailableDatasets(project: string) {
+    return new Promise<DatasetRecord[]>((resolve, reject) => {
       exec(
         `bq ls --datasets=true --project_id='${project}' --format=json --max_results=1000`,
         (_, stdout) => {
-          const datasets = JSON.parse(stdout).map(
+          let obj;
+          try {
+            obj = JSON.parse(stdout);
+          } catch (_) {
+            reject(new Error("Cannot parse stdout!"));
+            return;
+          }
+          const datasets = obj.map(
             (x: {
               datasetReference: { projectId: string; datasetId: string };
               location: string;
