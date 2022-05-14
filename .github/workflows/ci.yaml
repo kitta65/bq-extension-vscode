@@ -1,4 +1,4 @@
-on: [push, pull_request]
+on: [push]
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -13,6 +13,7 @@ jobs:
     - uses: 'google-github-actions/setup-gcloud@v0'
 
     - run: bq query 'select 1;'
+    - run: bq ls --projects=true --format=json
 
     - uses: actions/setup-node@v3
       with:
@@ -21,4 +22,7 @@ jobs:
 
     - run: npm ci
     - run: npm run compile
+    # NOTE
+    # You'll see `Failed to connect to the bus` many time.
+    # See https://github.com/microsoft/vscode-test/issues/127
     - run: xvfb-run npm test

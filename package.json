@@ -1,157 +1,164 @@
 {
-  "private": true,
-  "name": "bq-extension-vscode",
-  "displayName": "BigQuery Extension for VSCode",
-  "description": "Code completion / Code Formatting / Dry run / Hover information",
-  "icon": "icon.png",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/dr666m1/bq-extension-vscode"
-  },
-  "author": "dr666m1",
-  "license": "MIT",
-  "version": "0.0.17",
-  "publisher": "dr666m1",
-  "categories": [
-    "Programming Languages",
-    "Formatters",
-    "Linters"
-  ],
-  "keywords": [
-    "BigQuery"
-  ],
-  "engines": {
-    "vscode": "^1.43.0"
-  },
-  "activationEvents": [
-    "onLanguage:bigquery"
-  ],
-  "main": "./client/out/extension",
-  "contributes": {
-    "languages": [
-      {
-        "id": "bigquery",
-        "extensions": [
-          ".bq",
-          ".bigquery"
-        ],
-        "aliases": [
-          "BigQuery"
-        ],
-        "filenames": [],
-        "firstLine": "#standardSQL",
-        "configuration": "./language-configuration.json"
-      }
-    ],
-    "commands": [
-      {
-        "command": "bqExtensionVSCode.dryRun",
-        "title": "Dry Run",
-        "category": "BQExtensionVSCode"
-      },
-      {
-        "command": "bqExtensionVSCode.clearCache",
-        "title": "Clear Cache",
-        "category": "BQExtensionVSCode"
-      },
-      {
-        "command": "bqExtensionVSCode.updateCache",
-        "title": "Update Cache",
-        "category": "BQExtensionVSCode"
-      }
-    ],
-    "menus": {
-      "commandPalette": [
-        {
-          "command": "bqExtensionVSCode.dryRun",
-          "when": "editorLangId == bigquery"
-        },
-        {
-          "command": "bqExtensionVSCode.clearCache",
-          "when": "editorLangId == bigquery"
-        },
-        {
-          "command": "bqExtensionVSCode.updateCache",
-          "when": "editorLangId == bigquery"
-        }
-      ]
-    },
-    "configuration": {
-      "title": "BigQuery Extension for Visual Studio Code",
-      "properties": {
-        "bqExtensionVSCode.diagnostic.dryRunOnSave": {
-          "scope": "application",
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "When enabled dry run is executed on save."
-        },
-        "bqExtensionVSCode.diagnostic.forVSCode": {
-          "scope": "application",
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Use [these](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#diagnostics-tips-and-tricks) tips and tricks or not."
-        },
-        "bqExtensionVSCode.formatting.formatMultilineComment": {
-          "type": "boolean",
-          "default": false,
-          "markdownDescription": "Print multiline commnets in ['starred-block'](https://eslint.org/docs/rules/multiline-comment-style) style."
-        },
-        "bqExtensionVSCode.formatting.printKeywordsInUpperCase": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Print [reserved keywords](https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords) and functions in upper case."
-        },
-        "bqExtensionVSCode.formatting.printPseudoColumnsInUpperCase": {
-          "type": "boolean",
-          "default": true,
-          "markdownDescription": "Print pseudo columns (e.g. `_PARTITIONDATE`, `_PARTITIONTIME`) in upper case. When `printKeywordsInUpperCase` is `false`, this option is ignored."
-        },
-        "bqExtensionVSCode.trace.server": {
-          "scope": "application",
-          "type": "string",
-          "default": "messages",
-          "enum": [
-            "off",
-            "messages",
-            "verbose"
-          ],
-          "description": "Log communications between Client / Server."
-        }
-      }
-    },
-    "grammars": [
-      {
-        "language": "bigquery",
-        "path": "./syntaxes/bigquery.tmGrammar.json",
-        "scopeName": "source.bigquery"
-      },
-      {
-        "path": "./syntaxes/injection.json",
-        "scopeName": "bigquery.injection",
-        "injectTo": [
-          "source.bigquery"
-        ]
-      }
-    ]
-  },
-  "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "compile": "tsc -b",
-    "watch": "tsc -b -w",
-    "lint": "prettier --write . && eslint . --ext .ts,.tsx",
-    "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "devDependencies": {
-    "@types/glob": "^7.1.4",
-    "@types/mocha": "^9.0.0",
-    "@types/node": "^12.12.0",
-    "@typescript-eslint/eslint-plugin": "^4.23.0",
-    "@typescript-eslint/parser": "^4.23.0",
-    "eslint": "^7.26.0",
-    "eslint-config-prettier": "^8.3.0",
-    "mocha": "^9.2.2",
-    "prettier": "^2.3.2",
-    "typescript": "^4.3.5"
-  }
+	"private": true,
+	"name": "bq-extension-vscode",
+	"displayName": "BigQuery Extension for VSCode",
+	"description": "Code completion / Code Formatting / Dry run / Hover information",
+	"icon": "icon.png",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/dr666m1/bq-extension-vscode"
+	},
+	"author": "dr666m1",
+	"license": "MIT",
+	"version": "0.0.17",
+	"publisher": "dr666m1",
+	"categories": [
+		"Programming Languages",
+		"Formatters",
+		"Linters"
+	],
+	"keywords": [
+		"BigQuery"
+	],
+	"engines": {
+		"vscode": "^1.43.0"
+	},
+	"activationEvents": [
+		"onLanguage:bigquery"
+	],
+	"main": "./client/out/extension",
+	"contributes": {
+		"languages": [
+			{
+				"id": "bigquery",
+				"extensions": [
+					".bq",
+					".bigquery"
+				],
+				"aliases": [
+					"BigQuery"
+				],
+				"filenames": [],
+				"firstLine": "#standardSQL",
+				"configuration": "./language-configuration.json"
+			}
+		],
+		"commands": [
+			{
+				"command": "bqExtensionVSCode.dryRun",
+				"title": "Dry Run",
+				"category": "BQExtensionVSCode"
+			},
+			{
+				"command": "bqExtensionVSCode.clearCache",
+				"title": "Clear Cache",
+				"category": "BQExtensionVSCode"
+			},
+			{
+				"command": "bqExtensionVSCode.updateCache",
+				"title": "Update Cache",
+				"category": "BQExtensionVSCode"
+			}
+		],
+		"menus": {
+			"commandPalette": [
+				{
+					"command": "bqExtensionVSCode.dryRun",
+					"when": "editorLangId == bigquery"
+				},
+				{
+					"command": "bqExtensionVSCode.clearCache",
+					"when": "editorLangId == bigquery"
+				},
+				{
+					"command": "bqExtensionVSCode.updateCache",
+					"when": "editorLangId == bigquery"
+				}
+			]
+		},
+		"configuration": {
+			"title": "BigQuery Extension for Visual Studio Code",
+			"properties": {
+				"bqExtensionVSCode.diagnostic.dryRunOnSave": {
+					"scope": "application",
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "When enabled dry run is executed on save."
+				},
+				"bqExtensionVSCode.diagnostic.forVSCode": {
+					"scope": "application",
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Use [these](https://code.visualstudio.com/api/language-extensions/language-server-extension-guide#diagnostics-tips-and-tricks) tips and tricks or not."
+				},
+				"bqExtensionVSCode.formatting.formatMultilineComment": {
+					"type": "boolean",
+					"default": false,
+					"markdownDescription": "Print multiline commnets in ['starred-block'](https://eslint.org/docs/rules/multiline-comment-style) style."
+				},
+				"bqExtensionVSCode.formatting.printKeywordsInUpperCase": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Print [reserved keywords](https://cloud.google.com/bigquery/docs/reference/standard-sql/lexical#reserved_keywords) and functions in upper case."
+				},
+				"bqExtensionVSCode.formatting.printPseudoColumnsInUpperCase": {
+					"type": "boolean",
+					"default": true,
+					"markdownDescription": "Print pseudo columns (e.g. `_PARTITIONDATE`, `_PARTITIONTIME`) in upper case. When `printKeywordsInUpperCase` is `false`, this option is ignored."
+				},
+				"bqExtensionVSCode.trace.server": {
+					"scope": "application",
+					"type": "string",
+					"default": "messages",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"description": "Log communications between Client / Server."
+				}
+			}
+		},
+		"grammars": [
+			{
+				"language": "bigquery",
+				"path": "./syntaxes/bigquery.tmGrammar.json",
+				"scopeName": "source.bigquery"
+			},
+			{
+				"path": "./syntaxes/injection.json",
+				"scopeName": "bigquery.injection",
+				"injectTo": [
+					"source.bigquery"
+				]
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"lint": "prettier --write . && eslint . --ext .ts,.tsx",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"test": "tsc -b && node client/out/test/runTest"
+	},
+	"devDependencies": {
+		"@types/glob": "^7.1.4",
+		"@types/mocha": "^9.0.0",
+		"@types/node": "^12.12.0",
+		"@typescript-eslint/eslint-plugin": "^4.23.0",
+		"@typescript-eslint/parser": "^4.23.0",
+		"@vscode/test-electron": "^2.1.3",
+		"eslint": "^7.26.0",
+		"eslint-config-prettier": "^8.3.0",
+		"mocha": "^9.2.2",
+		"prettier": "^2.3.2",
+		"typescript": "^4.3.5"
+	},
+	"__metadata": {
+		"id": "c2d7b81e-c3d1-4219-94e7-6f3e5f762c79",
+		"publisherDisplayName": "dr666m1",
+		"publisherId": "1e50daec-9b8a-4154-80c8-c8741297c2a4",
+		"isPreReleaseVersion": false
+	}
 }
