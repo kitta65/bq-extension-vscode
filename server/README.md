@@ -45,3 +45,44 @@ command! BQUpdateCache call CocRequestAsync("bigquery", "bq/updateCache")
 command! BQClearCache call CocRequestAsync("bigquery", "bq/clearCache")
 command! BQDryRun call CocRequestAsync("bigquery", "bq/dryRun", {"uri": "file://" . expand("%:p")})
 ```
+
+### Neovim
+1. Enable [packer.nvim](https://github.com/wbthomason/packer.nvim)
+2. Modify your configuration
+
+```lua
+return require('packer').startup(function()
+  -- ... other packages ...
+  use {
+    "neovim/nvim-lspconfig",
+    config = function()
+      local lspconfig = require'lspconfig'
+      -- See :h lspconfig-adding-servers
+      local configs = require'lspconfig.configs'
+      if not configs.bqls then
+        configs.bqls = {
+          default_config = {
+            cmd = {'bq-language-server', '--stdio'},
+            filetypes = {'sql', 'bigquery'},
+            root_dir = function(fname) return
+              lspconfig.util.find_git_ancestor(fname)
+              or vim.fn.fnamemodify(fname, ':h')
+            end,
+            settings = {bqExtensionVSCode = {
+              diagnostic = {forVSCode = false}
+            }},
+          },
+        }
+      end
+      lspconfig.bqls.setup{}
+    end,
+  }
+  -- ... other packages ...
+end)
+
+vim.cmd[[
+command! BQUpdateCache lua vim.lsp.buf_request(0, "bq/updateCache", nil, function(err) if err print(err) end)
+command! BQClearCache lua vim.lsp.buf_request(0, "bq/clearCache", nil, function(err) if err print(err) end)
+command! BQDryRun lua vim.lsp.buf_request(0, "bq/dryRun", {"uri": "file://" . expand("%:p")}, function(err) if err print(err) end)
+]]
+```
