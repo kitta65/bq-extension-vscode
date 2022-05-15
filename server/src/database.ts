@@ -213,10 +213,10 @@ LIMIT 10000;`,
         const [job] = await this.bqClient.createQueryJob(options);
         const [rows] = await job.getQueryResults();
         columnRecords = rows;
-        await this.query("DELETE FROM columns WHERE project = ? and dataset = ?", [
-          dataset.project,
-          dataset.dataset,
-        ]);
+        await this.query(
+          "DELETE FROM columns WHERE project = ? and dataset = ?",
+          [dataset.project, dataset.dataset]
+        );
       } catch (err) {
         /* NOP */
       }
