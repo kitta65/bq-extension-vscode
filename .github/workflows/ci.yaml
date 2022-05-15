@@ -11,6 +11,7 @@ jobs:
         credentials_json: '${{secrets.GCP_CREDENTIALS}}'
 
     - uses: 'google-github-actions/setup-gcloud@v0'
+    - run: bq query 'select 1;'
 
     - uses: actions/setup-node@v3
       with:
