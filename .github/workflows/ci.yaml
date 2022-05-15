@@ -1,6 +1,6 @@
 on: [push]
 jobs:
-  ci:
+  test:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -29,6 +29,20 @@ jobs:
     # You'll see `Failed to connect to the bus` many time.
     # https://github.com/microsoft/vscode-test/issues/127
     - run: xvfb-run -a npm test
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.x'
+        registry-url: 'https://registry.npmjs.org'
+
+    - run: npm ci
+    - run: npm run compile
 
     - run: npx vsce package
     - uses: actions/upload-artifact@v3
