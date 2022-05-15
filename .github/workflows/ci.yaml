@@ -12,6 +12,9 @@ jobs:
 
     - uses: 'google-github-actions/setup-gcloud@v0'
 
+    # necessary to initialize `bq` command
+    - run: bq query 'select 1;'
+
     - uses: actions/setup-node@v3
       with:
         node-version: '16.x'
