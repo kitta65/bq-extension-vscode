@@ -12,9 +12,6 @@ jobs:
 
     - uses: 'google-github-actions/setup-gcloud@v0'
 
-    - run: bq query 'select 1;'
-    - run: bq ls --projects=true --format=json
-
     - uses: actions/setup-node@v3
       with:
         node-version: '16.x'
