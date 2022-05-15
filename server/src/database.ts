@@ -223,7 +223,7 @@ LIMIT 10000;`,
         insertQueries.push(
           this.query(
             "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
-            [c.project, c.dataset, c.table, c.column, c.data_type]
+            [dataset.project, dataset.dataset, c.table, c.column, c.data_type]
           )
         )
       );
