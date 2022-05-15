@@ -23,6 +23,8 @@ jobs:
     - run: npm ci
     - run: npm run compile
 
+    - run: npx prettier --check client/src server/src
+    - run: npx eslint client/src server/src
     # NOTE
     # official reference
     # https://code.visualstudio.com/api/working-with-extensions/continuous-integration#automated-publishing
