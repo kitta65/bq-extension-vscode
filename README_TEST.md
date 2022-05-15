@@ -2,11 +2,15 @@
 ## Prerequisite
 ### authentication
 In order to execute tests, you have to setup authentication.
-The easiest way is using the Google Cloud SDK (your default GCP project will be used).
+The easiest way is using the Google Cloud SDK.
 
 ```
+gcloud auth login
 gcloud auth application-default login
 ```
+
+The tests are executed in authenticated user's default GCP project.
+ℹ️ You can choose default project by `gcloud config set project your-project-id`.
 
 ### dataset and table
 Run the following query to creat dataset and table.
