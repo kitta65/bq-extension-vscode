@@ -325,6 +325,26 @@ SELECT
 FROM UNNEST([0, 1, 1, 2]) AS x
 ORDER BY x`,
   },
+  // ----- search functions -----
+  {
+    ident: "SEARCH",
+    example: `SELECT
+  SEARCH('foo', 'foo bar'), -- false
+  SEARCH('foo-bar', 'foo bar'), -- true
+  SEARCH('foo-bar', '\`foo bar\`'), -- false
+  SEARCH('FOO-BAR', 'foo bar'), -- true
+  SEARCH(STRUCT('foo', 'bar'), 'foo bar'), -- false
+  SEARCH(STRUCT('foo bar', 'bar'), 'foo bar'), -- true
+  SEARCH(
+    JSON '{"key": "val"}',
+    'key'
+  ), -- false
+  SEARCH(
+    JSON '{"key": "val"}',
+    'val',
+    json_scope => 'JSON_KEYS_AND_VALUES'
+  ), -- true`,
+  },
   // ----- bit functions -----
   {
     ident: "BIT_COUNT",
@@ -736,6 +756,11 @@ SELECT CHARACTER_LENGTH('ABC') -- 3`,
     example: `SELECT
   CODE_POINTS_TO_STRING([65]), -- 'A'
   CODE_POINTS_TO_BYTES([65]), -- b'\\x41'`,
+  },
+  {
+    ident: "COLLATE",
+    example: `SELECT
+  'abc' = COLLATE('ABC', "und:ci") -- true`,
   },
   {
     ident: "CONCAT",
