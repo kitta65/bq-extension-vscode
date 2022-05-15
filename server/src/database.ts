@@ -116,7 +116,7 @@ COMMIT;`);
             obj = JSON.parse(stdout);
           } catch (_) {
             reject(new Error("Cannot parse stdout!"));
-            return
+            return;
           }
           const projects = obj.map((x: { id: string }) => x.id);
           resolve(projects);
