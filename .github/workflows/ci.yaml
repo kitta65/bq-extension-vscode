@@ -1,0 +1,43 @@
+on: [push]
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: 'google-github-actions/auth@v0'
+      with:
+        # NOTE You need traditional service account key to run `bq` command
+        credentials_json: '${{secrets.GCP_CREDENTIALS}}'
+
+    - uses: 'google-github-actions/setup-gcloud@v0'
+
+    - run: bq query 'select 1;'
+    - run: bq ls --projects=true --format=json
+
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '16.x'
+        registry-url: 'https://registry.npmjs.org'
+
+    - run: npm ci
+    - run: npm run compile
+
+    # NOTE
+    # official reference
+    # https://code.visualstudio.com/api/working-with-extensions/continuous-integration#automated-publishing
+    #
+    # You'll see `Failed to connect to the bus` many time.
+    # https://github.com/microsoft/vscode-test/issues/127
+    - run: xvfb-run -a npm test
+
+    - run: npx vsce package
+    - uses: actions/upload-artifact@v3
+      with:
+        name: bq-extension-vscode.vsix
+        path: ./bq-extension-vscode-*.vsix
+
+    - if: ${{ github.ref_type == 'tag' }}
+      run: npx vsce publish
+      env:
+        VSCE_PAT: ${{ secrets.VSCE_PAT }}
