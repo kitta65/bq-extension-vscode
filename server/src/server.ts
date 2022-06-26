@@ -528,6 +528,7 @@ export class BQLanguageServer {
     } else {
       if (node && node.parent) {
         const parent = node.parent.deref();
+        // do not complete alias
         if (
           parent &&
           "alias" in parent.children &&
@@ -804,10 +805,18 @@ export class BQLanguageServer {
           if (isRecursive) {
             start = node.range.start; // position of WITH
           } else {
-            start = {
-              line: node.token.line,
-              character: node.token.column,
-            }; // position of SELECT
+            if (node.node_type === "SetOperator") {
+              if (node.children.left.Node.range.start) {
+                start = node.children.left.Node.range.start;
+              } else {
+                return;
+              }
+            } else {
+              start = {
+                line: node.token.line,
+                character: node.token.column,
+              }; // position of SELECT
+            }
             if (withQueries.length - 1 !== i) {
               const nextWithQuery = withQueries[i + 1];
               if (nextWithQuery.range.start) {
@@ -919,7 +928,17 @@ export class BQLanguageServer {
         if (idents.length === 1) {
           const ident = idents[0];
           const namespaces = this.getSmallestNameSpaces(
-            res.filter((ns) => ns.name && ns.name === ident)
+            res.filter(
+              (ns) =>
+                ns.name &&
+                ns.name === ident &&
+                util.arrangedInThisOrder(
+                  true,
+                  ns.start,
+                  { line: node.token.line, character: node.token.column },
+                  ns.end
+                )
+            )
           );
           namespaces.forEach((namespace) => {
             ns.variables.push(...namespace.variables);
