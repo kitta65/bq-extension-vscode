@@ -6,6 +6,11 @@ type Func =
     };
 
 export const globalFunctions: Func[] = [
+  // ----- AEAD encryption functions -----
+  "DETERMINISTIC_DECRYPT_BYTES",
+  "DETERMINISTIC_DECRYPT_STRING",
+  "DETERMINISTIC_ENCRYPT",
+
   // ----- aggregate functions -----
   {
     ident: "ANY_VALUE",
