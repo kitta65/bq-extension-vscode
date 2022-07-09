@@ -169,17 +169,22 @@ export class BQLanguageServer {
       defaultConfig: Record<string, unknown>,
       userConfig: Record<string, unknown>
     ) {
-      for (const k of Object.keys(defaultConfig)) {
+      for (const k of Object.keys(userConfig)) {
         if (
+          k in defaultConfig &&
           typeof defaultConfig[k] === "object" &&
-          k in userConfig &&
           typeof userConfig[k] === "object"
         ) {
           replace(
             defaultConfig[k] as Record<string, unknown>,
             userConfig[k] as Record<string, unknown>
           );
-        } else if (k in userConfig && typeof userConfig[k] !== "object") {
+        } else if (
+          k in defaultConfig &&
+          typeof defaultConfig[k] === typeof userConfig[k]
+        ) {
+          defaultConfig[k] = userConfig[k];
+        } else if (!(k in defaultConfig)) {
           defaultConfig[k] = userConfig[k];
         }
       }
