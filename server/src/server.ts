@@ -98,6 +98,7 @@ export class BQLanguageServer {
       const [job] = await this.bqClient.createQueryJob({
         query: this.uriToText[uri],
         dryRun: true,
+        defaultDataset: {datasetId: undefined}
       });
       if (
         job.metadata.statistics &&
