@@ -8,8 +8,8 @@
     "node": "*"
   },
   "dependencies": {
-    "@dr666m1/bq2cst": "^0.4.11",
-    "@dr666m1/prettier-plugin-bq": "^0.2.25",
+    "@dr666m1/bq2cst": "^0.4.12",
+    "@dr666m1/prettier-plugin-bq": "^0.2.27",
     "@google-cloud/bigquery": "^5.7.0",
     "dblite": "^1.1.4",
     "prettier": "^2.3.2",
