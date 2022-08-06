@@ -305,6 +305,10 @@ export class BQLanguageServer {
           column
         )
       ];
+    const config = await this.getConfiguration(uri);
+    const lowercaseFunction: boolean =
+      "printKeywordsInUpperCase" in config.formatting &&
+      !config.formatting.printKeywordsInUpperCase;
     if (char === ".") {
       // NOTE Check not cst but token here because `.` often breaks cst.
       const token = util.getTokenByRowColumn(
@@ -411,7 +415,7 @@ export class BQLanguageServer {
             for (const f of notGlobalFunctions[ident.toUpperCase()]) {
               if (typeof f === "string") {
                 res.push({
-                  label: f,
+                  label: lowercaseFunction ? f.toLowerCase() : f,
                   kind: LSP.CompletionItemKind.Function,
                   documentation: util.convert2MarkdownItems({
                     kind: "function",
@@ -419,7 +423,7 @@ export class BQLanguageServer {
                 });
               } else {
                 res.push({
-                  label: f.ident,
+                  label: lowercaseFunction ? f.ident.toLowerCase() : f.ident,
                   kind: LSP.CompletionItemKind.Function,
                   documentation: util.convert2MarkdownContent(f.example),
                 });
@@ -574,13 +578,13 @@ export class BQLanguageServer {
         globalFunctions.forEach((f) => {
           if (typeof f === "string") {
             res.push({
-              label: f,
+              label: lowercaseFunction ? f.toLowerCase() : f,
               kind: LSP.CompletionItemKind.Function,
               documentation: util.convert2MarkdownItems({ kind: "function" }),
             });
           } else {
             res.push({
-              label: f.ident,
+              label: lowercaseFunction ? f.ident.toLowerCase() : f.ident,
               kind: LSP.CompletionItemKind.Function,
               documentation: util.convert2MarkdownContent(f.example),
             });
