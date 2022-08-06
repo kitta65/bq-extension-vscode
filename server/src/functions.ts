@@ -565,6 +565,7 @@ SELECT POWER(2, 3) -- 8.0`,
   "ATAN",
   "ATANH",
   "ATAN2",
+  "CBRT",
   {
     ident: "RANGE_BUCKET",
     example: `SELECT
