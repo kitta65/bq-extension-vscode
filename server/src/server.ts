@@ -25,6 +25,9 @@ type Configuration = {
     forVSCode: boolean;
   };
   formatting: Record<string, boolean>;
+  experimental: {
+    formatEachLine: boolean;
+  };
 };
 
 const defaultConfiguration: Configuration = {
@@ -33,6 +36,9 @@ const defaultConfiguration: Configuration = {
     forVSCode: false,
   },
   formatting: {},
+  experimental: {
+    formatEachLine: false,
+  },
 };
 
 type QueryResult = {
@@ -624,16 +630,56 @@ export class BQLanguageServer {
 
   private async onRequestFormatting(params: LSP.DocumentFormattingParams) {
     const config = await this.getConfiguration(params.textDocument.uri);
-    const originalText = this.uriToText[params.textDocument.uri];
-    const splittedOriginalText = originalText.split("\n");
-    let formattedText;
     try {
-      formattedText = prettier
+      const originalText = this.uriToText[params.textDocument.uri];
+      const splittedOriginalText = originalText.split("\n");
+
+      const formattedText = prettier
         .format(originalText, {
           parser: "sql-parse",
           ...config.formatting,
         })
         .slice(0, -1); // remove unnecessary \n
+      const splittedFormattedText = formattedText.split("\n");
+
+      if (config.experimental.formatEachLine) {
+        if (splittedOriginalText.length <= splittedFormattedText.length) {
+          return splittedOriginalText.map((line, i) => {
+            return {
+              range: {
+                start: { line: i, character: 0 },
+                end: { line: i, character: line.length }, // `-1` is not needed
+              },
+              newText:
+                i === splittedOriginalText.length - 1 // last line
+                  ? splittedFormattedText.slice(i).join("\n")
+                  : splittedFormattedText[i],
+            };
+          });
+        } else {
+          return splittedOriginalText
+            .slice(0, splittedFormattedText.length)
+            .map((line, i) => {
+              return {
+                range: {
+                  start: { line: i, character: 0 },
+                  end: {
+                    line:
+                      i === splittedFormattedText.length - 1 // last line
+                        ? splittedOriginalText.length - 1
+                        : i,
+                    character:
+                      i === splittedFormattedText.length - 1 // last line
+                        ? splittedOriginalText[splittedOriginalText.length - 1]
+                            .length
+                        : line.length, // `-1` is not needed
+                  },
+                },
+                newText: splittedFormattedText[i],
+              };
+            });
+        }
+      }
       return [
         {
           range: {
