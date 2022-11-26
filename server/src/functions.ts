@@ -358,6 +358,15 @@ ORDER BY x`,
   BIT_COUNT(b'\\x03'), -- 2
   BIT_COUNT(b'\\x08'), -- 1`,
   },
+  // ----- built-in table functions -----
+  {
+    ident: "EXTERNAL_OBJECT_TRANSFORM",
+    example: `SELECT uri
+FROM EXTERNAL_OBJECT_TRANSFORM(
+  TABLE tablename,
+  ["SIGNED_URL"]
+)`
+  },
   // ----- conversion functions -----
   {
     ident: "CAST",
