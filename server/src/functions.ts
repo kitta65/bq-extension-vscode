@@ -365,7 +365,7 @@ ORDER BY x`,
 FROM EXTERNAL_OBJECT_TRANSFORM(
   TABLE tablename,
   ["SIGNED_URL"]
-)`
+)`,
   },
   // ----- conversion functions -----
   {
