@@ -2037,10 +2037,14 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
   KEYS: [
     // ----- AEAD encryption functions -----
     "NEW_KEYSET",
+    "NEW_WRAPPED_KEYSET",
+    "REWRAP_KEYSET",
     "ADD_KEY_FROM_RAW_BYTES",
+    "KEYSET_CHAIN",
     "KEYSET_FROM_JSON",
     "KEYSET_TO_JSON",
     "ROTATE_KEYSET",
+    "ROTATE_WRAPPED_KEYSET",
     "KEYSET_LENGTH",
   ],
   AEAD: [
