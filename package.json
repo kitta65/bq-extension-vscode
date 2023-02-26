@@ -135,7 +135,7 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "npm run compile",
+		"vscode:prepublish": "test $(cat package.json | jq -r '.version') = ${GITHUB_REF#refs/tags/} && npm run compile",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
 		"lint": "prettier --write . && eslint . --ext .ts,.tsx",
