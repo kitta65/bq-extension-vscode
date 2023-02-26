@@ -57,6 +57,6 @@ jobs:
         with:
           name: bq-extension-vscode.vsix
 
-      - run: npx vsce publish --packagePath ./bq-extension-vscode-*.vsix
+      - run: npx @vscode/vsce publish --packagePath ./bq-extension-vscode-*.vsix
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}
