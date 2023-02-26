@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@dr666m1/bq2cst": "^0.4.21",
-    "@dr666m1/prettier-plugin-bq": "^0.2.35",
+    "@dr666m1/prettier-plugin-bq": "^0.2.36",
     "@google-cloud/bigquery": "^5.7.0",
     "dblite": "^1.1.4",
     "prettier": "^2.3.2",
