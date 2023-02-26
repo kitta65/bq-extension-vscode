@@ -135,10 +135,10 @@
 		]
 	},
 	"scripts": {
-		"vscode:prepublish": "test $(cat package.json | jq -r '.version') = ${GITHUB_REF#refs/tags/} && npm run compile",
+		"check-version": "test $(cat package.json | jq -r '.version') = ${GITHUB_REF#refs/tags/}",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
-		"lint": "prettier --write . && eslint . --ext .ts,.tsx",
+		"lint": "prettier --check client/src server/src && eslint client/src server/src",
 		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
 		"test": "tsc -b && node client/out/test/runTest"
 	},
