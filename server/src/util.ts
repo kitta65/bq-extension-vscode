@@ -35,7 +35,7 @@ export function convert2MarkdownItems(
   arg: string[] | Record<string, string>
 ): LSP.MarkupContent {
   function escape(str: string) {
-    return str.replace("<", "\\<").replace(">", "\\>");
+    return str.replace("<", "\\<").replace(">", "\\>").replace("_", "\\_");
   }
 
   let value = "";
