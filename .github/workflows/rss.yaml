@@ -1,17 +1,16 @@
 name: rss
 on:
   schedule:
-  - cron: "0 8 * * *"
+    # 17:00 Asia/Tokyo
+    - cron: "0 8 * * *"
 jobs:
   main:
     name: bq-release-notes
     runs-on: ubuntu-latest
     steps:
-    - name: rss-issues-action
-      uses: guilhem/rss-issues-action@0.2.0
-      with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        feed: "https://cloud.google.com/feeds/bigquery-release-notes.xml"
-        prefix: "[BQ]"
-        lastTime: "72h"
-        labels: "release-notes"
+      - name: rss-issues-action
+        uses: guilhem/rss-issues-action@0.5.2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          feed: "https://cloud.google.com/feeds/bigquery-release-notes.xml"
+          labels: "rss"
