@@ -282,6 +282,20 @@ WHERE EXISTS(
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+  it("column subquery as column", async function () {
+    const sql = `
+SELECT (
+  SELECT 
+  FROM \`${util.project}.bq_extension_vscode_test.t\`
+)`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 9)
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "str"));
+  });
   it("column with", async function () {
     const sql = `
 WITH tmp AS (

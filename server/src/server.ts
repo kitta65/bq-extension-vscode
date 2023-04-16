@@ -897,6 +897,10 @@ export class BQLanguageServer {
         // WHERE EXISTS(SELECT ...)
         await this.createNameSpacesFromNode(res, node.children.where.Node);
       }
+      for (const n of node.children.exprs.NodeVec) {
+        // SELECT (SELECT ... FROM ...)
+        await this.createNameSpacesFromNode(res, n);
+      }
       if (node.children.from && node.range.start && node.range.end) {
         const ns: NameSpace = {
           start: {
