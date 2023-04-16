@@ -135,7 +135,6 @@
 		]
 	},
 	"scripts": {
-		"check-version": "test $(cat package.json | jq -r '.version') = ${GITHUB_REF#refs/tags/}",
 		"compile": "tsc -b",
 		"watch": "tsc -b -w",
 		"lint": "prettier --check client/src server/src && eslint client/src server/src",
