@@ -893,6 +893,10 @@ export class BQLanguageServer {
 
     if (node.node_type === "SelectStatement") {
       await createNameSpacesFromWithClause.call(this, node);
+      if (node.children.where) {
+        // WHERE EXISTS(SELECT ...)
+        await this.createNameSpacesFromNode(res, node.children.where.Node);
+      }
       if (node.children.from && node.range.start && node.range.end) {
         const ns: NameSpace = {
           start: {
