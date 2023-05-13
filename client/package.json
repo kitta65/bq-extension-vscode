@@ -1,9 +1,9 @@
 {
   "private": true,
-  "author": "dr666m1",
+  "author": "kitta65",
   "license": "MIT",
   "version": "0.0.1",
-  "publisher": "dr666m1",
+  "publisher": "kitta65",
   "engines": {
     "vscode": "^1.52.0"
   },

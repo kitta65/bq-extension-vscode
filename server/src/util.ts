@@ -1,4 +1,4 @@
-import * as bq2cst from "@dr666m1/bq2cst";
+import * as bq2cst from "bq2cst";
 import * as LSP from "vscode-languageserver/node";
 
 export type DocumentInfo = {

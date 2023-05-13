@@ -8,10 +8,10 @@
     "type": "git",
     "url": "https://github.com/dr666m1/bq-extension-vscode"
   },
-  "author": "dr666m1",
+  "author": "kitta65",
   "license": "MIT",
-  "version": "0.0.35",
-  "publisher": "dr666m1",
+  "version": "0.0.36",
+  "publisher": "kitta65",
   "categories": [
     "Programming Languages",
     "Formatters",
@@ -157,7 +157,7 @@
   },
   "__metadata": {
     "id": "c2d7b81e-c3d1-4219-94e7-6f3e5f762c79",
-    "publisherDisplayName": "dr666m1",
+    "publisherDisplayName": "kitta65",
     "publisherId": "1e50daec-9b8a-4154-80c8-c8741297c2a4",
     "isPreReleaseVersion": false
   }

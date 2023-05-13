@@ -1,14 +1,14 @@
 import * as LSP from "vscode-languageserver/node";
 import { BigQuery } from "@google-cloud/bigquery";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import * as bq2cst from "@dr666m1/bq2cst";
+import * as bq2cst from "bq2cst";
 import * as prettier from "prettier";
 import * as util from "./util";
 import { CacheDB } from "./database";
 import { globalFunctions, notGlobalFunctions } from "./functions";
 import { execSync } from "child_process";
 
-declare module "@dr666m1/bq2cst" {
+declare module "bq2cst" {
   interface BaseNode {
     extendedWithQueries?: bq2cst.WithQuery[];
     parent?: WeakRef<bq2cst.UnknownNode>;

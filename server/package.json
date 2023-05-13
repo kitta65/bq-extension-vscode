@@ -2,13 +2,13 @@
   "name": "bq-language-server",
   "description": "Language server for standardSQL, which is a dialect of BigQuery.",
   "version": "0.0.1",
-  "author": "dr666m1",
+  "author": "kitta65",
   "license": "MIT",
   "engines": {
     "node": "*"
   },
   "dependencies": {
-    "@dr666m1/prettier-plugin-bq": "0.2.38",
+    "prettier-plugin-bq": "0.2.39",
     "@google-cloud/bigquery": "^5.7.0",
     "dblite": "^1.1.4",
     "prettier": "^2.3.2",
