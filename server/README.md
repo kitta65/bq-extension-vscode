@@ -4,7 +4,7 @@ Some features might be ignored by other client.
 
 ## Install
 ```bash
-git clone https://github.com/dr666m1/bq-extension-vscode.git
+git clone https://github.com/kitta65/bq-extension-vscode.git
 cd bq-extension-vscode
 npm install
 npm run compile
