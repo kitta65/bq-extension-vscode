@@ -1096,6 +1096,25 @@ SELECT
   { ident: "UPPER", example: `SELECT UPPER('BigQuery') -- 'BIGQUERY'` },
   // ----- json functions -----
   {
+    ident: "BOOL",
+    example: `SELECT BOOL(JSON 'false') -- false`,
+  },
+  {
+    ident: "FLOAT64",
+    example: `SELECT
+  -- 1.2345678901234568E16
+  FLOAT64(JSON '12345678901234567'),
+  -- ERROR('...')
+  FLOAT64(
+    JSON '12345678901234567',
+    wide_number_mode => 'exact'
+  ),`,
+  },
+  {
+    ident: "INT64",
+    example: `SELECT INT64(JSON '123') -- 123`,
+  },
+  {
     ident: "JSON_EXTRACT",
     example: `SELECT
   JSON_EXTRACT(
@@ -1120,84 +1139,6 @@ SELECT
   JSON_EXTRACT(
     JSON 'null', '$'
   ), -- JSON 'null'`,
-  },
-  {
-    ident: "JSON_QUERY",
-    example: `SELECT
-  JSON_QUERY(
-    '{"x": "xxx"}', '$.x'
-  ), -- '"xxx"'
-  JSON_QUERY(
-    '{"x": "xxx"}', '$.y'
-  ), -- NULL
-  JSON_QUERY(
-    '{"x": [1, 2]}', '$.x[0]'
-  ), -- '1'
-  JSON_QUERY(
-    '{"x.y": [1, 2]}', '$."x.y"'
-  ), -- '[1,2]'
-
-  JSON_QUERY(
-    JSON '"xxx"', '$'
-  ), -- JSON '"xxx"'
-  JSON_QUERY(
-    JSON 'null', '$.x'
-  ), -- NULL
-  JSON_QUERY(
-    JSON 'null', '$'
-  ), -- JSON 'null'`,
-  },
-  {
-    ident: "JSON_EXTRACT_SCALAR",
-    example: `SELECT
-  JSON_EXTRACT_SCALAR(
-    '{"x": "xxx"}', '$.x'
-  ), -- 'xxx'
-  JSON_EXTRACT_SCALAR(
-    '{"x": "xxx"}', '$.y'
-  ), -- NULL
-  JSON_EXTRACT_SCALAR(
-    '{"x": [1, 2]}', '$.x[0]'
-  ), -- '1'
-  JSON_EXTRACT_SCALAR(
-    '{"x.y": [1, 2]}', "$['x.y']"
-  ), -- NULL
-
-  JSON_EXTRACT_SCALAR(
-    JSON '"xxx"', '$'
-  ), -- 'xxx'
-  JSON_EXTRACT_SCALAR(
-    JSON 'null', '$.x'
-  ), -- NULL
-  JSON_EXTRACT_SCALAR(
-    JSON 'null', '$'
-  ), -- NULL`,
-  },
-  {
-    ident: "JSON_VALUE",
-    example: `SELECT
-  JSON_VALUE(
-    '{"x": "xxx"}', '$.x'
-  ), -- 'xxx'
-  JSON_VALUE(
-    '{"x": "xxx"}', '$.y'
-  ), -- NULL
-  JSON_VALUE(
-    '{"x": [1, 2]}', '$.x[0]'
-  ), -- '1'
-  JSON_VALUE(
-    '{"x.y": [1, 2]}', '$."x.y"'
-  ), -- NULL
-
-  JSON_VALUE(
-    JSON '"xxx"', '$'
-  ), -- 'xxx'
-  JSON_VALUE(
-    JSON 'null', '$.x'
-  ), -- NULL
-  JSON_VALUE(
-    JSON 'null', '$'
-  ), -- NULL`,
   },
   {
     ident: "JSON_EXTRACT_ARRAY",
@@ -1229,33 +1170,30 @@ SELECT
   JSON_EXTRACT_ARRAY(JSON '"a"', '$'),`,
   },
   {
-    ident: "JSON_QUERY_ARRAY",
+    ident: "JSON_EXTRACT_SCALAR",
     example: `SELECT
-  -- ['"a"', '"b"']
-  JSON_QUERY_ARRAY('["a", "b"]'),
-  -- ['"a"', '"b"']
-  JSON_QUERY_ARRAY(
-    '{"x": ["a", "b"]}', '$.x'
-  ),
-  -- NULL
-  JSON_QUERY_ARRAY(
-    '{"x": ["a", "b"]}', '$.y'
-  ),
-  -- ['"a"', '"b"']
-  JSON_QUERY_ARRAY(
-    '{"x.y": ["a", "b"]}', '$."x.y"'
-  ),
+  JSON_EXTRACT_SCALAR(
+    '{"x": "xxx"}', '$.x'
+  ), -- 'xxx'
+  JSON_EXTRACT_SCALAR(
+    '{"x": "xxx"}', '$.y'
+  ), -- NULL
+  JSON_EXTRACT_SCALAR(
+    '{"x": [1, 2]}', '$.x[0]'
+  ), -- '1'
+  JSON_EXTRACT_SCALAR(
+    '{"x.y": [1, 2]}', "$['x.y']"
+  ), -- NULL
 
-  -- [JSON '"a"', JSON '"b"']
-  JSON_QUERY_ARRAY(
-    JSON '["a", "b"]', '$'
-  ),
-  -- NULL
-  JSON_QUERY_ARRAY(
-    JSON '["a", "b"]', '$.x'
-  ),
-  -- NULL
-  JSON_QUERY_ARRAY(JSON '"a"', '$'),`,
+  JSON_EXTRACT_SCALAR(
+    JSON '"xxx"', '$'
+  ), -- 'xxx'
+  JSON_EXTRACT_SCALAR(
+    JSON 'null', '$.x'
+  ), -- NULL
+  JSON_EXTRACT_SCALAR(
+    JSON 'null', '$'
+  ), -- NULL`,
   },
   {
     ident: "JSON_EXTRACT_STRING_ARRAY",
@@ -1287,6 +1225,103 @@ SELECT
   JSON_EXTRACT_STRING_ARRAY(
     JSON '"a"', '$'
   ),`,
+  },
+  {
+    ident: "JSON_QUERY",
+    example: `SELECT
+  JSON_QUERY(
+    '{"x": "xxx"}', '$.x'
+  ), -- '"xxx"'
+  JSON_QUERY(
+    '{"x": "xxx"}', '$.y'
+  ), -- NULL
+  JSON_QUERY(
+    '{"x": [1, 2]}', '$.x[0]'
+  ), -- '1'
+  JSON_QUERY(
+    '{"x.y": [1, 2]}', '$."x.y"'
+  ), -- '[1,2]'
+
+  JSON_QUERY(
+    JSON '"xxx"', '$'
+  ), -- JSON '"xxx"'
+  JSON_QUERY(
+    JSON 'null', '$.x'
+  ), -- NULL
+  JSON_QUERY(
+    JSON 'null', '$'
+  ), -- JSON 'null'`,
+  },
+  {
+    ident: "JSON_QUERY_ARRAY",
+    example: `SELECT
+  -- ['"a"', '"b"']
+  JSON_QUERY_ARRAY('["a", "b"]'),
+  -- ['"a"', '"b"']
+  JSON_QUERY_ARRAY(
+    '{"x": ["a", "b"]}', '$.x'
+  ),
+  -- NULL
+  JSON_QUERY_ARRAY(
+    '{"x": ["a", "b"]}', '$.y'
+  ),
+  -- ['"a"', '"b"']
+  JSON_QUERY_ARRAY(
+    '{"x.y": ["a", "b"]}', '$."x.y"'
+  ),
+
+  -- [JSON '"a"', JSON '"b"']
+  JSON_QUERY_ARRAY(
+    JSON '["a", "b"]', '$'
+  ),
+  -- NULL
+  JSON_QUERY_ARRAY(
+    JSON '["a", "b"]', '$.x'
+  ),
+  -- NULL
+  JSON_QUERY_ARRAY(JSON '"a"', '$'),`,
+  },
+  {
+    ident: "JSON_TYPE",
+    example: `SELECT
+  -- 'boolean'
+  JSON_TYPE(JSON 'true'),
+  -- 'string'
+  JSON_TYPE(JSON '"abc"'),
+  -- 'number'
+  JSON_TYPE(JSON '123'),
+  -- 'null'
+  JSON_TYPE(JSON 'null'),
+  -- 'object'
+  JSON_TYPE(JSON '{"key": "value"}'),
+  -- 'array'
+  JSON_TYPE(JSON '[1, 2, 3]'),`,
+  },
+  {
+    ident: "JSON_VALUE",
+    example: `SELECT
+  JSON_VALUE(
+    '{"x": "xxx"}', '$.x'
+  ), -- 'xxx'
+  JSON_VALUE(
+    '{"x": "xxx"}', '$.y'
+  ), -- NULL
+  JSON_VALUE(
+    '{"x": [1, 2]}', '$.x[0]'
+  ), -- '1'
+  JSON_VALUE(
+    '{"x.y": [1, 2]}', '$."x.y"'
+  ), -- NULL
+
+  JSON_VALUE(
+    JSON '"xxx"', '$'
+  ), -- 'xxx'
+  JSON_VALUE(
+    JSON 'null', '$.x'
+  ), -- NULL
+  JSON_VALUE(
+    JSON 'null', '$'
+  ), -- NULL`,
   },
   {
     ident: "JSON_VALUE_ARRAY",
@@ -1330,6 +1365,7 @@ SELECT
   -- ERROR('...')
   PARSE_JSON('1.23456789012345678'),`,
   },
+  // "STRING", // See timestamp function
   {
     ident: "TO_JSON",
     example: `SELECT
@@ -1349,42 +1385,6 @@ SELECT
   TO_JSON_STRING(STRUCT(1 AS x)),
   -- '{\\n  "x": 1\\n}'
   TO_JSON_STRING(STRUCT(1 AS x), true),`,
-  },
-  // "STRING", // See timestamp function
-  {
-    ident: "BOOL",
-    example: `SELECT BOOL(JSON 'false') -- false`,
-  },
-  {
-    ident: "INT64",
-    example: `SELECT INT64(JSON '123') -- 123`,
-  },
-  {
-    ident: "FLOAT64",
-    example: `SELECT
-  -- 1.2345678901234568E16
-  FLOAT64(JSON '12345678901234567'),
-  -- ERROR('...')
-  FLOAT64(
-    JSON '12345678901234567',
-    wide_number_mode => 'exact'
-  ),`,
-  },
-  {
-    ident: "JSON_TYPE",
-    example: `SELECT
-  -- 'boolean'
-  JSON_TYPE(JSON 'true'),
-  -- 'string'
-  JSON_TYPE(JSON '"abc"'),
-  -- 'number'
-  JSON_TYPE(JSON '123'),
-  -- 'null'
-  JSON_TYPE(JSON 'null'),
-  -- 'object'
-  JSON_TYPE(JSON '{"key": "value"}'),
-  -- 'array'
-  JSON_TYPE(JSON '[1, 2, 3]'),`,
   },
   // ----- array functions -----
   {
