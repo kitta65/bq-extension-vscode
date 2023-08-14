@@ -1114,6 +1114,10 @@ SELECT
     ident: "INT64",
     example: `SELECT INT64(JSON '123') -- 123`,
   },
+  // TODO add examples
+  "JSON_ARRAY",
+  "JSON_ARRAY_APPEND",
+  "JSON_ARRAY_INSERT",
   {
     ident: "JSON_EXTRACT",
     example: `SELECT
@@ -1226,6 +1230,10 @@ SELECT
     JSON '"a"', '$'
   ),`,
   },
+  "JSON_OBJECT",
+  "JSON_REMOVE",
+  "JSON_SET",
+  "JSON_STRIP_NULLS",
   {
     ident: "JSON_QUERY",
     example: `SELECT
@@ -1352,6 +1360,10 @@ SELECT
   -- NULL
   JSON_VALUE_ARRAY(JSON '"a"', '$'),`,
   },
+  "LAX_BOOL",
+  "LAX_FLOAT64",
+  "LAX_INT64",
+  "LAX_STRING",
   {
     ident: "PARSE_JSON",
     example: `SELECT
