@@ -1114,10 +1114,45 @@ SELECT
     ident: "INT64",
     example: `SELECT INT64(JSON '123') -- 123`,
   },
-  // TODO add examples
-  "JSON_ARRAY",
-  "JSON_ARRAY_APPEND",
-  "JSON_ARRAY_INSERT",
+  {
+    ident: "JSON_ARRAY",
+    example: `SELECT
+  JSON_ARRAY(1, 2) -- JSON '[1, 2]'`,
+  },
+  {
+    ident: "JSON_ARRAY_APPEND",
+    example: `SELECT
+  -- JSON '[1, 2, 3]'
+  JSON_ARRAY_APPEND(JSON '[1, 2]', '$', 3),
+  -- JSON '[1, 2, 3, 4]'
+  JSON_ARRAY_APPEND(JSON '[1, 2]', '$', [3, 4]),
+  -- JSON '[1, 2, [3], 4]'
+  JSON_ARRAY_APPEND(
+    JSON '[1, 2]',
+    '$', [3],
+    '$', 4,
+    append_each_element => false
+  ),`,
+  },
+  {
+    ident: "JSON_ARRAY_INSERT",
+    example: `SELECT
+  -- JSON '[3, 1, 2]'
+  JSON_ARRAY_INSERT(JSON '[1, 2]', '$[0]', 3),
+  -- JSON '[3, 4, 1, 2]'
+  JSON_ARRAY_INSERT(
+    JSON '[1, 2]',
+    '$[0]',
+    [3, 4]
+  ),
+  -- JSON '[4, [3], 1, 2]'
+  JSON_ARRAY_INSERT(
+    JSON '[1, 2]',
+    '$[0]', [3],
+    '$[0]', 4,
+    insert_each_element => false
+  ),`,
+  },
   {
     ident: "JSON_EXTRACT",
     example: `SELECT
@@ -1230,10 +1265,59 @@ SELECT
     JSON '"a"', '$'
   ),`,
   },
-  "JSON_OBJECT",
-  "JSON_REMOVE",
-  "JSON_SET",
-  "JSON_STRIP_NULLS",
+  {
+    ident: "JSON_OBJECT",
+    example: `SELECT
+  -- JSON '{"a": 1, "b": 2}'
+  JSON_OBJECT("a", 1, "b", 2),
+  -- JSON '{"a": 1, "b": 2}'
+  JSON_OBJECT(["a", "b"], [1, 2]),`,
+  },
+  {
+    ident: "JSON_REMOVE",
+    example: `SELECT
+  -- JSON '[2]'
+  JSON_REMOVE(JSON '[1, 2]', '$[0]'),
+  -- JSON '{"c": 3}'
+  JSON_REMOVE(
+    JSON '{"a": 1, "b": 2, "c": 3}',
+    '$.a',
+    '$.b'
+  ),`,
+  },
+  {
+    ident: "JSON_SET",
+    example: `SELECT
+  -- JSON '[1, 2]'
+  JSON_SET(JSON '{"a": 1}', '$', [1, 2]),
+  -- JSON '{"a": 10, "b": 20}'
+  JSON_SET(
+    JSON '{"a": 1}',
+    '$.a', 10,
+    '$.b', 20
+  ),`,
+  },
+  {
+    ident: "JSON_STRIP_NULLS",
+    example: `SELECT
+  -- JSON '{"a": []}'
+  JSON_STRIP_NULLS(JSON '{"a": [null], "b": null}'),
+  -- JSON '{"a": [], "b": null}'
+  JSON_STRIP_NULLS(
+    JSON '{"a": [null], "b": null}',
+    '$.a'
+  ),
+  -- JSON '{"a": [null]}'
+  JSON_STRIP_NULLS(
+    JSON '{"a": [null], "b": null}',
+    include_arrays => false
+  ),
+  -- JSON 'null'
+  JSON_STRIP_NULLS(
+    JSON '{"a": [null], "b": null}',
+    remove_empty => true
+  ),`,
+  },
   {
     ident: "JSON_QUERY",
     example: `SELECT
@@ -1360,10 +1444,38 @@ SELECT
   -- NULL
   JSON_VALUE_ARRAY(JSON '"a"', '$'),`,
   },
-  "LAX_BOOL",
-  "LAX_FLOAT64",
-  "LAX_INT64",
-  "LAX_STRING",
+  {
+    ident: "LAX_BOOL",
+    example: `SELECT
+  LAX_BOOL(JSON 'true'), -- true
+  LAX_BOOL(JSON '"true"'), -- true
+  LAX_BOOL(JSON '0'), -- false
+  LAX_BOOL(JSON '1'), -- true
+  LAX_BOOL(JSON '"string"'), -- null`,
+  },
+  {
+    ident: "LAX_FLOAT64",
+    example: `SELECT
+  LAX_FLOAT64(JSON '0'), -- 0.0
+  LAX_FLOAT64(JSON '"0"'), -- 0.0
+  LAX_FLOAT64(JSON '1e3'), -- 1000.0
+  LAX_FLOAT64(JSON '"string"'), -- null`,
+  },
+  {
+    ident: "LAX_INT64",
+    example: `SELECT
+  LAX_INT64(JSON '0'), -- 0
+  LAX_INT64(JSON '"0"'), -- 0
+  LAX_INT64(JSON '0.5'), -- 1
+  LAX_INT64(JSON '"string"'), -- null`,
+  },
+  {
+    ident: "LAX_STRING",
+    example: `SELECT
+  LAX_STRING(JSON '"string"'), -- "string"
+  LAX_STRING(JSON '0'), -- "0"
+  LAX_STRING(JSON 'null'), -- null`,
+  },
   {
     ident: "PARSE_JSON",
     example: `SELECT
