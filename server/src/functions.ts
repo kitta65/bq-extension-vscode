@@ -105,10 +105,30 @@ FROM UNNEST([true, false]) AS b`,
 FROM UNNEST([1, 2]) AS i`,
   },
   {
+    ident: "MAX_BY",
+    example: `SELECT
+  MAX_BY(x, y) -- 3
+FROM UNNEST([
+  STRUCT(1 AS x, 2 AS y),
+        (2     , 4     ),
+        (3     , 6     )
+])`,
+  },
+  {
     ident: "MIN",
     example: `SELECT
   MIN(i) -- 1
 FROM UNNEST([1, 2]) AS i`,
+  },
+  {
+    ident: "MIN_BY",
+    example: `SELECT
+  MIN_BY(x, y) -- 1
+FROM UNNEST([
+  STRUCT(1 AS x, 2 AS y),
+        (2     , 4     ),
+        (3     , 6     )
+])`,
   },
   {
     ident: "STRING_AGG",
