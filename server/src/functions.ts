@@ -257,6 +257,10 @@ FROM UNNEST([
         ('c'         , 1          )
 ])`,
   },
+  // DLP encryption functions
+  "DLP_DETERMINISTIC_ENCRYPT",
+  "DLP_DETERMINISTIC_DECRYPT",
+  "DLP_KEY_CHAIN",
   // ----- numbering functions -----
   {
     ident: "RANK",
