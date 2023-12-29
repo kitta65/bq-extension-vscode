@@ -93,6 +93,20 @@ FROM UNNEST([1, 2]) AS i`,
 FROM UNNEST([true, false]) AS b`,
   },
   {
+    ident: "GROUPING",
+    example: `/**
+ *  one, two, one_agg
+ *    1,    ,       0
+ *     ,   2,       1
+ */
+SELECT
+  one,
+  two,
+  GROUPING(one) one_agg,
+FROM (SELECT 1 AS one, 2 AS two)
+GROUP BY GROUPING SETS (one, two)`,
+  },
+  {
     ident: "LOGICAL_OR",
     example: `SELECT
   LOGICAL_OR(b) -- true
