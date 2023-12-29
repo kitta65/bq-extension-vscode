@@ -8,7 +8,7 @@
     "node": "*"
   },
   "dependencies": {
-    "prettier-plugin-bq": "0.2.43",
+    "prettier-plugin-bq": "0.2.44",
     "@google-cloud/bigquery": "^5.7.0",
     "dblite": "^1.1.4",
     "prettier": "^2.3.2",
