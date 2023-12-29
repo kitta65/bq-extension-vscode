@@ -2271,6 +2271,79 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     "MERGE_PARTIAL",
     "EXTRACT",
   ],
+  ML: [
+    // ----- ML functions -----
+    "TRANSFORM",
+    "FEATURE_INFO",
+    // general functions
+    "IMPUTER",
+    // numerical functions
+    "BUCKETIZE",
+    "MAX_ABS_SCALER",
+    "MIN_MAX_SCALER",
+    "NORMALIZER",
+    "POLYNOMIAL_EXPAND",
+    "QUANTILE_BUCKETIZE",
+    "ROBUST_SCALER",
+    "STANDARD_SCALER",
+    // categorical functions
+    "FEATURE_CROSS",
+    "HASH_BUCKETIZE",
+    "LABEL_ENCODER",
+    "MULTI_HOT_ENCODER",
+    "ONE_HOT_ENCODER",
+    // text analysis functions
+    "NGRAMS",
+    "BAG_OF_WORDS",
+    "TF_IDF",
+    // image functions
+    "CONVERT_COLOR_SPACE",
+    "CONVERT_IMAGE_TYPE",
+    "DECODE_IMAGE",
+    "RESIZE_IMAGE",
+    // point-in-time lookup functions
+    "FEATURES_AT_TIME",
+    "ENTITY_FEATURES_AT_TIME",
+    // hyperparameter tuning functions
+    "TRIAL_INFO",
+    // evaluation functions
+    "EVALUATE",
+    "ROC_CURVE",
+    "CONFUSION_MATRIX",
+    "ARIMA_EVALUATE",
+    "TRAINING_INFO",
+    "RECONSTRUCTION_LOSS",
+    "HOLIDAY_INFO",
+    // inference functions
+    "PREDICT",
+    "FORECAST",
+    "RECOMMEND",
+    "DETECT_ANOMALIES",
+    // generative ai functions
+    "GENERATE_TEXT",
+    "GENERATE_TEXT_EMBEDDING",
+    // ai functions
+    "UNDERSTAND_TEXT",
+    "TRANSLATE",
+    "PROCESS_DOCUMENT",
+    "TRANSCRIBE",
+    "ANNOTATE_IMAGE",
+    // ai explanation functions
+    "ARIMA_COEFFICIENTS",
+    "EXPLAIN_FORECAST",
+    "GLOBAL_EXPLAIN",
+    "FEATURE_IMPORTANCE",
+    "ADVANCED_WEIGHTS",
+    // model weights functions
+    "WEIGHTS",
+    "CENTROIDS",
+    "PRINCIPAL_COMPONENTS",
+    "PRINCIPAL_COMPONENT_INFO",
+    "ARIMA_COEFFICIENTS",
+    // math utility functions
+    "DISTANCE",
+    "LP_NORM",
+  ],
   NET: [
     // ----- net functions -----
     {
