@@ -492,6 +492,12 @@ SELECT POWER(2, 3) -- 8.0`,
   EXP(0), -- 1.0
   EXP(1), -- 2.718281828459045`,
   },
+  {
+    ident: "EUCLIDEAN_DISTANCE",
+    example: `SELECT
+  -- 1.4142135623730951
+  EUCLIDEAN_DISTANCE([0.0, 0,0], [1.0, 1.0]),`,
+  },
   { ident: "LN", example: `SELECT LN(2.718281828459045) -- 1.0` },
   { ident: "LOG", example: `SELECT LOG(8, 2) -- 3.0` },
   { ident: "LOG10", example: `SELECT LOG10(100) -- 2.0` },
@@ -581,6 +587,12 @@ SELECT POWER(2, 3) -- 8.0`,
     example: `SELECT COS(0) -- 1.0`,
   },
   "COSH",
+  {
+    ident: "COSINE_DISTANCE",
+    example: `SELECT
+  -- 1.0
+  COSINE_DISTANCE([1.0, 0.0], [0.0, 1.0])`,
+  },
   "ACOS",
   "ACOSH",
   { ident: "SIN", example: `SELECT SIN(0) -- 0.0` },
@@ -829,6 +841,11 @@ SELECT CHARACTER_LENGTH('ABC') -- 3`,
   CONTAINS_SUBSTR(('BQ', NULL), 'Big'),
   -- true
   CONTAINS_SUBSTR([1, 2], '1')`,
+  },
+  {
+    ident: "EDIT_DISTANCE",
+    example: `SELECT
+  EDIT_DISTANCE('aaa', 'abc'), -- 2`,
   },
   {
     ident: "ENDS_WITH",
@@ -1800,6 +1817,27 @@ SELECT
     '2020-01-01 00:00:00'
   ) -- DATETIME '2020-01-01 00:00:00'`,
   },
+  // ----- text analysis functions -----
+  {
+    ident: "BAG_OF_WORDS",
+    example: `SELECT
+  -- ARRAY<STRUCT<term string, count int64>>[
+  --   ("gain", 1), ("no", 2), ("pain", 1)
+  -- ]
+  BAG_OF_WORDS([
+    "no",
+    "pain",
+    "no",
+    "gain"
+  ])`,
+  },
+  {
+    ident: "TEXT_ANALYZE",
+    example: `SELECT
+  -- ["no", "pain", "no", "gain"]
+  TEXT_ANALYZE(["no pain, no gain"])`,
+  },
+  "TF_IDF",
   // ----- time functions -----
   {
     ident: "CURRENT_TIME",
