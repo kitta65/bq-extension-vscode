@@ -92,7 +92,17 @@
         "bqExtensionVSCode.formatting.formatMultilineComment": {
           "type": "boolean",
           "default": false,
-          "markdownDescription": "Print multiline commnets in ['starred-block'](https://eslint.org/docs/rules/multiline-comment-style) style."
+          "markdownDescription": "(experimental) Print multiline commnets in ['starred-block'](https://eslint.org/docs/rules/multiline-comment-style) style."
+        },
+        "bqExtensionVSCode.formatting.indentCte": {
+          "type": "boolean",
+          "default": true,
+          "markdownDescription": "Indent CTEs in with clause."
+        },
+        "bqExtensionVSCode.formatting.printBlankLineAfterCte": {
+          "type": "boolean",
+          "default": false,
+          "markdownDescription": "Print blank line after CTE in with clause."
         },
         "bqExtensionVSCode.formatting.printKeywordsInUpperCase": {
           "type": "boolean",
