@@ -8,10 +8,11 @@
     "node": "*"
   },
   "dependencies": {
-    "prettier-plugin-bq": "0.2.46",
     "@google-cloud/bigquery": "^5.7.0",
     "dblite": "^1.1.4",
+    "lowdb": "^7.0.1",
     "prettier": "^2.3.2",
+    "prettier-plugin-bq": "0.2.46",
     "vscode-languageserver": "^7.0.0",
     "vscode-languageserver-textdocument": "^1.0.1"
   },
