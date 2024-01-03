@@ -8,7 +8,7 @@
     "node": "*"
   },
   "dependencies": {
-    "@google-cloud/bigquery": "^5.7.0",
+    "@google-cloud/bigquery": "^7.3.0",
     "lowdb": "^7.0.1",
     "prettier": "^2.3.2",
     "prettier-plugin-bq": "0.2.46",
