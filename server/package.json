@@ -9,7 +9,6 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^5.7.0",
-    "dblite": "^1.1.4",
     "lowdb": "^7.0.1",
     "prettier": "^2.3.2",
     "prettier-plugin-bq": "0.2.46",

@@ -1,8 +1,10 @@
-import dblite from "dblite";
 import * as fs from "fs";
-import { BigQuery } from "@google-cloud/bigquery";
 import { exec } from "child_process";
 import { dirname } from "path";
+
+import { Low } from "lowdb";
+import { JSONFile } from "lowdb/node";
+import { BigQuery } from "@google-cloud/bigquery";
 
 type DatasetRecord = {
   project: string;
@@ -13,97 +15,44 @@ type DatasetRecord = {
 type ColumnRecord = {
   project: string;
   dataset: string;
-  table: string;
+  table_name: string;
   column: string;
   data_type: string;
 };
 
-const createTableProjects = `
-CREATE TABLE IF NOT EXISTS projects (
-  project TEXT,
-  PRIMARY KEY (project)
-);`;
-const createTableDatasets = `
-CREATE TABLE IF NOT EXISTS datasets (
-  project TEXT,
-  dataset TEXT,
-  location TEXT,
-  PRIMARY KEY (project, dataset)
-);`;
-const createTableColumns = `
-CREATE TABLE IF NOT EXISTS columns (
-  project TEXT,
-  dataset TEXT,
-  table_name TEXT,
-  column TEXT,
-  data_type TEXT,
-  PRIMARY KEY (project, dataset, table_name, column)
-);
-`;
+type Data = {
+  projects: string[];
+  datasets: DatasetRecord[];
+  columns: ColumnRecord[];
+};
+
+const EmptyData: Data = {
+  projects: [],
+  datasets: [],
+  columns: [],
+};
 
 export class CacheDB {
   public static async initialize(filename: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
     const db = new CacheDB(filename);
-    await Promise.all([
-      db.query(createTableProjects),
-      db.query(createTableDatasets),
-      db.query(createTableColumns),
-    ]);
     return db;
   }
 
-  private db: SQLite;
+  public db: Low<Data>;
   private bqClient = new BigQuery();
 
   private constructor(filename: string) {
-    this.db = dblite(filename);
+    this.db = new Low(new JSONFile(filename), EmptyData);
   }
 
   public async clearCache() {
-    await this.query(`
-BEGIN;
-DROP TABLE projects;
-DROP TABLE datasets;
-DROP TABLE columns;
-${createTableProjects}
-${createTableDatasets}
-${createTableColumns}
-COMMIT;`);
+    this.db.data = EmptyData;
+    await this.db.write();
   }
 
   public close() {
-    // if the db has already been closed, it does not throw error.
-    this.db.close();
-  }
-
-  public query(sql: string, paramsOrFields?: any[]): Promise<any[]>;
-  public query(sql: string, params?: any[], fields?: any[]): Promise<any[]>;
-  public query(sql: string, arg1?: any[], arg2?: any[]): Promise<any[]> {
-    return new Promise((resolve, reject) => {
-      if (arg2) {
-        this.db.query(sql, arg1, arg2, (err: any, data: any[] | undefined) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(data || []);
-        });
-      } else if (arg1) {
-        this.db.query(sql, arg1, (err: any, data: any[] | undefined) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(data || []);
-        });
-      } else {
-        this.db.query(sql, (err: any, data: any[] | undefined) => {
-          if (err) {
-            reject(err);
-          }
-          resolve(data || []);
-        });
-      }
-    });
+    // NOP
   }
 
   private getAvailableProjects() {
@@ -156,50 +105,29 @@ COMMIT;`);
   }
 
   public async updateCache(texts: string[]) {
-    const insertQueries: Promise<any>[] = [];
-
-    // cache projects
+    // projects
     const projects = await this.getAvailableProjects();
-    await this.query(`
-BEGIN;
-DROP TABLE projects;
-${createTableProjects}
-COMMIT;`);
-    projects.forEach((proj) => {
-      insertQueries.push(
-        this.query(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [
-          proj,
-        ])
-      );
+    await this.db.update((data) => {
+      data.projects = projects;
     });
 
-    // cache datasets
-    const datasetRecords: DatasetRecord[] = [];
+    // datasets
+    const datasets: DatasetRecord[] = [];
     for (const proj of projects) {
-      try {
-        const rows = await this.getAvailableDatasets(proj);
-        await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
-        rows.forEach((row) => {
-          datasetRecords.push(row);
-          insertQueries.push(
-            this.query(
-              `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
-              [row.project, row.dataset, row.location]
-            )
-          );
-        });
-      } catch (err) {
-        /* NOP */
-      }
+      const rows = await this.getAvailableDatasets(proj);
+      rows.forEach((row) => {
+        datasets.push(row);
+      });
     }
+    await this.db.update((data) => {
+      data.datasets = datasets;
+    });
 
-    // cache columns
-    for (const dataset of datasetRecords) {
-      let columnRecords: ColumnRecord[] = [];
+    // columns
+    for (const dataset of datasets) {
       if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
-      try {
-        const options = {
-          query: `
+      const options = {
+        query: `
 SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
@@ -208,27 +136,20 @@ SELECT DISTINCT
   data_type,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
 LIMIT 10000;`,
-          location: dataset.location,
-        };
-        const [job] = await this.bqClient.createQueryJob(options);
-        const [rows] = await job.getQueryResults();
-        columnRecords = rows;
-        await this.query(
-          "DELETE FROM columns WHERE project = ? and dataset = ?",
-          [dataset.project, dataset.dataset]
-        );
-      } catch (err) {
-        /* NOP */
-      }
-      columnRecords.forEach((c) =>
-        insertQueries.push(
-          this.query(
-            "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
-            [dataset.project, dataset.dataset, c.table, c.column, c.data_type]
-          )
-        )
-      );
+        location: dataset.location,
+      };
+      const [job] = await this.bqClient.createQueryJob(options);
+      let columns: ColumnRecord[];
+      [columns] = await job.getQueryResults();
+      await this.db.update((data) => {
+        data.columns = data.columns.filter((column) => {
+          column.project !== dataset.project &&
+            column.dataset !== dataset.dataset;
+        });
+        columns.forEach((column) => {
+          data.columns.push(column);
+        });
+      });
     }
-    await Promise.all(insertQueries);
   }
 }
