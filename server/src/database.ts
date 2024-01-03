@@ -139,8 +139,7 @@ LIMIT 10000;`,
         location: dataset.location,
       };
       const [job] = await this.bqClient.createQueryJob(options);
-      let columns: ColumnRecord[];
-      [columns] = await job.getQueryResults();
+      const [columns] = await job.getQueryResults();
       await this.db.update((data) => {
         data.columns = data.columns.filter((column) => {
           column.project !== dataset.project &&
