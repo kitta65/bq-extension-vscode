@@ -19,6 +19,7 @@ jobs:
         with:
           node-version: "16.x"
           registry-url: "https://registry.npmjs.org"
+          cache: npm
 
       - run: npm ci
       - run: npm run compile
@@ -50,6 +51,7 @@ jobs:
         with:
           node-version: "16.x"
           registry-url: "https://registry.npmjs.org"
+          cache: npm
 
       - uses: dr666m1/tag-version-match@main
         with:
