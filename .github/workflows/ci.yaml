@@ -35,7 +35,7 @@ jobs:
 
       # upload package for debug
       - run: npx vsce package
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: bq-extension-vscode.vsix
           path: ./bq-extension-vscode-*.vsix
@@ -59,7 +59,7 @@ jobs:
           query: .version
           pattern: '^([0-9]+\.[0-9]+\.[0-9]+)$'
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: bq-extension-vscode.vsix
 
