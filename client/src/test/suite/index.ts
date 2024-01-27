@@ -48,7 +48,10 @@ SELECT * FROM \`${util.project}.bq_extension_vscode_test_asia.v\`;`
   await vscode.commands.executeCommand("bqExtensionVSCode.clearCache");
   // sqlite file name is defined in other file
   execSync(
-    `sqlite3 ${process.env.HOME}/.bq_extension_vscode/*.sqlite < initialize.sql`
+    `sqlite3 ${process.env.HOME}/.bq_extension_vscode/*.sqlite < ${path.resolve(
+      __dirname,
+      "initialize.sql"
+    )}`
   );
   await util.deleteTextDocument("cache.bq");
   console.log("Finish initializing the extension");
