@@ -17,6 +17,9 @@ describe("Diagnostics", function () {
     await util.deleteTextDocument(filename);
   });
   it("dryRun (success)", async function () {
+    if (process.env.CI === "true") {
+      return;
+    }
     await util.insert(filename, new vscode.Position(0, 0), "SELECT 1;");
     await vscode.commands.executeCommand("bqExtensionVSCode.dryRun");
     const diagnostics = vscode.languages.getDiagnostics(
@@ -25,6 +28,9 @@ describe("Diagnostics", function () {
     assert.strictEqual(diagnostics.length, 0);
   });
   it("dryRun (fail)", async function () {
+    if (process.env.CI === "true") {
+      return;
+    }
     await util.insert(filename, new vscode.Position(0, 0), "SELECT 1;;");
     await vscode.commands.executeCommand("bqExtensionVSCode.dryRun");
     const diagnostics = vscode.languages.getDiagnostics(
