@@ -3,6 +3,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - run: echo $CI
       - uses: actions/checkout@v4
 
       - uses: "google-github-actions/auth@v2"
