@@ -7,19 +7,7 @@
   "engines": {
     "node": "*"
   },
-  "dependencies": {
-    "prettier-plugin-bq": "0.2.48",
-    "@google-cloud/bigquery": "^5.7.0",
-    "dblite": "^1.1.4",
-    "prettier": "^2.3.2",
-    "vscode-languageserver": "^7.0.0",
-    "vscode-languageserver-textdocument": "^1.0.1"
-  },
   "bin": {
     "bq-language-server": "./bin/bq-language-server"
-  },
-  "scripts": {},
-  "devDependencies": {
-    "@types/prettier": "^2.4.1"
   }
 }

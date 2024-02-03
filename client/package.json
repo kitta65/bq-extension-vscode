@@ -6,11 +6,5 @@
   "publisher": "kitta65",
   "engines": {
     "vscode": "^1.52.0"
-  },
-  "dependencies": {
-    "vscode-languageclient": "^7.0.0"
-  },
-  "devDependencies": {
-    "@types/vscode": "^1.52.0"
   }
 }
