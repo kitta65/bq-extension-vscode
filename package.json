@@ -21,7 +21,7 @@
     "BigQuery"
   ],
   "engines": {
-    "vscode": "^1.43.0"
+    "vscode": "^1.52.0"
   },
   "activationEvents": [],
   "main": "./client/out/extension",
@@ -149,10 +149,21 @@
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
     "test": "tsc -b && node client/out/test/runTest"
   },
+  "dependencies": {
+    "@google-cloud/bigquery": "^5.7.0",
+    "dblite": "^1.1.4",
+    "prettier": "^2.3.2",
+    "prettier-plugin-bq": "0.2.48",
+    "vscode-languageclient": "^7.0.0",
+    "vscode-languageserver": "^7.0.0",
+    "vscode-languageserver-textdocument": "^1.0.1"
+  },
   "devDependencies": {
     "@types/glob": "^7.1.4",
     "@types/mocha": "^9.0.0",
     "@types/node": "^12.12.0",
+    "@types/vscode": "^1.52.0",
+    "@types/prettier": "^2.4.1",
     "@typescript-eslint/eslint-plugin": "^5.23.0",
     "@typescript-eslint/parser": "^5.23.0",
     "@vscode/test-electron": "^2.1.3",
@@ -160,7 +171,6 @@
     "eslint": "^8.15.0",
     "eslint-config-prettier": "^8.5.0",
     "mocha": "^9.2.2",
-    "prettier": "^2.3.2",
     "typescript": "^4.3.5"
   },
   "__metadata": {
