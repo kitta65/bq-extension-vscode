@@ -20,7 +20,7 @@ describe("Completion", function () {
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
     assert.ok(
-      list.items.some((x) => x.label.toUpperCase() === "CURRENT_TIMESTAMP")
+      list.items.some((x) => x.label === "CURRENT_TIMESTAMP")
     );
   });
   it("not global function", async function () {
@@ -32,7 +32,7 @@ describe("Completion", function () {
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
     assert.ok(
-      list.items.some((x) => x.label.toUpperCase() === "IPV4_FROM_INT64")
+      list.items.some((x) => x.label === "IPV4_FROM_INT64")
     );
   });
   it("project", async function () {
