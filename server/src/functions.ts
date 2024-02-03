@@ -388,6 +388,7 @@ ORDER BY x`,
     json_scope => 'JSON_KEYS_AND_VALUES'
   ), -- true`,
   },
+  "VECTOR_SEARCH",
   // ----- bit functions -----
   {
     ident: "BIT_COUNT",
