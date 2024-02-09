@@ -22,6 +22,8 @@ jobs:
       # You'll see `Failed to connect to the bus` many time.
       # https://github.com/microsoft/vscode-test/issues/127
       - run: xvfb-run -a npm test
+      - run: echo 'select * from columns' | sqlite3 ~/.bq_extension_vscode/cache_00_00_17.sqlite
+        if: failure()
 
       # upload package for debug
       - run: npx vsce package
