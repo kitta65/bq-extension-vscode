@@ -191,6 +191,7 @@ COMMIT;`);
         );
       }
       await Promise.all(insertQueries);
+      return;
     }
 
     // cache projects
