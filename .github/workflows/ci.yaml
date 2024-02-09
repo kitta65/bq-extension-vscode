@@ -15,6 +15,8 @@ jobs:
       - run: npm run compile
       - run: npm run lint
 
+      - run: sqlite3 ~/.bq_extension_vscode/cache_00_00_17.sqlite < ./init.sql
+
       # NOTE
       # official reference
       # https://code.visualstudio.com/api/working-with-extensions/continuous-integration#automated-publishing

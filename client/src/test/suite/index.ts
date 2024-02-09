@@ -44,8 +44,10 @@ async function globalSetup() {
 SELECT * FROM \`${util.project}.bq_extension_vscode_test.t\`;
 SELECT * FROM \`${util.project}.bq_extension_vscode_test_asia.v\`;`
   );
-  await vscode.commands.executeCommand("bqExtensionVSCode.clearCache");
-  await vscode.commands.executeCommand("bqExtensionVSCode.updateCache");
+  if (process.env.CI !== "true") {
+    await vscode.commands.executeCommand("bqExtensionVSCode.clearCache");
+    await vscode.commands.executeCommand("bqExtensionVSCode.updateCache");
+  }
   await util.deleteTextDocument("cache.bq");
   console.log("Finish initializing the extension");
 }
