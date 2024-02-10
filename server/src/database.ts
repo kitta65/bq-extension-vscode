@@ -231,4 +231,62 @@ LIMIT 10000;`,
     }
     await Promise.all(insertQueries);
   }
+
+  public async updateCacheForTest(_: string[]) {
+    const insertQueries: Promise<any>[] = [];
+
+    // US
+    const project = "bq-extension-vscode";
+    const dataset = "bq_extension_vscode_test";
+    insertQueries.push(
+      this.query(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [
+        project,
+      ])
+    );
+    insertQueries.push(
+      this.query(
+        `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
+        [project, dataset, "US"]
+      )
+    );
+    for (const table of ["t", "u_*"]) {
+      const columns: { column: string; data_type: string }[] = [
+        { column: "str", data_type: "STRING" },
+        { column: "int", data_type: "INT64" },
+        { column: "float", data_type: "FLOAT64" },
+        { column: "bool", data_type: "BOOLEAN" },
+        { column: "arr", data_type: "ARRAY<INT64>" },
+        {
+          column: "nested",
+          data_type:
+            "STRUCT<arr2 ARRAY<INT64>, str2 STRING, int2 INT64, nested2 STRUCT<nested3 STRUCT<str4 STRING>, int3 INT64>>",
+        },
+      ];
+      columns.forEach((c) =>
+        insertQueries.push(
+          this.query(
+            "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
+            [project, dataset, table, c.column, c.data_type]
+          )
+        )
+      );
+    }
+
+    // asia-northeast1
+    const datasetAsia = "bq_extension_vscode_test_asia";
+    insertQueries.push(
+      this.query(
+        `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
+        [project, datasetAsia, "asia-northeast1"]
+      )
+    );
+    insertQueries.push(
+      this.query(
+        "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
+        [project, datasetAsia, "v", "str", "STRING"]
+      )
+    );
+
+    await Promise.all(insertQueries);
+  }
 }

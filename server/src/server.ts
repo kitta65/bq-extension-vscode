@@ -92,9 +92,10 @@ export class BQLanguageServer {
     private db: CacheDB,
     capabilities: Record<string, boolean>
   ) {
-    this.defaultProject = (
-      execSync(" gcloud config get-value project") + ""
-    ).trim();
+    this.defaultProject =
+      process.env.CI === "true"
+        ? "bq-extension-vscode"
+        : (execSync("gcloud config get-value project") + "").trim();
     this.hasConfigurationCapability = capabilities.hasConfigurationCapability;
   }
   private async dryRun(uri: LSP.URI): Promise<void> {
@@ -704,7 +705,11 @@ export class BQLanguageServer {
   }
 
   private async onRequestUpdateCache(_: any) {
-    await this.db.updateCache(Object.values(this.uriToText));
+    if (process.env.CI === "true") {
+      await this.db.updateCacheForTest(Object.values(this.uriToText));
+    } else {
+      await this.db.updateCache(Object.values(this.uriToText));
+    }
     return "The cache was updated successfully.";
   }
 
