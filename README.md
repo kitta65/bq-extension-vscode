@@ -4,8 +4,6 @@
 This is a Visual Studio Code extension for standardSQL, which is a SQL dialect supported by BigQuery.
 The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/server) itself is also available by other editors.
 
-⚠️ This extension is still a work in progress, so the behavior would change frequently.
-
 ## Features
 - Complete table names (when quoted by `` ` `` ), column names (in SELECT statement) and functions
 - Show hover information about tables and functions
@@ -14,7 +12,10 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 - Language configuration and syntax highlight (mostly based on [sql](https://github.com/microsoft/vscode/tree/main/extensions/sql), but slightly adjusted)
 
 ## Quick Start
-ℹ️ If your OS is Windows, it is recommended to develop in WSL (read the [document](https://code.visualstudio.com/docs/remote/wsl)).
+
+> [!NOTE]
+> If your OS is Windows, it is recommended to develop in WSL (read the [document](https://code.visualstudio.com/docs/remote/wsl)).
+
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 2. Run `gcloud auth login` `gcloud auth application-default login`
 3. Install sqlite3
