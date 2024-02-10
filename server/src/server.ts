@@ -705,7 +705,11 @@ export class BQLanguageServer {
   }
 
   private async onRequestUpdateCache(_: any) {
-    await this.db.updateCache(Object.values(this.uriToText));
+    if (process.env.CI === "true") {
+      await this.db.updateCacheForTest(Object.values(this.uriToText));
+    } else {
+      await this.db.updateCache(Object.values(this.uriToText));
+    }
     return "The cache was updated successfully.";
   }
 
