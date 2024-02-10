@@ -168,7 +168,7 @@ COMMIT;`);
         `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
         [project, dataset, "US"]
       );
-      for (const table of ["t", "u_20210101", "u_20210102", "v"]) {
+      for (const table of ["t", "u_*"]) {
         const columns: { column: string; data_type: string }[] = [
           { column: "str", data_type: "STRING" },
           { column: "int", data_type: "INT64" },
