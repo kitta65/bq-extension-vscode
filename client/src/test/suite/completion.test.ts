@@ -19,7 +19,12 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "CURRENT_TIMESTAMP"));
+    assert.ok(
+      list.items.some(
+        // case insensitive compare (to ignore user config)
+        (x) => x.label.toString().toUpperCase() === "CURRENT_TIMESTAMP"
+      )
+    );
   });
   it("not global function", async function () {
     const sql = "SELECT net."; // NOTE Actually, any string is OK.
@@ -29,7 +34,12 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length)
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "IPV4_FROM_INT64"));
+    assert.ok(
+      list.items.some(
+        // case insensitive compare (to ignore user config)
+        (x) => x.label.toString().toUpperCase() === "IPV4_FROM_INT64"
+      )
+    );
   });
   it("project", async function () {
     const sql = "SELECT * FROM ``";
