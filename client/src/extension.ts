@@ -38,8 +38,7 @@ export async function activate(context: vscode.ExtensionContext) {
     clientOptions
   );
   const commands = [clearCache, updateCache, dryRun];
-  client.start();
-  await client.onReady().then(() => {
+  await client.start().then(() => {
     client.onNotification("bq/totalBytesProcessed", (params) => {
       statusBarItem.text = params.totalBytesProcessed;
       statusBarItem.show();
