@@ -154,7 +154,7 @@
     "dblite": "^1.1.4",
     "prettier": "^2.3.2",
     "prettier-plugin-bq": "0.2.48",
-    "vscode-languageclient": "^7.0.0",
+    "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.1"
   },
