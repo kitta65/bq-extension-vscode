@@ -160,7 +160,7 @@
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
-    "@types/mocha": "^9.0.0",
+    "@types/mocha": "^10.0.6",
     "@types/node": "^20.11.17",
     "@types/vscode": "^1.52.0",
     "@types/prettier": "^2.4.1",
@@ -170,7 +170,7 @@
     "@vscode/vsce": "^2.23.0",
     "eslint": "^8.15.0",
     "eslint-config-prettier": "^8.5.0",
-    "mocha": "^9.2.2",
+    "mocha": "^10.3.0",
     "typescript": "^4.3.5"
   },
   "__metadata": {
