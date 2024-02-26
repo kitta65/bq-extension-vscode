@@ -2323,7 +2323,7 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     "DETECT_ANOMALIES",
     // generative ai functions
     "GENERATE_TEXT",
-    "GENERATE_TEXT_EMBEDDING",
+    "GENERATE_EMBEDDING",
     // ai functions
     "UNDERSTAND_TEXT",
     "TRANSLATE",
