@@ -705,10 +705,18 @@ export class BQLanguageServer {
   }
 
   private async onRequestUpdateCache(_: any) {
-    if (process.env.CI === "true") {
-      await this.db.updateCacheForTest(Object.values(this.uriToText));
-    } else {
-      await this.db.updateCache(Object.values(this.uriToText));
+    try {
+      if (process.env.CI === "true") {
+        await this.db.updateCacheForTest(Object.values(this.uriToText));
+      } else {
+        await this.db.updateCache(Object.values(this.uriToText));
+      }
+    } catch (e) {
+      const params: LSP.ShowMessageParams = {
+        message: String(e),
+        type: LSP.MessageType.Error,
+      };
+      this.connection.sendNotification("window/showMessage", params);
     }
     return "The cache was updated successfully.";
   }

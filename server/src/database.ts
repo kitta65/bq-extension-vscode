@@ -176,30 +176,25 @@ COMMIT;`);
     // cache datasets
     const datasetRecords: DatasetRecord[] = [];
     for (const proj of projects) {
-      try {
-        const rows = await this.getAvailableDatasets(proj);
-        await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
-        rows.forEach((row) => {
-          datasetRecords.push(row);
-          insertQueries.push(
-            this.query(
-              `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
-              [row.project, row.dataset, row.location]
-            )
-          );
-        });
-      } catch (err) {
-        /* NOP */
-      }
+      const rows = await this.getAvailableDatasets(proj);
+      await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
+      rows.forEach((row) => {
+        datasetRecords.push(row);
+        insertQueries.push(
+          this.query(
+            `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
+            [row.project, row.dataset, row.location]
+          )
+        );
+      });
     }
 
     // cache columns
     for (const dataset of datasetRecords) {
       let columnRecords: ColumnRecord[] = [];
       if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
-      try {
-        const options = {
-          query: `
+      const options = {
+        query: `
 SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
@@ -208,18 +203,15 @@ SELECT DISTINCT
   data_type,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
 LIMIT 10000;`,
-          location: dataset.location,
-        };
-        const [job] = await this.bqClient.createQueryJob(options);
-        const [rows] = await job.getQueryResults();
-        columnRecords = rows;
-        await this.query(
-          "DELETE FROM columns WHERE project = ? and dataset = ?",
-          [dataset.project, dataset.dataset]
-        );
-      } catch (err) {
-        /* NOP */
-      }
+        location: dataset.location,
+      };
+      const [job] = await this.bqClient.createQueryJob(options);
+      const [rows] = await job.getQueryResults();
+      columnRecords = rows;
+      await this.query(
+        "DELETE FROM columns WHERE project = ? and dataset = ?",
+        [dataset.project, dataset.dataset]
+      );
       columnRecords.forEach((c) =>
         insertQueries.push(
           this.query(
