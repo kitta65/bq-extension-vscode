@@ -711,6 +711,7 @@ export class BQLanguageServer {
       } else {
         await this.db.updateCache(Object.values(this.uriToText));
       }
+      return "The cache was updated successfully.";
     } catch (e) {
       const params: LSP.ShowMessageParams = {
         message: String(e),
@@ -718,7 +719,6 @@ export class BQLanguageServer {
       };
       this.connection.sendNotification("window/showMessage", params);
     }
-    return "The cache was updated successfully.";
   }
 
   private async provideHoverMessage(
