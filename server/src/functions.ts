@@ -95,9 +95,9 @@ FROM UNNEST([true, false]) AS b`,
   {
     ident: "GROUPING",
     example: `/**
- *  one, two, one_agg
- *    1,    ,       0
- *     ,   2,       1
+ * one, two, one_agg
+ *   1,    ,       0
+ *    ,   2,       1
  */
 SELECT
   one,
@@ -367,6 +367,72 @@ SELECT
   ROW_NUMBER() OVER (ORDER BY x) AS num
 FROM UNNEST([0, 1, 1, 2]) AS x
 ORDER BY x`,
+  },
+  // ----- range functions -----
+  {
+    ident: "GENERATE_RANGE_ARRAY",
+    example: `SELECT
+  -- [RANGE<DATE> '[2024-01-01, 2024-01-02)',
+  --  RANGE<DATE> '[2024-01-02, 2024-01-03)']
+  GENERATE_RANGE_ARRAY(
+    RANGE<DATE> '[2024-01-01, 2024-01-03)',
+    INTERVAL 1 DAY
+  ),`,
+  },
+  {
+    ident: "RANGE",
+    example: `SELECT
+  -- RANGE<DATE> '[2024-01-01, 2024-12-31)'
+  RANGE(DATE '2024-01-01', DATE '2024-12-31'),
+  -- RANGE<DATE> '[2024-01-01, UNBOUNDED)'
+  RANGE(DATE '2024-01-01', NULL),`,
+  },
+  {
+    ident: "RANGE_CONTAINS",
+    example: `SELECT
+  RANGE_CONTAINS(
+    RANGE<DATE> '[2024-01-01, 2024-12-31)',
+    RANGE<DATE> '[2024-02-01, 2024-02-29)'
+  ), -- TRUE
+  RANGE_CONTAINS(
+    RANGE<DATE> '[2024-01-01, 2024-12-31)',
+    DATE "2025-01-01"
+  ), -- FALSE`,
+  },
+  {
+    ident: "RANGE_END",
+    example: `SELECT
+  -- DATE '2024-12-31'
+  RANGE_END(RANGE<DATE> '[2024-01-01, 2024-12-31)'),
+  -- NULL
+  RANGE_END(RANGE<DATE> '[2024-01-01, UNBOUNDED)'),`,
+  },
+  {
+    ident: "RANGE_INTERSECT",
+    example: `SELECT
+  RANGE_INTERSECT(
+    RANGE<DATE> '[2020-01-01, 2025-01-01)',
+    RANGE<DATE> '[2023-01-01, 2027-01-01)'
+  ), -- RANGE<DATE> '[2023-01-01, 2025-01-01)'
+  SAFE.RANGE_INTERSECT(
+    RANGE<DATE> '[2020-01-01, 2021-01-01)',
+    RANGE<DATE> '[2023-01-01, 2024-01-01)'
+  ), -- NULL`,
+  },
+  {
+    ident: "RANGE_OVERLAPS",
+    example: `SELECT RANGE_OVERLAPS(
+  RANGE<DATE> '[2020-01-01, 2021-01-01)',
+  RANGE<DATE> '[2023-01-01, 2024-01-01)'
+) -- false`,
+  },
+  {
+    ident: "RANGE_START",
+    example: `SELECT
+  -- DATE '2024-01-01'
+  RANGE_START(RANGE<DATE> '[2024-01-01, 2024-12-31)'),
+  -- NULL
+  RANGE_START(RANGE<DATE> '[UNBOUNDED, 2024-12-31)'),`,
   },
   // ----- search functions -----
   {
@@ -1831,6 +1897,69 @@ SELECT
     '%F %T',
     '2020-01-01 00:00:00'
   ) -- DATETIME '2020-01-01 00:00:00'`,
+  },
+  // ----- time series functions -----
+  {
+    ident: "DATE_BUCKET",
+    example: `SELECT
+  DATE_BUCKET(
+    DATE '2024-01-01',
+    INTERVAL 7 DAY
+  ), -- DATE '2023-12-31'
+  DATE_BUCKET(
+    DATE '2024-01-01',
+    INTERVAL 7 DAY,
+    -- '1950-01-01' is used by default
+    DATE '2024-01-01'
+  ), -- DATE '2024-01-01'`,
+  },
+  {
+    ident: "DATETIME_BUCKET",
+    example: `SELECT
+  DATETIME_BUCKET(
+    DATETIME '2024-01-01 00:00:00',
+    INTERVAL 7 DAY
+  ), -- DATETIME '2023-12-31 00:00:00'
+  DATETIME_BUCKET(
+    DATETIME '2024-01-01 00:00:00',
+    INTERVAL 7 DAY,
+    -- '1950-01-01 00:00:00' is used by default
+    DATETIME '2024-01-01 00:00:00'
+  ), -- DATETIME '2024-01-01 00:00:00'`,
+  },
+  {
+    ident: "GAP_FILL",
+    example: `/**
+ * ts                     , value
+ * 2024-01-01 00:00:00 UTC,     0
+ * 2024-01-01 00:30:00 UTC,     2
+ * 2024-01-01 01:00:00 UTC,     4
+ */
+SELECT * FROM GAP_FILL(
+  (
+    SELECT TIMESTAMP "2024-01-01 00:00:00" as ts, 0 AS value
+    UNION ALL
+    SELECT TIMESTAMP "2024-01-01 01:00:00"      , 4
+  ),
+  ts_column => "ts",
+  bucket_width => INTERVAL 30 MINUTE,
+  value_columns => [("value", "linear")]
+)
+ORDER BY ts`,
+  },
+  {
+    ident: "TIMESTAMP_BUCKET",
+    example: `SELECT
+  TIMESTAMP_BUCKET(
+    TIMESTAMP '2024-01-01 00:00:00',
+    INTERVAL 7 DAY
+  ), -- TIMESTAMP '2023-12-31 00:00:00'
+  TIMESTAMP_BUCKET(
+    TIMESTAMP '2024-01-01 00:00:00',
+    INTERVAL 7 DAY,
+    -- '1950-01-01 00:00:00' is used by default
+    TIMESTAMP '2024-01-01 00:00:00'
+  ), -- TIMESTAMP '2024-01-01 00:00:00'`,
   },
   // ----- text analysis functions -----
   {
