@@ -34,7 +34,7 @@ export async function deleteTextDocument(docPath: string) {
 export async function insert(
   docPath: string,
   position: vscode.Position,
-  text: string
+  text: string,
 ) {
   const edit = new vscode.WorkspaceEdit();
   edit.insert(getDocUri(docPath), position, text);

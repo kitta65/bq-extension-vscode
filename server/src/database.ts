@@ -120,7 +120,7 @@ COMMIT;`);
           }
           const projects = obj.map((x: { id: string }) => x.id);
           resolve(projects);
-        }
+        },
       );
     });
   }
@@ -147,10 +147,10 @@ COMMIT;`);
                 dataset: x.datasetReference.datasetId,
                 location: x.location,
               };
-            }
+            },
           );
           resolve(datasets);
-        }
+        },
       );
     });
   }
@@ -169,7 +169,7 @@ COMMIT;`);
       insertQueries.push(
         this.query(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [
           proj,
-        ])
+        ]),
       );
     });
 
@@ -183,8 +183,8 @@ COMMIT;`);
         insertQueries.push(
           this.query(
             `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
-            [row.project, row.dataset, row.location]
-          )
+            [row.project, row.dataset, row.location],
+          ),
         );
       });
     }
@@ -210,15 +210,15 @@ LIMIT 10000;`,
       columnRecords = rows;
       await this.query(
         "DELETE FROM columns WHERE project = ? and dataset = ?",
-        [dataset.project, dataset.dataset]
+        [dataset.project, dataset.dataset],
       );
       columnRecords.forEach((c) =>
         insertQueries.push(
           this.query(
             "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
-            [dataset.project, dataset.dataset, c.table, c.column, c.data_type]
-          )
-        )
+            [dataset.project, dataset.dataset, c.table, c.column, c.data_type],
+          ),
+        ),
       );
     }
     await Promise.all(insertQueries);
@@ -233,13 +233,13 @@ LIMIT 10000;`,
     insertQueries.push(
       this.query(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [
         project,
-      ])
+      ]),
     );
     insertQueries.push(
       this.query(
         `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
-        [project, dataset, "US"]
-      )
+        [project, dataset, "US"],
+      ),
     );
     for (const table of ["t", "u_*"]) {
       const columns: { column: string; data_type: string }[] = [
@@ -258,9 +258,9 @@ LIMIT 10000;`,
         insertQueries.push(
           this.query(
             "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
-            [project, dataset, table, c.column, c.data_type]
-          )
-        )
+            [project, dataset, table, c.column, c.data_type],
+          ),
+        ),
       );
     }
 
@@ -269,14 +269,14 @@ LIMIT 10000;`,
     insertQueries.push(
       this.query(
         `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
-        [project, datasetAsia, "asia-northeast1"]
-      )
+        [project, datasetAsia, "asia-northeast1"],
+      ),
     );
     insertQueries.push(
       this.query(
         "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
-        [project, datasetAsia, "v", "str", "STRING"]
-      )
+        [project, datasetAsia, "v", "str", "STRING"],
+      ),
     );
 
     await Promise.all(insertQueries);

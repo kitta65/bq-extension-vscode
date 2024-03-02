@@ -21,7 +21,7 @@ describe("Diagnostics", function () {
     await util.insert(filename, new vscode.Position(0, 0), "SELECT 1;");
     await vscode.commands.executeCommand("bqExtensionVSCode.dryRun");
     const diagnostics = vscode.languages.getDiagnostics(
-      util.getDocUri(filename)
+      util.getDocUri(filename),
     );
     assert.strictEqual(diagnostics.length, 0);
   });
@@ -30,7 +30,7 @@ describe("Diagnostics", function () {
     await util.insert(filename, new vscode.Position(0, 0), "SELECT 1;;");
     await vscode.commands.executeCommand("bqExtensionVSCode.dryRun");
     const diagnostics = vscode.languages.getDiagnostics(
-      util.getDocUri(filename)
+      util.getDocUri(filename),
     );
     assert.strictEqual(diagnostics.length, 1);
   });
@@ -38,7 +38,7 @@ describe("Diagnostics", function () {
     await util.insert(filename, new vscode.Position(0, 0), "SELECT ''");
     await util.sleep(1 * 1000); // wait for processing
     const diagnostics = vscode.languages.getDiagnostics(
-      util.getDocUri(filename)
+      util.getDocUri(filename),
     );
     assert.strictEqual(diagnostics.length, 0);
   });
@@ -46,7 +46,7 @@ describe("Diagnostics", function () {
     await util.insert(filename, new vscode.Position(0, 0), "SELECT '");
     await util.sleep(1 * 1000); // wait for processing
     const diagnostics = vscode.languages.getDiagnostics(
-      util.getDocUri(filename)
+      util.getDocUri(filename),
     );
     assert.strictEqual(diagnostics.length, 1);
   });

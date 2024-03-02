@@ -13,11 +13,11 @@ let client: LanguageClient;
 export async function activate(context: vscode.ExtensionContext) {
   const statusBarItem: vscode.StatusBarItem = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Right,
-    100
+    100,
   );
 
   const serverModule = context.asAbsolutePath(
-    path.join("server", "out", "index.js")
+    path.join("server", "out", "index.js"),
   );
   const debugOptions = { execArgv: ["--nolazy", "--inspect=6009"] };
   const serverOptions: ServerOptions = {
@@ -35,7 +35,7 @@ export async function activate(context: vscode.ExtensionContext) {
     "bqExtensionVSCode",
     "BQ Extension VSCode",
     serverOptions,
-    clientOptions
+    clientOptions,
   );
   const commands = [clearCache, updateCache, dryRun];
   await client.start().then(() => {
@@ -47,7 +47,7 @@ export async function activate(context: vscode.ExtensionContext) {
     commands.forEach((c) => {
       const disposable = vscode.commands.registerCommand(
         `bqExtensionVSCode.${c.name}`,
-        c.bind(client)
+        c.bind(client),
       );
       context.subscriptions.push(disposable);
     });

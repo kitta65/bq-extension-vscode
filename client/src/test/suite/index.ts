@@ -42,7 +42,7 @@ async function globalSetup() {
     new vscode.Position(0, 0),
     `
 SELECT * FROM \`${util.project}.bq_extension_vscode_test.t\`;
-SELECT * FROM \`${util.project}.bq_extension_vscode_test_asia.v\`;`
+SELECT * FROM \`${util.project}.bq_extension_vscode_test_asia.v\`;`,
   );
   await vscode.commands.executeCommand("bqExtensionVSCode.clearCache");
   await vscode.commands.executeCommand("bqExtensionVSCode.updateCache");

@@ -21,7 +21,7 @@ describe("Hover", function () {
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(0, sql.length - 1)
+        new vscode.Position(0, sql.length - 1),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -34,7 +34,7 @@ describe("Hover", function () {
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(0, sql.length - 1)
+        new vscode.Position(0, sql.length - 1),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -47,7 +47,7 @@ describe("Hover", function () {
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(0, sql.length - 1)
+        new vscode.Position(0, sql.length - 1),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -60,7 +60,7 @@ describe("Hover", function () {
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(0, sql.length - 1)
+        new vscode.Position(0, sql.length - 1),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -73,7 +73,7 @@ describe("Hover", function () {
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(0, sql.length - 1)
+        new vscode.Position(0, sql.length - 1),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -87,7 +87,7 @@ SELECT cast('1' AS INT64)`;
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(1, 7)
+        new vscode.Position(1, 7),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -101,7 +101,7 @@ SELECT net.ipv4_from_int64(0)`;
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(1, 11)
+        new vscode.Position(1, 11),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);
@@ -115,7 +115,7 @@ SELECT net.ipv4_from_int64(0)`;
       await vscode.commands.executeCommand(
         "vscode.executeHoverProvider",
         util.getDocUri(filename),
-        new vscode.Position(1, 7)
+        new vscode.Position(1, 7),
       )
     )[0];
     const items = hover.contents.map((x) => x.value);

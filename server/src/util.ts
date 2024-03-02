@@ -29,10 +29,10 @@ export function convert2MarkdownContent(code: string): LSP.MarkupContent {
 
 export function convert2MarkdownItems(arg: string[]): LSP.MarkupContent;
 export function convert2MarkdownItems(
-  arg: Record<string, string>
+  arg: Record<string, string>,
 ): LSP.MarkupContent;
 export function convert2MarkdownItems(
-  arg: string[] | Record<string, string>
+  arg: string[] | Record<string, string>,
 ): LSP.MarkupContent {
   function escape(str: string) {
     return str
@@ -78,7 +78,7 @@ export function formatBytes(bytes: number) {
 }
 
 export function getAllDescendants(
-  node: bq2cst.UnknownNode
+  node: bq2cst.UnknownNode,
 ): bq2cst.UnknownNode[] {
   const res: bq2cst.UnknownNode[] = [];
   function pushDescendants(node: bq2cst.UnknownNode) {
@@ -153,7 +153,7 @@ function getLastNode(node: bq2cst.UnknownNode): bq2cst.UnknownNode {
 export function getNodeByRowColumn(
   csts: bq2cst.UnknownNode[],
   line: number,
-  column: number
+  column: number,
 ) {
   // line, column... 1-based index
   function findNodeFromCst(cst: bq2cst.UnknownNode): bq2cst.UnknownNode | null {
@@ -164,7 +164,7 @@ export function getNodeByRowColumn(
         true,
         cst.range.start,
         { line: line, character: column },
-        cst.range.end
+        cst.range.end,
       )
     ) {
       if (cst.token) {
@@ -185,7 +185,7 @@ export function getNodeByRowColumn(
             true,
             startPosition,
             { line: line, character: column },
-            endPosition
+            endPosition,
           )
         ) {
           return cst;
@@ -270,7 +270,7 @@ export function isNodeVecChild(child: unknown): child is bq2cst.NodeVecChild {
 export function getTokenRangeByRowColumn(
   docInfo: DocumentInfo,
   line: number,
-  column: number
+  column: number,
 ): LSP.Range | null {
   // line, column... 1-based index
 
@@ -304,7 +304,7 @@ export function getTokenRangeByRowColumn(
 export function getPositionByRowColumn(
   docInfo: DocumentInfo,
   line: number,
-  column: number
+  column: number,
 ) {
   // line, column... 1-based index
   const rowLengthArr = docInfo.text.split("\n").map((x) => x.length + 1); // add length of "\n"
@@ -316,7 +316,7 @@ export function getPositionByRowColumn(
 export function getTokenByRowColumn(
   docInfo: DocumentInfo,
   line: number,
-  column: number
+  column: number,
 ) {
   // line, column... 1-based index
   const targetPosition = getPositionByRowColumn(docInfo, line, column);
@@ -330,7 +330,7 @@ export function getTokenByRowColumn(
     const tokenPosition = getPositionByRowColumn(
       docInfo,
       token.line,
-      token.column
+      token.column,
     );
     if (targetPosition < tokenPosition) {
       res = docInfo.tokens[i - 1];
@@ -390,7 +390,7 @@ export function parseIdentifier(node: bq2cst.UnknownNode): string[] {
 
 export function parseStruct(
   str: string,
-  prefix: string[]
+  prefix: string[],
 ): { type: string; path: string[] }[] {
   // str... STRUCT<arr ARRAY<INT64>, str STRING, nested STRUCT<nested2 STRUCT<str2 STRING>, int INT64>>
   const match = str.match(/^\s*STRUCT<(.*)>\s*$/);
@@ -448,7 +448,7 @@ export function arrangedInThisOrder(
 
 export function rangeContains(
   range1: { start: LSP.Position; end: LSP.Position },
-  range2: { start: LSP.Position; end: LSP.Position }
+  range2: { start: LSP.Position; end: LSP.Position },
 ): boolean {
   // validation
   for (const r of [range1, range2]) {

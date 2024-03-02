@@ -63,7 +63,7 @@ export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
     db: CacheDB,
-    capabilities: Record<string, boolean>
+    capabilities: Record<string, boolean>,
   ): Promise<BQLanguageServer> {
     return new BQLanguageServer(connection, db, capabilities);
   }
@@ -81,7 +81,7 @@ export class BQLanguageServer {
   private configurations: Map<string, Thenable<Configuration>> = new Map();
   private defaultProject: string;
   private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
-    TextDocument
+    TextDocument,
   );
   private hasConfigurationCapability: boolean;
   private uriToCst: Record<string, bq2cst.UnknownNode[]> = {};
@@ -90,7 +90,7 @@ export class BQLanguageServer {
   private constructor(
     private connection: LSP.Connection,
     private db: CacheDB,
-    capabilities: Record<string, boolean>
+    capabilities: Record<string, boolean>,
   ) {
     this.defaultProject =
       process.env.CI === "true"
@@ -111,7 +111,7 @@ export class BQLanguageServer {
         job.metadata.statistics.totalBytesProcessed
       ) {
         msg = util.formatBytes(
-          Number(job.metadata.statistics.totalBytesProcessed)
+          Number(job.metadata.statistics.totalBytesProcessed),
         );
       } else {
         msg = "???B";
@@ -156,7 +156,7 @@ export class BQLanguageServer {
         const range = util.getTokenRangeByRowColumn(
           this.getDocInfo(uri),
           Number(matchResult[1]),
-          Number(matchResult[2])
+          Number(matchResult[2]),
         );
         if (range) diagnostic.range = range;
       }
@@ -174,7 +174,7 @@ export class BQLanguageServer {
   private getConfiguration(uri: string): Thenable<Configuration> {
     function replace(
       defaultConfig: Record<string, unknown>,
-      userConfig: Record<string, unknown>
+      userConfig: Record<string, unknown>,
     ) {
       for (const k of Object.keys(userConfig)) {
         if (
@@ -184,7 +184,7 @@ export class BQLanguageServer {
         ) {
           replace(
             defaultConfig[k] as Record<string, unknown>,
-            userConfig[k] as Record<string, unknown>
+            userConfig[k] as Record<string, unknown>,
           );
         } else if (
           k in defaultConfig &&
@@ -267,21 +267,21 @@ export class BQLanguageServer {
     // Register all the handlers for the LSP events.
     this.connection.onCompletion(this.onCompletion.bind(this));
     this.connection.onDidChangeConfiguration(
-      this.onDidChangeConfiguration.bind(this)
+      this.onDidChangeConfiguration.bind(this),
     );
     this.connection.onHover(this.onHover.bind(this));
     this.connection.onRequest(
       "bq/clearCache",
-      this.onRequestClearCache.bind(this)
+      this.onRequestClearCache.bind(this),
     );
     this.connection.onRequest("bq/dryRun", this.onRequestDryRun.bind(this));
     this.connection.onRequest(
       "textDocument/formatting",
-      this.onRequestFormatting.bind(this)
+      this.onRequestFormatting.bind(this),
     );
     this.connection.onRequest(
       "bq/updateCache",
-      this.onRequestUpdateCache.bind(this)
+      this.onRequestUpdateCache.bind(this),
     );
     this.connection.onShutdown(() => {
       this.db.close();
@@ -289,7 +289,7 @@ export class BQLanguageServer {
   }
 
   private async onCompletion(
-    position: LSP.CompletionParams
+    position: LSP.CompletionParams,
   ): Promise<LSP.CompletionItem[]> {
     const res: {
       label: string;
@@ -302,14 +302,14 @@ export class BQLanguageServer {
     const node = util.getNodeByRowColumn(
       this.getDocInfo(uri).cst,
       line,
-      column
+      column,
     );
     const char =
       this.uriToText[position.textDocument.uri][
         util.getPositionByRowColumn(
           this.getDocInfo(position.textDocument.uri),
           line,
-          column
+          column,
         )
       ];
     const config = await this.getConfiguration(uri);
@@ -321,7 +321,7 @@ export class BQLanguageServer {
       const token = util.getTokenByRowColumn(
         this.getDocInfo(uri),
         line,
-        column
+        column,
       );
       if (!token) return [];
       const quoted = token.literal.match(/^`(.+)`$/);
@@ -334,7 +334,7 @@ export class BQLanguageServer {
             await this.db.query(
               "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
               [idents[0]],
-              ["dataset"]
+              ["dataset"],
             )
           ).map((x: { dataset: string }) => x.dataset);
           datasets.forEach((dataset) => {
@@ -348,7 +348,7 @@ export class BQLanguageServer {
             await this.db.query(
               "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
               [this.defaultProject, idents[0]],
-              ["table_name"]
+              ["table_name"],
             )
           ).map((x: { table_name: string }) => x.table_name);
           tables.forEach((table_name) => {
@@ -363,7 +363,7 @@ export class BQLanguageServer {
             await this.db.query(
               "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
               [idents[0], idents[1]],
-              ["table_name"]
+              ["table_name"],
             )
           ).map((x: { table_name: string }) => x.table_name);
           tables.forEach((table_name) => {
@@ -379,7 +379,7 @@ export class BQLanguageServer {
         const currIndex = util.getPositionByRowColumn(
           this.getDocInfo(uri),
           line,
-          column
+          column,
         );
         const currText = this.uriToText[uri];
         const prevText =
@@ -396,9 +396,9 @@ export class BQLanguageServer {
               true,
               ns.start,
               { line: line, character: column - 1 }, // 1-character before "."
-              ns.end
+              ns.end,
             );
-          }
+          },
         );
         const prevNode = util.getNodeByRowColumn(prevCsts, line, column - 1);
         if (!prevNode) return [];
@@ -406,7 +406,7 @@ export class BQLanguageServer {
         if (idents.length === 1) {
           const ident = idents[0];
           this.getSmallestNameSpaces(
-            nameSpaces.filter((ns) => ns.name && ns.name === ident)
+            nameSpaces.filter((ns) => ns.name && ns.name === ident),
           ).forEach((ns) => {
             res.push(
               ...ns.variables.map((v) => {
@@ -415,7 +415,7 @@ export class BQLanguageServer {
                   kind: v.kind,
                   documentation: util.convert2MarkdownItems(v.info),
                 };
-              })
+              }),
             );
           });
           if (ident.toUpperCase() in notGlobalFunctions) {
@@ -444,10 +444,10 @@ export class BQLanguageServer {
           ns.variables.forEach((v) => {
             if (ns.name && "type" in v.info) {
               structs.push(
-                ...util.parseStruct(v.info.type, [ns.name, v.label])
+                ...util.parseStruct(v.info.type, [ns.name, v.label]),
               );
             }
-          })
+          }),
         );
         this.getSmallestNameSpaces(nameSpaces).forEach((ns) => {
           ns.variables.forEach((v) => {
@@ -490,7 +490,7 @@ export class BQLanguageServer {
         await this.db.query(
           "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
           [this.defaultProject],
-          ["dataset"]
+          ["dataset"],
         )
       ).map((x: { dataset: string }) => x.dataset);
       for (const dataset of datasets) {
@@ -505,7 +505,7 @@ export class BQLanguageServer {
       const currIndex = util.getPositionByRowColumn(
         this.getDocInfo(uri),
         line,
-        column
+        column,
       );
       const currText = this.uriToText[uri];
       const newText =
@@ -523,7 +523,7 @@ export class BQLanguageServer {
           true,
           ns.start,
           { line: line + 1, character: 0 }, // position of inserted ident
-          ns.end
+          ns.end,
         );
       });
       namespaces.forEach((ns) => {
@@ -562,8 +562,8 @@ export class BQLanguageServer {
           true,
           ns.start,
           { line: line, character: column },
-          ns.end
-        )
+          ns.end,
+        ),
       );
       namespaces.forEach((ns) => {
         // NOTE You may push the same name twice or more.
@@ -602,7 +602,7 @@ export class BQLanguageServer {
 
     // get unique result
     return Array.from(new Set(res.map((x) => JSON.stringify(x)))).map((x) =>
-      JSON.parse(x)
+      JSON.parse(x),
     );
   }
 
@@ -614,7 +614,7 @@ export class BQLanguageServer {
     const uri = params.textDocument.uri;
     const res = await this.provideHoverMessage(
       this.getDocInfo(uri),
-      params.position
+      params.position,
     );
     return res;
   }
@@ -723,12 +723,12 @@ export class BQLanguageServer {
 
   private async provideHoverMessage(
     docInfo: util.DocumentInfo,
-    position: LSP.Position
+    position: LSP.Position,
   ) {
     const node = util.getNodeByRowColumn(
       docInfo.cst,
       position.line + 1,
-      position.character + 1
+      position.character + 1,
     );
     if (!node || !node.token) {
       // unexpected case!
@@ -774,7 +774,7 @@ export class BQLanguageServer {
     if (queryResults.length > 0) {
       return {
         contents: util.convert2MarkdownItems(
-          queryResults.map((row) => `${row.column}: ${row.data_type}`)
+          queryResults.map((row) => `${row.column}: ${row.data_type}`),
         ),
       };
     }
@@ -783,7 +783,7 @@ export class BQLanguageServer {
   }
 
   private updateDocumentInfo(
-    change: LSP.TextDocumentChangeEvent<TextDocument>
+    change: LSP.TextDocumentChangeEvent<TextDocument>,
   ) {
     const uri = change.document.uri;
     this.uriToText[uri] = change.document.getText();
@@ -809,7 +809,7 @@ export class BQLanguageServer {
             true,
             { line: 0, character: 0 },
             errorPosition,
-            finalCharaPosition
+            finalCharaPosition,
           )
         ) {
           errorPosition = finalCharaPosition;
@@ -842,7 +842,7 @@ export class BQLanguageServer {
   }
 
   private async createNameSpaces(
-    csts: bq2cst.UnknownNode[]
+    csts: bq2cst.UnknownNode[],
   ): Promise<NameSpace[]> {
     const res: NameSpace[] = [];
     for (const cst of csts) {
@@ -854,14 +854,14 @@ export class BQLanguageServer {
   private async createNameSpacesFromNode(
     res: NameSpace[],
     node: bq2cst.UnknownNode,
-    namespace?: NameSpace
+    namespace?: NameSpace,
   ): Promise<void> {
     async function createNameSpacesFromWithClause(
       this: BQLanguageServer,
       node:
         | bq2cst.SelectStatement
         | bq2cst.GroupedStatement
-        | bq2cst.SetOperator
+        | bq2cst.SetOperator,
     ) {
       if (node.children.with) {
         const withQueries = node.children.with.Node.children.queries.NodeVec;
@@ -956,7 +956,7 @@ export class BQLanguageServer {
       await this.createNameSpacesFromNode(
         res,
         node.children.left.Node,
-        namespace
+        namespace,
       );
       await this.createNameSpacesFromNode(res, node.children.right.Node);
     } else if (node.node_type === "GroupedStatement") {
@@ -972,14 +972,14 @@ export class BQLanguageServer {
         await this.createNameSpacesFromNode(
           res,
           node.children.stmt.Node,
-          newNameSpace
+          newNameSpace,
         );
         if (newNameSpace.variables.length > 0) res.push(newNameSpace);
       } else {
         await this.createNameSpacesFromNode(
           res,
           node.children.stmt.Node,
-          namespace
+          namespace,
         );
       }
     } else if (
@@ -1012,9 +1012,9 @@ export class BQLanguageServer {
                   true,
                   ns.start,
                   { line: node.token.line, character: node.token.column },
-                  ns.end
-                )
-            )
+                  ns.end,
+                ),
+            ),
           );
           namespaces.forEach((namespace) => {
             ns.variables.push(...namespace.variables);
@@ -1060,7 +1060,7 @@ export class BQLanguageServer {
       const queryResults: QueryResult[] = await this.db.query(
         `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
         [this.defaultProject, dataset, table],
-        ["column", "data_type"]
+        ["column", "data_type"],
       );
       return queryResults;
     } else if (idents.length === 3) {
@@ -1070,7 +1070,7 @@ export class BQLanguageServer {
       const queryResults: QueryResult[] = await this.db.query(
         `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
         [project, dataset, table],
-        ["column", "data_type"]
+        ["column", "data_type"],
       );
       return queryResults;
     } else {
