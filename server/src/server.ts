@@ -635,12 +635,12 @@ export class BQLanguageServer {
       const originalText = this.uriToText[params.textDocument.uri];
       const splittedOriginalText = originalText.split("\n");
 
-      const formattedText = prettier
+      const formattedText = await prettier
         .format(originalText, {
           parser: "sql-parse",
           ...config.formatting,
         })
-        .slice(0, -1); // remove unnecessary \n
+        .then((txt) => txt.slice(0, -1)); // remove unnecessary \n
       const splittedFormattedText = formattedText.split("\n");
 
       if (config.experimental.formatEachLine) {
