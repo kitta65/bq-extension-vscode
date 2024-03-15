@@ -694,9 +694,9 @@ export class BQLanguageServer {
           newText: formattedText,
         },
       ];
-    } catch (_) {
+    } catch (e) {
       const params: LSP.ShowMessageParams = {
-        message: "Cannot format the query. Try `Dry Run` command.",
+        message: String(e),
         type: LSP.MessageType.Error,
       };
       this.connection.sendNotification("window/showMessage", params);
