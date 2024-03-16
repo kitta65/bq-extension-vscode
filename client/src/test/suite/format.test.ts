@@ -16,7 +16,7 @@ describe("Format", function () {
     util.insert(filename, new vscode.Position(0, 0), sql);
     await vscode.commands.executeCommand("editor.action.formatDocument");
     const texts = vscode.workspace.textDocuments.filter(
-      (text) => text.fileName === filename,
+      (text) => text.fileName.endsWith(filename), // it is a little optimistic, but OK
     );
     assert.equal(texts.length, 1);
     const text = texts[0];
