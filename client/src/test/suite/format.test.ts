@@ -20,6 +20,7 @@ describe("Format", function () {
     );
     const texts = vscode.workspace.textDocuments.filter(
       (text) => text.fileName.endsWith(filename), // it is a little optimistic, but OK
+      {},
     );
     assert.equal(texts.length, 1);
     const text = texts[0];
