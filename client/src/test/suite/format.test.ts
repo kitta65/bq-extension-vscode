@@ -14,7 +14,10 @@ describe("Format", function () {
   it("format", async function () {
     const sql = "SELECT 1    ;";
     util.insert(filename, new vscode.Position(0, 0), sql);
-    await vscode.commands.executeCommand("editor.action.formatDocument");
+    await vscode.commands.executeCommand(
+      "vscode.executeFormatDocumentProvider",
+      util.getDocUri(filename),
+    );
     const texts = vscode.workspace.textDocuments.filter(
       (text) => text.fileName.endsWith(filename), // it is a little optimistic, but OK
     );
