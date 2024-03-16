@@ -7,6 +7,7 @@ import * as util from "./util";
 import { CacheDB } from "./database";
 import { globalFunctions, notGlobalFunctions } from "./functions";
 import { execSync } from "child_process";
+import * as prettierPluginBQ from "prettier-plugin-bq";
 
 declare module "bq2cst" {
   interface BaseNode {
@@ -638,6 +639,7 @@ export class BQLanguageServer {
       const formattedText = await prettier
         .format(originalText, {
           parser: "sql-parse",
+          plugins: [prettierPluginBQ],
           ...config.formatting,
         })
         .then((txt) => txt.slice(0, -1)); // remove unnecessary \n
@@ -694,9 +696,9 @@ export class BQLanguageServer {
           newText: formattedText,
         },
       ];
-    } catch (_) {
+    } catch (e) {
       const params: LSP.ShowMessageParams = {
-        message: "Cannot format the query. Try `Dry Run` command.",
+        message: String(e),
         type: LSP.MessageType.Error,
       };
       this.connection.sendNotification("window/showMessage", params);
