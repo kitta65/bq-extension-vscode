@@ -17,10 +17,10 @@ describe("Format", function () {
     await vscode.commands.executeCommand(
       "vscode.executeFormatDocumentProvider",
       util.getDocUri(filename),
+      { insertSpaces: true, tabSize: 2 } as vscode.FormattingOptions,
     );
     const texts = vscode.workspace.textDocuments.filter(
       (text) => text.fileName.endsWith(filename), // it is a little optimistic, but OK
-      {},
     );
     assert.equal(texts.length, 1);
     const text = texts[0];
