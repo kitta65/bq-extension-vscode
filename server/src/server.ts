@@ -7,6 +7,7 @@ import * as util from "./util";
 import { CacheDB } from "./database";
 import { globalFunctions, notGlobalFunctions } from "./functions";
 import { execSync } from "child_process";
+import * as prettierPluginBQ from "prettier-plugin-bq";
 
 declare module "bq2cst" {
   interface BaseNode {
@@ -638,6 +639,7 @@ export class BQLanguageServer {
       const formattedText = await prettier
         .format(originalText, {
           parser: "sql-parse",
+          plugins: [prettierPluginBQ],
           ...config.formatting,
         })
         .then((txt) => txt.slice(0, -1)); // remove unnecessary \n
