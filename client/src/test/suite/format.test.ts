@@ -12,19 +12,15 @@ describe("Format", function () {
     await util.deleteTextDocument(filename);
   });
   it("format", async function () {
-    const sql = "SELECT 1    ;";
-    util.insert(filename, new vscode.Position(0, 0), sql);
-    await vscode.commands.executeCommand(
-      "vscode.executeFormatDocumentProvider",
-      util.getDocUri(filename),
-      { insertSpaces: true, tabSize: 2 } as vscode.FormattingOptions,
-    );
-    const texts = vscode.workspace.textDocuments.filter(
-      (text) => text.fileName.endsWith(filename), // it is a little optimistic, but OK
-    );
-    assert.equal(texts.length, 1);
-    const text = texts[0];
-    const actual = text.getText();
-    assert.equal(actual, "SELECT 1;");
+    const sql = "SELECT 1 one;";
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const res: Array<{ newText: string }> =
+      await vscode.commands.executeCommand(
+        "vscode.executeFormatDocumentProvider",
+        util.getDocUri(filename),
+        { insertSpaces: true, tabSize: 2 } as vscode.FormattingOptions,
+      );
+    assert.equal(res.length, 1);
+    assert.equal(res[0].newText.toLowerCase().trim(), "as");
   });
 });
