@@ -43,7 +43,7 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: npm
 
-      - uses: dr666m1/tag-version-match@main
+      - uses: kitta65/tag-version-match@main
         with:
           file: ./package.json
           query: .version
