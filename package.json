@@ -168,7 +168,7 @@
     "@vscode/vsce": "^2.24.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "mocha": "^10.3.0",
+    "mocha": "^10.4.0",
     "typescript": "^5.4.3"
   },
   "__metadata": {
