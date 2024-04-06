@@ -12,7 +12,7 @@ describe("Format", function () {
     await util.deleteTextDocument(filename);
   });
   it("format", async function () {
-    const sql = "SELECT 1 one;";
+    const sql = "SELECT 1 one;\n";
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const res: Array<{ newText: string }> =
       await vscode.commands.executeCommand(
