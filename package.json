@@ -10,7 +10,7 @@
   },
   "author": "kitta65",
   "license": "MIT",
-  "version": "0.0.49",
+  "version": "0.0.50",
   "publisher": "dr666m1",
   "categories": [
     "Programming Languages",
@@ -152,7 +152,7 @@
   "dependencies": {
     "@google-cloud/bigquery": "^7.7.0",
     "dblite": "^1.1.4",
-    "prettier-plugin-bq": "0.2.53",
+    "prettier-plugin-bq": "0.2.54",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.1"
