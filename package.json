@@ -21,7 +21,7 @@
     "BigQuery"
   ],
   "engines": {
-    "vscode": "^1.87.0"
+    "vscode": "^1.89.0"
   },
   "activationEvents": [],
   "main": "./client/out/extension",
@@ -161,7 +161,7 @@
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.12.8",
-    "@types/vscode": "^1.87.0",
+    "@types/vscode": "^1.89.0",
     "@typescript-eslint/eslint-plugin": "^7.8.0",
     "@typescript-eslint/parser": "^7.8.0",
     "@vscode/test-electron": "^2.3.9",
