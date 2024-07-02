@@ -21,7 +21,7 @@
     "BigQuery"
   ],
   "engines": {
-    "vscode": "^1.89.0"
+    "vscode": "^1.90.0"
   },
   "activationEvents": [],
   "main": "./client/out/extension",
