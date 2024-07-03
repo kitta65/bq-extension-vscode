@@ -6,7 +6,7 @@
   "icon": "icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dr666m1/bq-extension-vscode"
+    "url": "https://github.com/kitta65/bq-extension-vscode"
   },
   "author": "kitta65",
   "license": "MIT",
