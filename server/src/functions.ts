@@ -1391,6 +1391,19 @@ SELECT
   ),`,
   },
   {
+    ident: "JSON_KEYS",
+    example: `SELECT
+  -- ARRAY["a", "a.b"]
+  JSON_KEYS(JSON '{"a": {"b": 2}}'),
+  -- ARRAY["a"]
+  JSON_KEYS(JSON '{"a": {"b": 2}}', 1),
+  -- ARRAY["a", "a.b"]
+  JSON_KEYS(
+    JSON '{"a": [{"b": 2}]}',
+    mode => "lax"
+  ),`,
+  },
+  {
     ident: "JSON_OBJECT",
     example: `SELECT
   -- JSON '{"a": 1, "b": 2}'
