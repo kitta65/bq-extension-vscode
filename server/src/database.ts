@@ -114,7 +114,7 @@ COMMIT;`);
           let obj;
           try {
             obj = JSON.parse(stdout);
-          } catch (_) {
+          } catch {
             reject(new Error("Cannot parse stdout!"));
             return;
           }
@@ -133,7 +133,7 @@ COMMIT;`);
           let obj;
           try {
             obj = JSON.parse(stdout);
-          } catch (_) {
+          } catch {
             reject(new Error("Cannot parse stdout!"));
             return;
           }

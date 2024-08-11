@@ -388,7 +388,7 @@ export class BQLanguageServer {
         let prevCsts;
         try {
           prevCsts = util.parseSQL(prevText);
-        } catch (_) {
+        } catch {
           return [];
         }
         const nameSpaces = (await this.createNameSpaces(prevCsts)).filter(
@@ -516,7 +516,7 @@ export class BQLanguageServer {
       let newCsts;
       try {
         newCsts = util.parseSQL(newText);
-      } catch (_) {
+      } catch {
         return [];
       }
       const namespaces = (await this.createNameSpaces(newCsts)).filter((ns) => {
