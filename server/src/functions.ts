@@ -464,6 +464,8 @@ ORDER BY x`,
   BIT_COUNT(b'\\x08'), -- 1`,
   },
   // ----- built-in table functions -----
+  "APPENDS",
+  "CHANGES",
   {
     ident: "EXTERNAL_OBJECT_TRANSFORM",
     example: `SELECT uri
@@ -472,6 +474,7 @@ FROM EXTERNAL_OBJECT_TRANSFORM(
   ["SIGNED_URL"]
 )`,
   },
+  "RANGE_SESSIONIZE",
   // ----- conversion functions -----
   {
     ident: "CAST",
