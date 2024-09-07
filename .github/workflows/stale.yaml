@@ -1,18 +1,8 @@
+name: stale
 on:
-  schedule:
-    - cron: '30 1 * * *'
   workflow_dispatch:
-
 jobs:
-  stale:
+  greet:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@v9
-        with:
-          stale-issue-message: &message >
-            This has been automatically marked as stale because it has
-            not had recent activity. It will be closed if no further activity
-            occurs. Thank you for your contributions.
-          stale-pr-message: *message
-          exempt-issue-labels: rss
-          exempt-pr-labels: dependencies
+    - run: echo Hello World
