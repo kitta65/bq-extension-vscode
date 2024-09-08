@@ -17,5 +17,6 @@ jobs:
             This pull request has been automatically marked as stale because it has
             not had recent activity. It will be closed if no further activity
             occurs. Thank you for your contributions.
-          exempt-issue-labels: rss,blocked
+          exempt-all-assignees: true
+          exempt-issue-labels: rss
           exempt-pr-labels: dependencies
