@@ -10,7 +10,7 @@ export function run(): Promise<void> {
   mocha.timeout(0);
   mocha.globalSetup(globalSetup);
   const testsRoot = __dirname;
-  console.log(glob)
+  console.log(glob);
   return new Promise<void>((resolve, reject) => {
     glob("**.test.js", { cwd: testsRoot }, (err, files) => {
       if (err) {
