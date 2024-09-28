@@ -132,7 +132,7 @@ COMMIT;`);
         (_, stdout) => {
           let obj;
           try {
-            obj = JSON.parse(stdout);
+            obj = JSON.parse(stdout || "[]");
           } catch {
             reject(new Error("Cannot parse stdout!"));
             return;
