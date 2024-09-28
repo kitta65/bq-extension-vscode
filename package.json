@@ -169,7 +169,8 @@
     "eslint": "^9.11.1",
     "eslint-config-prettier": "^9.1.0",
     "mocha": "^10.7.3",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "glob": "^11.0.0"
   },
   "__metadata": {
     "id": "c2d7b81e-c3d1-4219-94e7-6f3e5f762c79",
