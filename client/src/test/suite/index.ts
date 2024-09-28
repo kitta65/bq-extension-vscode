@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import * as util from "./util";
 
 // NOTE If the function is not named `run`, you'll get an error.
-export function run() {
+export function run(): Promise<void> {
   const mocha = new Mocha({ ui: "bdd", color: true });
   mocha.timeout(0);
   mocha.globalSetup(globalSetup);
@@ -14,10 +14,14 @@ export function run() {
     mocha.addFile(path.resolve(testsRoot, f));
   });
 
-  mocha.run((failures) => {
-    if (0 < failures) {
-      throw `${failures} tests failed.`;
-    }
+  return new Promise<void>((resolve, reject) => {
+    mocha.run((failures) => {
+      if (0 < failures) {
+        reject(new Error(`${failures} tests failed.`));
+      } else {
+        resolve();
+      }
+    });
   });
 }
 
