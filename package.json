@@ -150,7 +150,7 @@
     "test": "tsc -b && node client/out/test/runTest"
   },
   "dependencies": {
-    "@google-cloud/bigquery": "^7.9.3",
+    "@google-cloud/bigquery": "^7.9.4",
     "dblite": "^1.1.4",
     "prettier-plugin-bq": "0.2.58",
     "vscode-languageclient": "^9.0.1",
