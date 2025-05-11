@@ -3,6 +3,7 @@ import * as fs from "fs";
 import { BigQuery } from "@google-cloud/bigquery";
 import { exec } from "child_process";
 import { dirname } from "path";
+import Datastore from "@seald-io/nedb";
 
 type DatasetRecord = {
   project: string;
@@ -42,13 +43,15 @@ CREATE TABLE IF NOT EXISTS columns (
 `;
 
 export class CacheDB {
-  public static async initialize(filename: string) {
+  public static async initialize(filename: string, nedbFileName: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
     const db = new CacheDB(filename);
+    const nedb = new Datastore({ filename: nedbFileName, autoload: true });
     await Promise.all([
       db.query(createTableProjects),
       db.query(createTableDatasets),
       db.query(createTableColumns),
+      nedb.autoloadPromise,
     ]);
     return db;
   }
