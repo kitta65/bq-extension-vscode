@@ -2433,6 +2433,19 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     "MERGE_PARTIAL",
     "EXTRACT",
   ],
+  KLL_QUANTILES: [
+    "EXTRACT_INT64",
+    "EXTRACT_FLOAT64",
+    "EXTRACT_POINT_INT64",
+    "EXTRACT_POINT_FLOAT64",
+    "INIT_INT64",
+    "INIT_FLOAT64",
+    "MERGE_INT64",
+    "MERGE_FLOAT64",
+    "MERGE_PARTIAL",
+    "MERGE_POINT_INT64",
+    "MERGE_POINT_FLOAT64",
+  ],
   ML: [
     // ----- ML functions -----
     "TRANSFORM",
