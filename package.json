@@ -161,14 +161,14 @@
   "devDependencies": {
     "@types/glob": "^8.1.0",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^22.15.10",
+    "@types/node": "^22.15.17",
     "@types/vscode": "^1.92.0",
     "@typescript-eslint/eslint-plugin": "^8.32.0",
     "@typescript-eslint/parser": "^8.32.0",
     "@vscode/test-electron": "^2.5.2",
     "@vscode/vsce": "^3.3.2",
     "eslint": "^9.26.0",
-    "eslint-config-prettier": "^10.1.2",
+    "eslint-config-prettier": "^10.1.5",
     "glob": "^11.0.2",
     "mocha": "^11.2.2",
     "typescript": "^5.8.3"
