@@ -2361,6 +2361,12 @@ ORDER BY ts`,
     -- 'a9fd30f7-3f80-...'
     GENERATE_UUID()`,
   },
+  {
+    ident: "TYPEOF",
+    example: `SELECT
+    -- 'STRING'
+    TYPEOF("foo")`,
+  },
   // ----- conditional -----
   {
     ident: "COALESCE",
