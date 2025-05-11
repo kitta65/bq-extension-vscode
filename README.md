@@ -1,4 +1,11 @@
 # BigQuery Extension for VSCode
+
+> [!NOTE]
+> The Identifier of the extension has changed! Sorry for the confusion.
+> 
+> * old: `dr666m1.bq-extension-vscode`
+> * new: `kitta65.googlesql-extension-vscode`
+
 <img src="https://user-images.githubusercontent.com/26474260/148650103-7217fa6f-e1d2-4393-a013-6782d80837be.gif">
 
 This is a Visual Studio Code extension for standardSQL, which is a SQL dialect supported by BigQuery.
