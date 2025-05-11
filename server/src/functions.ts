@@ -2393,6 +2393,7 @@ ORDER BY ts`,
 ];
 
 export const notGlobalFunctions: { [key: string]: Func[] } = {
+  AI: ["FORECAST"],
   KEYS: [
     // ----- AEAD encryption functions -----
     "NEW_KEYSET",
