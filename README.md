@@ -19,7 +19,7 @@ The [language server](https://github.com/kitta65/bq-extension-vscode/tree/main/s
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 2. Run `gcloud auth login` `gcloud auth application-default login`
 3. Install sqlite3
-4. [Install this extension from VSCode](https://marketplace.visualstudio.com/items?itemName=kitta65.bigquery-extension-vscode)
+4. [Install this extension from VSCode](https://marketplace.visualstudio.com/items?itemName=kitta65.googlesql-extension-vscode)
 5. Open a file (`xxx.bq` or `xxx.bigquery`)
 6. Update cache (see the usage section)
 
