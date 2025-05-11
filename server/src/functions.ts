@@ -2338,6 +2338,7 @@ ORDER BY ts`,
   "ST_NUMPOINTS",
   "ST_PERIMETER",
   "ST_POINTN",
+  "ST_REGIONSTATS",
   "ST_SIMPLIFY",
   "ST_SNAPTOGRID",
   "ST_STARTPOINT",
@@ -2359,6 +2360,12 @@ ORDER BY ts`,
     example: `SELECT
     -- 'a9fd30f7-3f80-...'
     GENERATE_UUID()`,
+  },
+  {
+    ident: "TYPEOF",
+    example: `SELECT
+    -- 'STRING'
+    TYPEOF("foo")`,
   },
   // ----- conditional -----
   {
@@ -2392,6 +2399,14 @@ ORDER BY ts`,
 ];
 
 export const notGlobalFunctions: { [key: string]: Func[] } = {
+  AI: [
+    "FORECAST",
+    "GENERATE",
+    "GENERATE_BOOL",
+    "GENERATE_DOUBLE",
+    "GENERATE_INT",
+    "GENERATE_TABLE",
+  ],
   KEYS: [
     // ----- AEAD encryption functions -----
     "NEW_KEYSET",
@@ -2417,6 +2432,19 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     "MERGE",
     "MERGE_PARTIAL",
     "EXTRACT",
+  ],
+  KLL_QUANTILES: [
+    "EXTRACT_INT64",
+    "EXTRACT_FLOAT64",
+    "EXTRACT_POINT_INT64",
+    "EXTRACT_POINT_FLOAT64",
+    "INIT_INT64",
+    "INIT_FLOAT64",
+    "MERGE_INT64",
+    "MERGE_FLOAT64",
+    "MERGE_PARTIAL",
+    "MERGE_POINT_INT64",
+    "MERGE_POINT_FLOAT64",
   ],
   ML: [
     // ----- ML functions -----
@@ -2451,6 +2479,8 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     // point-in-time lookup functions
     "FEATURES_AT_TIME",
     "ENTITY_FEATURES_AT_TIME",
+    // augmented analytics
+    "GET_INSIGHTS ",
     // hyperparameter tuning functions
     "TRIAL_INFO",
     // evaluation functions
