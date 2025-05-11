@@ -27,7 +27,9 @@ export function run(): Promise<void> {
 
 async function globalSetup() {
   console.log("Start initializing the extension");
-  const ext = vscode.extensions.getExtension("dr666m1.bq-extension-vscode")!;
+  const ext = vscode.extensions.getExtension(
+    "kitta65.bigquery-extension-vscode",
+  )!;
   await ext.activate();
   await util.createTextDocument("cache.bq");
   await util.insert(

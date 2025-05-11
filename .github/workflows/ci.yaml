@@ -27,8 +27,8 @@ jobs:
       - run: npx vsce package
       - uses: actions/upload-artifact@v4
         with:
-          name: bq-extension-vscode.vsix
-          path: ./bq-extension-vscode-*.vsix
+          name: bigquery-extension-vscode.vsix
+          path: ./bigquery-extension-vscode-*.vsix
 
   deploy:
     runs-on: ubuntu-latest
@@ -51,8 +51,8 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: bq-extension-vscode.vsix
+          name: bigquery-extension-vscode.vsix
 
-      - run: npx @vscode/vsce publish --packagePath ./bq-extension-vscode-*.vsix
+      - run: npx @vscode/vsce publish --packagePath ./bigquery-extension-vscode-*.vsix
         env:
           VSCE_PAT: ${{ secrets.VSCE_PAT }}

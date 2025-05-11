@@ -2,13 +2,13 @@
 <img src="https://user-images.githubusercontent.com/26474260/148650103-7217fa6f-e1d2-4393-a013-6782d80837be.gif">
 
 This is a Visual Studio Code extension for standardSQL, which is a SQL dialect supported by BigQuery.
-The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/server) itself is also available by other editors.
+The [language server](https://github.com/kitta65/bq-extension-vscode/tree/main/server) itself is also available by other editors.
 
 ## Features
 - Complete table names (when quoted by `` ` `` ), column names (in SELECT statement) and functions
 - Show hover information about tables and functions
 - Dry run on save and show total bytes processed
-- Format source code using [prettier-plugin-bq](https://github.com/dr666m1/prettier-plugin-bq) (`Shift+Alt+F`)
+- Format source code using [prettier-plugin-bq](https://github.com/kitta65/prettier-plugin-bq) (`Shift+Alt+F`)
 - Language configuration and syntax highlight (mostly based on [sql](https://github.com/microsoft/vscode/tree/main/extensions/sql), but slightly adjusted)
 
 ## Quick Start
@@ -19,7 +19,7 @@ The [language server](https://github.com/dr666m1/bq-extension-vscode/tree/main/s
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
 2. Run `gcloud auth login` `gcloud auth application-default login`
 3. Install sqlite3
-4. [Install this extension from VSCode](https://marketplace.visualstudio.com/items?itemName=dr666m1.bq-extension-vscode)
+4. [Install this extension from VSCode](https://marketplace.visualstudio.com/items?itemName=kitta65.bigquery-extension-vscode)
 5. Open a file (`xxx.bq` or `xxx.bigquery`)
 6. Update cache (see the usage section)
 

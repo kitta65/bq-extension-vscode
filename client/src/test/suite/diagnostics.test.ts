@@ -4,7 +4,7 @@ import * as util from "./util";
 
 /**NOTE
  * The position of the diagnostic is not tested here
- * because it depends on the message from BigQuery (or `@dr666m1/bq2cst`).
+ * because it depends on the message from BigQuery (or `@kitta65/bq2cst`).
  */
 
 const filename = "diagnostics.bq";
