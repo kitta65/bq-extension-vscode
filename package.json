@@ -151,6 +151,7 @@
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.0.0",
+    "@seald-io/nedb": "^4.1.1",
     "dblite": "^1.1.4",
     "prettier-plugin-bq": "0.2.59",
     "vscode-languageclient": "^9.0.1",
