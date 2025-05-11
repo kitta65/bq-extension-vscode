@@ -45,25 +45,31 @@ CREATE TABLE IF NOT EXISTS columns (
 export class CacheDB {
   public static async initialize(filename: string, nedbFileName: string) {
     await fs.promises.mkdir(dirname(filename), { recursive: true });
-    const db = new CacheDB(filename);
-    const nedb = new Datastore({ filename: nedbFileName, autoload: true });
+    const db = new CacheDB(filename, nedbFileName);
     await Promise.all([
       db.query(createTableProjects),
       db.query(createTableDatasets),
       db.query(createTableColumns),
-      nedb.autoloadPromise,
+      db.nedb.autoloadPromise,
     ]);
     return db;
   }
 
   private db: SQLite;
   private bqClient = new BigQuery();
+  private nedb: Datastore<Record<string, unknown>>;
+  private nedbFileName: string;
 
-  private constructor(filename: string) {
+  private constructor(filename: string, nedbFileName: string) {
     this.db = dblite(filename);
+    this.nedbFileName = nedbFileName;
+    this.nedb = new Datastore({ filename: nedbFileName, autoload: true });
   }
 
   public async clearCache() {
+    await this.nedb.dropDatabaseAsync();
+    this.nedb = new Datastore({ filename: this.nedbFileName, autoload: true });
+    await this.nedb.autoloadPromise;
     await this.query(`
 BEGIN;
 DROP TABLE projects;
