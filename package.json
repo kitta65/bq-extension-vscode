@@ -1,7 +1,7 @@
 {
   "private": true,
-  "name": "bigquery-extension-vscode",
-  "displayName": "BigQuery Extension for VSCode",
+  "name": "googlesql-extension-vscode",
+  "displayName": "GoogleSQL Extension for VSCode",
   "description": "Code completion / Code Formatting / Dry run / Hover information",
   "icon": "icon.png",
   "repository": {
