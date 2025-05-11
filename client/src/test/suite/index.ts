@@ -28,7 +28,7 @@ export function run(): Promise<void> {
 async function globalSetup() {
   console.log("Start initializing the extension");
   const ext = vscode.extensions.getExtension(
-    "kitta65.bigquery-extension-vscode",
+    "kitta65.googlesql-extension-vscode",
   )!;
   await ext.activate();
   await util.createTextDocument("cache.bq");
