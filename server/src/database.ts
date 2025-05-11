@@ -72,11 +72,6 @@ export class CacheDB {
     await this.nedb.autoloadPromise;
   }
 
-  public close() {
-    // if the db has already been closed, it does not throw error.
-    this.db.close();
-  }
-
   public query(sql: string, paramsOrFields?: any[]): Promise<any[]>;
   public query(sql: string, params?: any[], fields?: any[]): Promise<any[]>;
   public query(sql: string, arg1?: any[], arg2?: any[]): Promise<any[]> {

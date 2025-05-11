@@ -20,7 +20,7 @@ connection.onInitialize(async (params: LSP.InitializeParams) => {
   );
   // in the case that the client does not request shutdown
   process.on("SIGTERM", () => {
-    db.close();
+    // close the db connection if needed
   });
 
   const server = await BQLanguageServer.initialize(

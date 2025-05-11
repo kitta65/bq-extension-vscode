@@ -285,7 +285,7 @@ export class BQLanguageServer {
       this.onRequestUpdateCache.bind(this),
     );
     this.connection.onShutdown(() => {
-      this.db.close();
+      // close the db connection if needed
     });
   }
 
