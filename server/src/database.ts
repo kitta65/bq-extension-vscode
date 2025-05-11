@@ -11,12 +11,12 @@ type DatasetRecord = {
   location: string;
 };
 
-type ColumnRecord = {
+type Document = {
   project: string;
-  dataset: string;
-  table: string;
-  column: string;
-  data_type: string;
+  dataset: string | null;
+  table: string | null;
+  location?: string;
+  columns?: { column: string; data_type: string }[];
 };
 
 const createTableProjects = `
@@ -70,15 +70,6 @@ export class CacheDB {
     await this.nedb.dropDatabaseAsync();
     this.nedb = new Datastore({ filename: this.nedbFileName, autoload: true });
     await this.nedb.autoloadPromise;
-    await this.query(`
-BEGIN;
-DROP TABLE projects;
-DROP TABLE datasets;
-DROP TABLE columns;
-${createTableProjects}
-${createTableDatasets}
-${createTableColumns}
-COMMIT;`);
   }
 
   public close() {
@@ -165,72 +156,75 @@ COMMIT;`);
   }
 
   public async updateCache(texts: string[]) {
-    const insertQueries: Promise<any>[] = [];
-
     // cache projects
     const projects = await this.getAvailableProjects();
-    await this.query(`
-BEGIN;
-DROP TABLE projects;
-${createTableProjects}
-COMMIT;`);
-    projects.forEach((proj) => {
-      insertQueries.push(
-        this.query(`INSERT OR IGNORE INTO projects (project) VALUES (?);`, [
-          proj,
-        ]),
-      );
-    });
+    await this.nedb.removeAsync(
+      { project: { $ne: null }, dataset: null, table: null },
+      { multi: true },
+    );
+    await this.nedb.insertAsync(
+      projects.map((project) => ({ project, dataset: null, table: null })),
+    );
 
     // cache datasets
-    const datasetRecords: DatasetRecord[] = [];
+    let datasets: (Document & { dataset: string })[] = [];
     for (const proj of projects) {
       const rows = await this.getAvailableDatasets(proj);
-      await this.query("DELETE FROM datasets WHERE project = ?", [proj]);
-      rows.forEach((row) => {
-        datasetRecords.push(row);
-        insertQueries.push(
-          this.query(
-            `INSERT OR IGNORE INTO datasets (project, dataset, location) VALUES (?, ?, ?);`,
-            [row.project, row.dataset, row.location],
-          ),
-        );
-      });
+      await this.nedb.removeAsync(
+        {
+          project: proj,
+          dataset: { $ne: null },
+          table: null,
+        },
+        { multi: true },
+      );
+      const docs = rows.map((row) => ({
+        project: row.project,
+        dataset: row.dataset,
+        table: null,
+        location: row.location,
+      }));
+      this.nedb.insertAsync(docs);
+      datasets = [...datasets, ...docs];
     }
 
     // cache columns
-    for (const dataset of datasetRecords) {
-      let columnRecords: ColumnRecord[] = [];
+    for (const dataset of datasets) {
+      // skip if the dataset name does not appear in SQL files
       if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
+
       const options = {
         query: `
 SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
   REGEXP_REPLACE(table_name, r"([^0-9])[0-9]{8,}$", r"\\1*") AS table,
-  column_name AS column,
-  data_type,
+  ARRAY_AGG(STRUCT(column_name AS column, data_type)) as columns,
 FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
+GROUP BY project, dataset, table
 LIMIT 10000;`,
         location: dataset.location,
       };
       const [job] = await this.bqClient.createQueryJob(options);
       const [rows] = await job.getQueryResults();
-      columnRecords = rows;
-      await this.query(
-        "DELETE FROM columns WHERE project = ? and dataset = ?",
-        [dataset.project, dataset.dataset],
+      await this.nedb.removeAsync(
+        {
+          project: dataset.project,
+          dataset: dataset.dataset,
+          table: { $ne: null },
+        },
+        { multi: true },
       );
-      columnRecords.forEach((c) =>
-        insertQueries.push(
-          this.query(
-            "INSERT OR IGNORE INTO columns (project, dataset, table_name, column, data_type) VALUES (?, ?, ?, ?, ?);",
-            [dataset.project, dataset.dataset, c.table, c.column, c.data_type],
-          ),
-        ),
+      this.nedb.insertAsync(
+        rows.map((row) => ({
+          project: row.project,
+          dataset: row.dataset,
+          table: row.table,
+          location: dataset.location,
+          columns: row.columns,
+        })),
       );
     }
-    await Promise.all(insertQueries);
   }
 
   public async updateCacheForTest(_: string[]) {
