@@ -2399,6 +2399,7 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     "GENERATE_BOOL",
     "GENERATE_DOUBLE",
     "GENERATE_INT",
+    "GENERATE_TABLE",
   ],
   KEYS: [
     // ----- AEAD encryption functions -----
