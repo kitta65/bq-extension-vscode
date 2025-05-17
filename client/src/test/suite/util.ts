@@ -3,8 +3,15 @@ import * as path from "path";
 import { BigQuery } from "@google-cloud/bigquery";
 
 const client = new BigQuery();
-export const project =
-  process.env.CI === "true" ? "bq-extension-vscode" : client.projectId;
+
+export async function getProjectId() {
+  if (process.env.CI === "true") {
+    return "bq-extension-vscode";
+  }
+
+  const projectId = await client.getProjectId()
+  return projectId;
+}
 
 export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
