@@ -1,7 +1,7 @@
 # BigQuery Language Sever
 
 > [!WARNING]
-> This language server is designed to be used by [bq-extension-vscode](https://github.com/dr666m1/bq-extension-vscode).
+> This language server is designed to be used by [bq-extension-vscode](https://github.com/kitta65/bq-extension-vscode).
 > Some features might be ignored by other client.
 
 ## Install

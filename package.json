@@ -1,7 +1,7 @@
 {
   "private": true,
-  "name": "bq-extension-vscode",
-  "displayName": "BigQuery Extension for VSCode",
+  "name": "googlesql-extension-vscode",
+  "displayName": "GoogleSQL Extension for VSCode",
   "description": "Code completion / Code Formatting / Dry run / Hover information",
   "icon": "icon.png",
   "repository": {
@@ -10,8 +10,8 @@
   },
   "author": "kitta65",
   "license": "MIT",
-  "version": "0.0.55",
-  "publisher": "dr666m1",
+  "version": "0.0.56",
+  "publisher": "kitta65",
   "categories": [
     "Programming Languages",
     "Formatters",
@@ -153,7 +153,7 @@
     "@google-cloud/bigquery": "^8.0.0",
     "@seald-io/nedb": "^4.1.1",
     "dblite": "^1.1.4",
-    "prettier-plugin-bq": "0.2.59",
+    "prettier-plugin-bq": "0.2.60",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"

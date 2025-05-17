@@ -2446,6 +2446,12 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
     "MERGE_POINT_INT64",
     "MERGE_POINT_FLOAT64",
   ],
+  OBJ: [
+    // ----- ObjectRef functions -----
+    "FETCH_METADATA",
+    "GET_ACCESS_URL",
+    "MAKE_REF",
+  ],
   ML: [
     // ----- ML functions -----
     "TRANSFORM",
