@@ -163,8 +163,67 @@ LIMIT 10000;`,
   }
 
   public async updateCacheForTest(_: string[]) {
-    // TODO
-    const insertQueries: Promise<any>[] = [];
-    await Promise.all(insertQueries);
+    const project = "bq-extension-vscode";
+    const insertProject = this.nedb.insertAsync({
+      project,
+      dataset: null,
+      table: null,
+    });
+
+    // US
+    const datasetUS = "bq_extension_vscode_test";
+    const insertDatasetUS = this.nedb.insertAsync({
+      project,
+      dataset: datasetUS,
+      table: null,
+      location: "US",
+    });
+    const insertTablesUS = ["t", "u_*"].map((table) =>
+      this.nedb.insertAsync({
+        project,
+        dataset: datasetUS,
+        table,
+        columns: [
+          { column: "str", data_type: "STRING" },
+          { column: "int", data_type: "INT64" },
+          { column: "float", data_type: "FLOAT64" },
+          { column: "bool", data_type: "BOOLEAN" },
+          { column: "arr", data_type: "ARRAY<INT64>" },
+          {
+            column: "nested",
+            data_type:
+              "STRUCT<arr2 ARRAY<INT64>, str2 STRING, int2 INT64, nested2 STRUCT<nested3 STRUCT<str4 STRING>, int3 INT64>>",
+          },
+        ],
+      }),
+    );
+
+    // asia-northeast1
+    const datasetAsia = "bq_extension_vscode_test_asia";
+    const insertDatasetAsia = this.nedb.insertAsync({
+      project,
+      dataset: datasetAsia,
+      table: null,
+      location: "asia-northeast1",
+    });
+    const insertTableAsia = this.nedb.insertAsync({
+      project,
+      dataset: datasetAsia,
+      table: "v",
+      columns: [
+        {
+          column: "str",
+          data_type: "STRING",
+        },
+      ],
+    });
+
+    await Promise.all([
+      insertProject,
+      insertDatasetUS,
+      insertTablesUS,
+      insertDatasetAsia,
+      insertTableAsia,
+    ]);
   }
 }
