@@ -57,7 +57,7 @@ export class CacheDB {
 
   private db: SQLite;
   private bqClient = new BigQuery();
-  private nedb: Datastore<Record<string, unknown>>;
+  public nedb: Datastore<Document>;
   private nedbFileName: string;
 
   private constructor(filename: string, nedbFileName: string) {
@@ -179,7 +179,7 @@ export class CacheDB {
         table: null,
         location: row.location,
       }));
-      this.nedb.insertAsync(docs);
+      await this.nedb.insertAsync(docs);
       datasets = [...datasets, ...docs];
     }
 
@@ -210,7 +210,7 @@ LIMIT 10000;`,
         },
         { multi: true },
       );
-      this.nedb.insertAsync(
+      await this.nedb.insertAsync(
         rows.map((row) => ({
           project: row.project,
           dataset: row.dataset,

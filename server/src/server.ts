@@ -331,6 +331,7 @@ export class BQLanguageServer {
         const idents = quoted[1].split(".");
         idents.pop();
         if (idents.length === 1) {
+          // TODO
           const datasets = (
             await this.db.query(
               "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
@@ -345,6 +346,7 @@ export class BQLanguageServer {
               documentation: util.convert2MarkdownItems({ kind: "dataset" }),
             });
           });
+          // TODO
           const tables = (
             await this.db.query(
               "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
@@ -360,13 +362,14 @@ export class BQLanguageServer {
             });
           });
         } else if (idents.length === 2) {
-          const tables = (
-            await this.db.query(
-              "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
-              [idents[0], idents[1]],
-              ["table_name"],
-            )
-          ).map((x: { table_name: string }) => x.table_name);
+          const tables = // TODO
+            (
+              await this.db.query(
+                "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
+                [idents[0], idents[1]],
+                ["table_name"],
+              )
+            ).map((x: { table_name: string }) => x.table_name);
           tables.forEach((table_name) => {
             res.push({
               label: table_name,
@@ -475,11 +478,12 @@ export class BQLanguageServer {
           });
       }
     } else if (char === "`") {
-      const projects = (
-        await this.db.query("SELECT DISTINCT project FROM projects;", [
-          "project",
-        ])
-      ).map((x: { project: string }) => x.project);
+      const projects = // TODO
+        (
+          await this.db.query("SELECT DISTINCT project FROM projects;", [
+            "project",
+          ])
+        ).map((x: { project: string }) => x.project);
       for (const project of projects) {
         res.push({
           label: project,
@@ -487,13 +491,14 @@ export class BQLanguageServer {
           documentation: util.convert2MarkdownItems({ kind: "project" }),
         });
       }
-      const datasets = (
-        await this.db.query(
-          "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
-          [this.defaultProject],
-          ["dataset"],
-        )
-      ).map((x: { dataset: string }) => x.dataset);
+      const datasets = // TODO
+        (
+          await this.db.query(
+            "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
+            [this.defaultProject],
+            ["dataset"],
+          )
+        ).map((x: { dataset: string }) => x.dataset);
       for (const dataset of datasets) {
         res.push({
           label: dataset,
@@ -1055,23 +1060,29 @@ export class BQLanguageServer {
       // TODO support default dataset
       return [];
     } else if (idents.length === 2) {
-      const dataset = idents[0];
-      const table = replaceTableSuffix(idents[1]);
-      const queryResults: QueryResult[] = await this.db.query(
-        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-        [this.defaultProject, dataset, table],
-        ["column", "data_type"],
-      );
+      const table = await this.db.nedb.findOneAsync({
+        project: this.defaultProject,
+        dataset: idents[0],
+        table: { $ne: null },
+      });
+      const queryResults: QueryResult[] =
+        table?.columns?.map((col) => ({
+          column: col.column,
+          data_type: col.data_type,
+        })) || [];
+
       return queryResults;
     } else if (idents.length === 3) {
-      const project = idents[0];
-      const dataset = idents[1];
-      const table = replaceTableSuffix(idents[2]);
-      const queryResults: QueryResult[] = await this.db.query(
-        `SELECT DISTINCT column, data_type FROM columns WHERE project = ? AND dataset = ? AND table_name = ?;`,
-        [project, dataset, table],
-        ["column", "data_type"],
-      );
+      const table = await this.db.nedb.findOneAsync({
+        project: idents[0],
+        dataset: idents[1],
+        table: replaceTableSuffix(idents[2]),
+      });
+      const queryResults: QueryResult[] =
+        table?.columns?.map((col) => ({
+          column: col.column,
+          data_type: col.data_type,
+        })) || [];
       return queryResults;
     } else {
       return [];
