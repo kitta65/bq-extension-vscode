@@ -9,7 +9,7 @@ export async function getProjectId() {
     return "bq-extension-vscode";
   }
 
-  const projectId = await client.getProjectId()
+  const projectId = await client.getProjectId();
   return projectId;
 }
 

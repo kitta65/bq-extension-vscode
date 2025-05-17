@@ -8,12 +8,11 @@ type Hover = {
 };
 
 describe("Hover", function () {
-  let projectId: string
+  let projectId: string;
 
-  before(async function() {
-    projectId  = await util.getProjectId();
-
-  })
+  before(async function () {
+    projectId = await util.getProjectId();
+  });
   beforeEach(async function () {
     await util.createTextDocument(filename);
   });
