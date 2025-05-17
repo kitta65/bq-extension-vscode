@@ -28,7 +28,7 @@ The [language server](https://github.com/kitta65/bq-extension-vscode/tree/main/s
 > Since v0.0.57, sqlite is no longer needed.
 
 1. [Install Google Cloud SDK](https://cloud.google.com/sdk/docs/install)
-2. Run `gcloud auth login` `gcloud auth application-default login`
+2. Run `gcloud auth login` `gcloud auth application-default login` `gcloud config set project $YOUR_PROJECT`
 3. [Install this extension from VSCode](https://marketplace.visualstudio.com/items?itemName=kitta65.googlesql-extension-vscode)
 4. Open a file (`xxx.bq` or `xxx.bigquery`)
 5. Update cache (see the usage section)

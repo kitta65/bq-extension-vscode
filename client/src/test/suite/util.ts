@@ -1,11 +1,17 @@
 import * as vscode from "vscode";
 import * as path from "path";
-import { execSync } from "child_process";
+import { BigQuery } from "@google-cloud/bigquery";
 
-export const project =
-  process.env.CI === "true"
-    ? "bq-extension-vscode"
-    : (execSync("gcloud config get-value project") + "").trim();
+const client = new BigQuery();
+
+export async function getProjectId() {
+  if (process.env.CI === "true") {
+    return "bq-extension-vscode";
+  }
+
+  const projectId = await client.getProjectId();
+  return projectId;
+}
 
 export async function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

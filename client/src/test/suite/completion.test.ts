@@ -5,6 +5,10 @@ import * as util from "./util";
 const filename = "completion.bq";
 
 describe("Completion", function () {
+  let projectId: string;
+  before(async function () {
+    projectId = await util.getProjectId();
+  });
   beforeEach(async function () {
     await util.createTextDocument(filename);
   });
@@ -49,10 +53,10 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === util.project));
+    assert.ok(list.items.some((x) => x.label === projectId));
   });
   it("dataset", async function () {
-    const sql = `SELECT * FROM \`${util.project}.\``;
+    const sql = `SELECT * FROM \`${projectId}.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -62,7 +66,7 @@ describe("Completion", function () {
     assert.ok(list.items.some((x) => x.label === "bq_extension_vscode_test"));
   });
   it("table_name", async function () {
-    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.\``;
+    const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -72,7 +76,7 @@ describe("Completion", function () {
     assert.ok(list.items.some((x) => x.label === "t"));
   });
   it("table_name_asia", async function () {
-    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test_asia.\``;
+    const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test_asia.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -92,7 +96,7 @@ describe("Completion", function () {
     assert.ok(list.items.some((x) => x.label === "t"));
   });
   it("table_name (table suffix)", async function () {
-    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.\``;
+    const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -108,7 +112,7 @@ describe("Completion", function () {
     const sql = `
 SELECT
   s
-FROM \`${util.project}.bq_extension_vscode_test.t\``;
+FROM \`${projectId}.bq_extension_vscode_test.t\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -122,7 +126,7 @@ FROM \`${util.project}.bq_extension_vscode_test.t\``;
     const sql = `
 SELECT
 
-FROM \`${util.project}.bq_extension_vscode_test.t\``;
+FROM \`${projectId}.bq_extension_vscode_test.t\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -135,7 +139,7 @@ FROM \`${util.project}.bq_extension_vscode_test.t\``;
     // NOTE `s` is neeeded to parse sql!
     const sql = `
 SELECT *
-FROM \`${util.project}.bq_extension_vscode_test.t\`
+FROM \`${projectId}.bq_extension_vscode_test.t\`
 WHERE
   s`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -182,7 +186,7 @@ FROM (
     const sql = `
 SELECT
   t
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
@@ -196,7 +200,7 @@ FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
 SELECT
   f
 FROM
-  \`${util.project}.bq_extension_vscode_test.t\` AS former
+  \`${projectId}.bq_extension_vscode_test.t\` AS former
   , (SELECT 1) AS latter`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
@@ -211,7 +215,7 @@ FROM
 SELECT
   l
 FROM
-  \`${util.project}.bq_extension_vscode_test.t\` AS former
+  \`${projectId}.bq_extension_vscode_test.t\` AS former
   , (SELECT 1 one) AS latter`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
@@ -276,7 +280,7 @@ SELECT *
 FROM tablename
 WHERE EXISTS(
   SELECT 1
-  FROM \`${util.project}.bq_extension_vscode_test.t\`
+  FROM \`${projectId}.bq_extension_vscode_test.t\`
   WHERE t
 )`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -292,7 +296,7 @@ WHERE EXISTS(
     const sql = `
 SELECT (
   SELECT 
-  FROM \`${util.project}.bq_extension_vscode_test.t\`
+  FROM \`${projectId}.bq_extension_vscode_test.t\`
 )`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const list = (await vscode.commands.executeCommand(
@@ -354,7 +358,7 @@ FROM tmp`;
   it("column with alias (refine existing table)", async function () {
     const sql = `
 WITH
-  t AS (SELECT 1 AS one FROM \`${util.project}.bq_extension_vscode_test.t\`),
+  t AS (SELECT 1 AS one FROM \`${projectId}.bq_extension_vscode_test.t\`),
   other_cte AS (SELECT 1 AS two)
 SELECT t
 FROM t`;
@@ -555,7 +559,7 @@ SELECT * FROM temp1
     const sql = `
 SELECT
   tmp
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     await util.insert(filename, new vscode.Position(2, 5), ".");
     const list = (await vscode.commands.executeCommand(
@@ -568,7 +572,7 @@ FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp`;
   it("column leaded by table end of statement", async function () {
     const sql = `
 SELECT *
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp
 WHERE 0 < tmp`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     await util.insert(filename, new vscode.Position(3, 13), ".");
@@ -582,10 +586,10 @@ WHERE 0 < tmp`;
   it("column leaded by table subquery", async function () {
     const sql = `
 SELECT *
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp1
 WHERE EXISTS(
   SELECT *
-  FROM \`${util.project}.bq_extension_vscode_test.u_*\` AS tmp2
+  FROM \`${projectId}.bq_extension_vscode_test.u_*\` AS tmp2
   WHERE tmp2.str = tmp1
 )`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -600,7 +604,7 @@ WHERE EXISTS(
   it("struct", async function () {
     const sql = `
 SELECT nested
-FROM \`${util.project}.bq_extension_vscode_test.t\`
+FROM \`${projectId}.bq_extension_vscode_test.t\`
 `;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     await util.insert(filename, new vscode.Position(1, 13), ".");
@@ -614,10 +618,10 @@ FROM \`${util.project}.bq_extension_vscode_test.t\`
   it("struct subquery", async function () {
     const sql = `
 SELECT *
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp1
 WHERE EXISTS(
   SELECT *
-  FROM \`${util.project}.bq_extension_vscode_test.u_*\` AS tmp2
+  FROM \`${projectId}.bq_extension_vscode_test.u_*\` AS tmp2
   WHERE tmp2.str = tmp1.nested
 )
 `;
@@ -633,7 +637,7 @@ WHERE EXISTS(
   it("deep struct", async function () {
     const sql = `
 SELECT nested.nested2.nested3
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp1
 `;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     await util.insert(filename, new vscode.Position(1, 29), ".");
@@ -647,10 +651,10 @@ FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
   it("deep struct subquery", async function () {
     const sql = `
 SELECT *
-FROM \`${util.project}.bq_extension_vscode_test.t\` AS tmp1
+FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp1
 WHERE EXISTS(
   SELECT *
-  FROM \`${util.project}.bq_extension_vscode_test.u_*\` AS tmp2
+  FROM \`${projectId}.bq_extension_vscode_test.u_*\` AS tmp2
   WHERE tmp2.str = tmp1.nested.nested2.nested3
 )
 `;
