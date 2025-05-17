@@ -117,6 +117,9 @@
         "bqExtensionVSCode.project.targetProjects": {
           "scope": "application",
           "type": "array",
+          "items": {
+            "type": "string"
+          },
           "default": [],
           "markdownDescription": "Project IDs used to search for table schema. Even if this option is empty, this extension tries to use your default project ID."
         },
