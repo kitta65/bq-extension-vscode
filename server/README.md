@@ -5,6 +5,7 @@
 > Some features might be ignored by other client.
 
 ## Install
+
 ```bash
 git clone https://github.com/kitta65/bq-extension-vscode.git
 cd bq-extension-vscode
@@ -15,7 +16,9 @@ npm install -g .
 ```
 
 ## Usage
+
 ### Vim
+
 1. Install [coc.nvim](https://github.com/neoclide/coc.nvim)
 2. Modify `coc-settings.json` and `.vimrc` (See the examples below)
 
@@ -31,12 +34,12 @@ npm install -g .
       "settings": {
         "bqExtensionVSCode": {
           "diagnostic": {
-            "forVSCode": false
-          }
-        }
-      }
-    }
-  }
+            "forVSCode": false,
+          },
+        },
+      },
+    },
+  },
 }
 ```
 
@@ -49,6 +52,7 @@ command! BQDryRun call CocRequestAsync("bigquery", "bq/dryRun", {"uri": "file://
 ```
 
 ### Neovim
+
 1. Enable [packer.nvim](https://github.com/wbthomason/packer.nvim)
 2. Modify your configuration
 
