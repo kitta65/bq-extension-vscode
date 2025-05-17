@@ -69,7 +69,13 @@ export class BQLanguageServer {
     db: NeDB,
     capabilities: Record<string, boolean>,
   ): Promise<BQLanguageServer> {
-    return new BQLanguageServer(connection, db, capabilities);
+    const server = new BQLanguageServer(connection, db, capabilities);
+    try {
+      await server.bqClient.getProjectId();
+    } catch {
+      // even if something went wrong, completion and hover would work
+    }
+    return server;
   }
   private bqClient = new BigQuery();
   public capabilities: LSP.InitializeResult = {
@@ -344,7 +350,7 @@ export class BQLanguageServer {
           });
           const tables =
             (await this.db.nedb.findAsync({
-              project: await this.bqClient.getProjectId(),
+              project: this.bqClient.projectId,
               dataset: idents[0],
               table: { $ne: null },
             })) ?? [];
@@ -485,7 +491,7 @@ export class BQLanguageServer {
       }
       const datasets =
         (await this.db.nedb.findAsync({
-          project: await this.bqClient.getProjectId(),
+          project: this.bqClient.projectId,
           dataset: { $ne: null },
           table: null,
         })) ?? [];
@@ -1055,7 +1061,7 @@ export class BQLanguageServer {
       return [];
     } else if (idents.length === 2) {
       const table = await this.db.nedb.findOneAsync({
-        project: await this.bqClient.getProjectId(),
+        project: this.bqClient.projectId,
         dataset: idents[0],
         table: { $ne: null },
       });
