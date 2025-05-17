@@ -485,7 +485,7 @@ export class BQLanguageServer {
       }
       const datasets =
         (await this.db.nedb.findAsync({
-          project: this.bqClient.getProjectId(),
+          project: await this.bqClient.getProjectId(),
           dataset: { $ne: null },
           table: null,
         })) ?? [];
