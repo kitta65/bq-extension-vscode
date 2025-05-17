@@ -91,90 +91,99 @@ export class NeDB {
   }
 
   public async updateCache(texts: string[]) {
-    const asyncOperations: Promise<unknown>[] = [];
-
-    // cache projects
     const projects = await this.getAvailableProjects();
-    const projectOperation = this.nedb
+    const updateProjects = this.nedb
       .removeAsync({ dataset: null, table: null }, { multi: true })
       .then(() =>
         this.nedb.insertAsync(
-          projects.map((project) => ({ project, dataset: null, table: null })),
+          projects.map((project) => ({
+            project,
+            dataset: null,
+            table: null,
+          })),
         ),
       );
-    asyncOperations.push(projectOperation);
+    const updateDatasets = Promise.all(
+      projects.map(async (proj) => this.updateCacheDatasets(texts, proj)),
+    );
+    await Promise.all([updateProjects, updateDatasets]);
+  }
 
-    // cache datasets
-    let datasets: { project: string; dataset: string; location: string }[] = [];
-    for (const proj of projects) {
-      const rows = await this.getAvailableDatasets(proj);
-      datasets = [...datasets, ...rows];
+  private async updateCacheDatasets(texts: string[], project: string) {
+    const datasets = await this.getAvailableDatasets(project);
 
-      const datasetOperation = this.nedb
-        .removeAsync(
-          {
-            project: proj,
-            dataset: { $ne: null },
-            table: null,
-          },
-          { multi: true },
-        )
-        .then(() => {
-          const docs = rows.map((row) => ({
-            project: row.project,
-            dataset: row.dataset,
-            table: null,
-            location: row.location,
-          }));
-          return this.nedb.insertAsync(docs);
-        });
-      asyncOperations.push(datasetOperation);
-    }
+    const updateDatasets = this.nedb
+      .removeAsync(
+        {
+          project,
+          dataset: { $ne: null },
+          table: null,
+        },
+        { multi: true },
+      )
+      .then(() => {
+        const docs = datasets.map((dataset) => ({
+          project: dataset.project,
+          dataset: dataset.dataset,
+          table: null,
+          location: dataset.location,
+        }));
+        return this.nedb.insertAsync(docs);
+      });
 
-    // cache tables
-    for (const dataset of datasets) {
-      // skip if the dataset name does not appear in SQL files
-      if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
+    const updateTables = Promise.all(
+      datasets.map((dataset) => {
+        if (!texts.some((txt) => txt.includes(dataset.dataset))) {
+          return;
+        }
+        return this.updateCacheTables(
+          dataset.project,
+          dataset.dataset,
+          dataset.location,
+        );
+      }),
+    );
 
-      const options = {
-        query: `
+    return Promise.all([updateDatasets, updateTables]);
+  }
+
+  private async updateCacheTables(
+    project: string,
+    dataset: string,
+    location: string,
+  ) {
+    const options = {
+      query: `
 SELECT DISTINCT
   table_catalog AS project,
   table_schema AS dataset,
   REGEXP_REPLACE(table_name, r"([^0-9])[0-9]{8,}$", r"\\1*") AS table,
   ARRAY_AGG(STRUCT(column_name AS column, data_type)) as columns,
-FROM \`${dataset.project}\`.\`${dataset.dataset}\`.INFORMATION_SCHEMA.COLUMNS
+FROM \`${project}\`.\`${dataset}\`.INFORMATION_SCHEMA.COLUMNS
 GROUP BY project, dataset, table
 LIMIT 10000;`,
-        location: dataset.location,
-      };
+      location: location,
+    };
 
-      const tableOperation = this.bqClient
-        .createQueryJob(options)
-        .then(([job]) => job.getQueryResults())
-        .then(async ([rows]) => {
-          await this.nedb.removeAsync(
-            {
-              project: dataset.project,
-              dataset: dataset.dataset,
-              table: { $ne: null },
-            },
-            { multi: true },
-          );
-          await this.nedb.insertAsync(
-            rows.map((row) => ({
-              project: row.project,
-              dataset: row.dataset,
-              table: row.table,
-              location: dataset.location,
-              columns: row.columns,
-            })),
-          );
-        });
-      asyncOperations.push(tableOperation);
-    }
-
-    await Promise.all(asyncOperations);
+    const [job] = await this.bqClient.createQueryJob(options);
+    const [rows] = await job.getQueryResults();
+    await this.nedb.removeAsync(
+      {
+        project: project,
+        dataset: dataset,
+        table: { $ne: null },
+      },
+      { multi: true },
+    );
+    await this.nedb.insertAsync(
+      rows.map((row) => ({
+        project: row.project,
+        dataset: row.dataset,
+        table: row.table,
+        location: location,
+        columns: row.columns,
+      })),
+    );
   }
 
   public async updateCacheForTest(_: string[]) {
