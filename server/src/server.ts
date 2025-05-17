@@ -4,7 +4,7 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import * as bq2cst from "bq2cst";
 import * as prettier from "prettier";
 import * as util from "./util";
-import { CacheDB } from "./database";
+import { NeDB } from "./database";
 import { globalFunctions, notGlobalFunctions } from "./functions";
 import { execSync } from "child_process";
 import * as prettierPluginBQ from "prettier-plugin-bq";
@@ -63,7 +63,7 @@ type CompletionItem = {
 export class BQLanguageServer {
   public static async initialize(
     connection: LSP.Connection,
-    db: CacheDB,
+    db: NeDB,
     capabilities: Record<string, boolean>,
   ): Promise<BQLanguageServer> {
     return new BQLanguageServer(connection, db, capabilities);
@@ -90,7 +90,7 @@ export class BQLanguageServer {
   private uriToTokens: Record<string, bq2cst.Token[]> = {};
   private constructor(
     private connection: LSP.Connection,
-    private db: CacheDB,
+    private db: NeDB,
     capabilities: Record<string, boolean>,
   ) {
     this.defaultProject =

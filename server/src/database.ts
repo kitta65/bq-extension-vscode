@@ -12,10 +12,10 @@ type Document = {
   columns?: { column: string; data_type: string }[];
 };
 
-export class CacheDB {
+export class NeDB {
   public static async initialize(nedbFileName: string) {
     await fs.promises.mkdir(dirname(nedbFileName), { recursive: true });
-    const db = new CacheDB(nedbFileName);
+    const db = new NeDB(nedbFileName);
     await Promise.all([db.nedb.autoloadPromise]);
     return db;
   }
@@ -91,39 +91,47 @@ export class CacheDB {
   }
 
   public async updateCache(texts: string[]) {
+    const asyncOperations: Promise<unknown>[] = [];
+
     // cache projects
     const projects = await this.getAvailableProjects();
-    await this.nedb.removeAsync(
-      { project: { $ne: null }, dataset: null, table: null },
-      { multi: true },
-    );
-    await this.nedb.insertAsync(
-      projects.map((project) => ({ project, dataset: null, table: null })),
-    );
+    const projectOperation = this.nedb
+      .removeAsync({ dataset: null, table: null }, { multi: true })
+      .then(() =>
+        this.nedb.insertAsync(
+          projects.map((project) => ({ project, dataset: null, table: null })),
+        ),
+      );
+    asyncOperations.push(projectOperation);
 
     // cache datasets
-    let datasets: (Document & { dataset: string })[] = [];
+    let datasets: { project: string; dataset: string; location: string }[] = [];
     for (const proj of projects) {
       const rows = await this.getAvailableDatasets(proj);
-      await this.nedb.removeAsync(
-        {
-          project: proj,
-          dataset: { $ne: null },
-          table: null,
-        },
-        { multi: true },
-      );
-      const docs = rows.map((row) => ({
-        project: row.project,
-        dataset: row.dataset,
-        table: null,
-        location: row.location,
-      }));
-      await this.nedb.insertAsync(docs);
-      datasets = [...datasets, ...docs];
+      datasets = [...datasets, ...rows];
+
+      const datasetOperation = this.nedb
+        .removeAsync(
+          {
+            project: proj,
+            dataset: { $ne: null },
+            table: null,
+          },
+          { multi: true },
+        )
+        .then(() => {
+          const docs = rows.map((row) => ({
+            project: row.project,
+            dataset: row.dataset,
+            table: null,
+            location: row.location,
+          }));
+          return this.nedb.insertAsync(docs);
+        });
+      asyncOperations.push(datasetOperation);
     }
 
-    // cache columns
+    // cache tables
     for (const dataset of datasets) {
       // skip if the dataset name does not appear in SQL files
       if (!texts.some((txt) => txt.includes(dataset.dataset))) continue;
@@ -140,26 +148,33 @@ GROUP BY project, dataset, table
 LIMIT 10000;`,
         location: dataset.location,
       };
-      const [job] = await this.bqClient.createQueryJob(options);
-      const [rows] = await job.getQueryResults();
-      await this.nedb.removeAsync(
-        {
-          project: dataset.project,
-          dataset: dataset.dataset,
-          table: { $ne: null },
-        },
-        { multi: true },
-      );
-      await this.nedb.insertAsync(
-        rows.map((row) => ({
-          project: row.project,
-          dataset: row.dataset,
-          table: row.table,
-          location: dataset.location,
-          columns: row.columns,
-        })),
-      );
+
+      const tableOperation = this.bqClient
+        .createQueryJob(options)
+        .then(([job]) => job.getQueryResults())
+        .then(async ([rows]) => {
+          await this.nedb.removeAsync(
+            {
+              project: dataset.project,
+              dataset: dataset.dataset,
+              table: { $ne: null },
+            },
+            { multi: true },
+          );
+          await this.nedb.insertAsync(
+            rows.map((row) => ({
+              project: row.project,
+              dataset: row.dataset,
+              table: row.table,
+              location: dataset.location,
+              columns: row.columns,
+            })),
+          );
+        });
+      asyncOperations.push(tableOperation);
     }
+
+    await Promise.all(asyncOperations);
   }
 
   public async updateCacheForTest(_: string[]) {
