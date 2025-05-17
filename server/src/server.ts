@@ -331,48 +331,44 @@ export class BQLanguageServer {
         const idents = quoted[1].split(".");
         idents.pop();
         if (idents.length === 1) {
-          // TODO
-          const datasets = (
-            await this.db.query(
-              "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
-              [idents[0]],
-              ["dataset"],
-            )
-          ).map((x: { dataset: string }) => x.dataset);
+          const datasets =
+            (await this.db.nedb.findAsync({
+              project: idents[0],
+              dataset: { $ne: null },
+              table: null,
+            })) ?? [];
           datasets.forEach((dataset) => {
             res.push({
-              label: dataset,
+              label: dataset.dataset!,
               kind: LSP.CompletionItemKind.Struct,
               documentation: util.convert2MarkdownItems({ kind: "dataset" }),
             });
           });
           // TODO
-          const tables = (
-            await this.db.query(
-              "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
-              [this.defaultProject, idents[0]],
-              ["table_name"],
-            )
-          ).map((x: { table_name: string }) => x.table_name);
-          tables.forEach((table_name) => {
+          const tables =
+            (await this.db.nedb.findAsync({
+              project: this.defaultProject,
+              dataset: idents[0],
+              table: { $ne: null },
+            })) ?? [];
+          tables.forEach((table) => {
             res.push({
-              label: table_name,
+              label: table.table!,
               kind: LSP.CompletionItemKind.Struct,
               documentation: util.convert2MarkdownItems({ kind: "table" }),
             });
           });
         } else if (idents.length === 2) {
-          const tables = // TODO
-            (
-              await this.db.query(
-                "SELECT DISTINCT table_name FROM columns WHERE project = ? AND dataset = ?;",
-                [idents[0], idents[1]],
-                ["table_name"],
-              )
-            ).map((x: { table_name: string }) => x.table_name);
-          tables.forEach((table_name) => {
+          // TODO
+          const tables =
+            (await this.db.nedb.findAsync({
+              project: idents[0],
+              dataset: idents[1],
+              table: { $ne: null },
+            })) ?? [];
+          tables.forEach((table) => {
             res.push({
-              label: table_name,
+              label: table.table!,
               kind: LSP.CompletionItemKind.Struct,
               documentation: util.convert2MarkdownItems({ kind: "table" }),
             });
@@ -478,30 +474,27 @@ export class BQLanguageServer {
           });
       }
     } else if (char === "`") {
-      const projects = // TODO
-        (
-          await this.db.query("SELECT DISTINCT project FROM projects;", [
-            "project",
-          ])
-        ).map((x: { project: string }) => x.project);
+      const projects =
+        (await this.db.nedb.findAsync({
+          dataset: null,
+          table: null,
+        })) ?? [];
       for (const project of projects) {
         res.push({
-          label: project,
+          label: project.project,
           kind: LSP.CompletionItemKind.Struct,
           documentation: util.convert2MarkdownItems({ kind: "project" }),
         });
       }
-      const datasets = // TODO
-        (
-          await this.db.query(
-            "SELECT DISTINCT dataset FROM datasets WHERE project = ?;",
-            [this.defaultProject],
-            ["dataset"],
-          )
-        ).map((x: { dataset: string }) => x.dataset);
+      const datasets =
+        (await this.db.nedb.findAsync({
+          project: this.defaultProject,
+          dataset: { $ne: null },
+          table: null,
+        })) ?? [];
       for (const dataset of datasets) {
         res.push({
-          label: dataset,
+          label: dataset.dataset!,
           kind: LSP.CompletionItemKind.Struct,
           documentation: util.convert2MarkdownItems({ kind: "dataset" }),
         });
