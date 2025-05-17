@@ -114,6 +114,12 @@
           "default": true,
           "markdownDescription": "Print pseudo columns (e.g. `_PARTITIONDATE`, `_PARTITIONTIME`) in upper case. When `printKeywordsInUpperCase` is `false`, this option is ignored."
         },
+        "bqExtensionVSCode.project.targetProjects": {
+          "scope": "application",
+          "type": "array",
+          "default": [],
+          "markdownDescription": "Project IDs used to search for table schema. Even if this option is empty, this extension tries to use your default project ID."
+        },
         "bqExtensionVSCode.trace.server": {
           "scope": "application",
           "type": "string",

@@ -1,6 +1,5 @@
 import * as fs from "fs";
 import { BigQuery } from "@google-cloud/bigquery";
-import { exec } from "child_process";
 import { dirname } from "path";
 import Datastore from "@seald-io/nedb";
 
@@ -35,63 +34,19 @@ export class NeDB {
     await this.nedb.autoloadPromise;
   }
 
-  private getAvailableProjects() {
-    return new Promise<string[]>((resolve, reject) => {
-      exec(
-        "bq ls --projects=true --format=json --max_results=1000",
-        (_, stdout) => {
-          let obj;
-          try {
-            obj = JSON.parse(stdout);
-          } catch {
-            reject(new Error("Cannot parse stdout!"));
-            return;
-          }
-          const projects = obj.map((x: { id: string }) => x.id);
-          resolve(projects);
-        },
-      );
-    });
+  private async getAvailableDatasets(project: string) {
+    const [datasets] = await this.bqClient.getDatasets({ projectId: project });
+    return datasets.map((dataset) => ({
+      project,
+      dataset: dataset.id!,
+      location: dataset.location!,
+    }));
   }
 
-  private getAvailableDatasets(project: string) {
-    return new Promise<
-      {
-        project: string;
-        dataset: string;
-        location: string;
-      }[]
-    >((resolve, reject) => {
-      exec(
-        `bq ls --datasets=true --project_id='${project}' --format=json --max_results=1000`,
-        (_, stdout) => {
-          let obj;
-          try {
-            obj = JSON.parse(stdout || "[]");
-          } catch {
-            reject(new Error("Cannot parse stdout!"));
-            return;
-          }
-          const datasets = obj.map(
-            (x: {
-              datasetReference: { projectId: string; datasetId: string };
-              location: string;
-            }) => {
-              return {
-                project: x.datasetReference.projectId,
-                dataset: x.datasetReference.datasetId,
-                location: x.location,
-              };
-            },
-          );
-          resolve(datasets);
-        },
-      );
-    });
-  }
-
-  public async updateCache(texts: string[]) {
-    const projects = await this.getAvailableProjects();
+  public async updateCache(texts: string[], targetProjects: string[]) {
+    const projects = [
+      ...new Set([...targetProjects, await this.bqClient.getProjectId()]),
+    ];
     const updateProjects = this.nedb
       .removeAsync({ dataset: null, table: null }, { multi: true })
       .then(() =>
