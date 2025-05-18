@@ -31,13 +31,14 @@ async function globalSetup() {
     "kitta65.googlesql-extension-vscode",
   )!;
   await ext.activate();
+  const projectId = await util.getProjectId();
   await util.createTextDocument("cache.bq");
   await util.insert(
     "cache.bq",
     new vscode.Position(0, 0),
     `
-SELECT * FROM \`${util.project}.bq_extension_vscode_test.t\`;
-SELECT * FROM \`${util.project}.bq_extension_vscode_test_asia.v\`;`,
+SELECT * FROM \`${projectId}.bq_extension_vscode_test.t\`;
+SELECT * FROM \`${projectId}.bq_extension_vscode_test_asia.v\`;`,
   );
   await vscode.commands.executeCommand("bqExtensionVSCode.clearCache");
   await vscode.commands.executeCommand("bqExtensionVSCode.updateCache");

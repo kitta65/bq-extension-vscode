@@ -8,6 +8,11 @@ type Hover = {
 };
 
 describe("Hover", function () {
+  let projectId: string;
+
+  before(async function () {
+    projectId = await util.getProjectId();
+  });
   beforeEach(async function () {
     await util.createTextDocument(filename);
   });
@@ -15,7 +20,7 @@ describe("Hover", function () {
     await util.deleteTextDocument(filename);
   });
   it("`project.dataset.t`", async function () {
-    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.t\``;
+    const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.t\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
       await vscode.commands.executeCommand(
@@ -28,7 +33,7 @@ describe("Hover", function () {
     assert.ok(items.some((x) => x.includes("str: STRING")));
   });
   it("project.dataset.t", async function () {
-    const sql = `SELECT * FROM ${util.project}.bq_extension_vscode_test.t`;
+    const sql = `SELECT * FROM ${projectId}.bq_extension_vscode_test.t`;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
       await vscode.commands.executeCommand(
@@ -54,7 +59,7 @@ describe("Hover", function () {
     assert.ok(items.some((x) => x.includes("str: STRING")));
   });
   it("`project.dataset.u_*`", async function () {
-    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.u_*\``;
+    const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.u_*\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
       await vscode.commands.executeCommand(
@@ -67,7 +72,7 @@ describe("Hover", function () {
     assert.ok(items.some((x) => x.includes("str: STRING")));
   });
   it("`project.dataset.u_20210101`", async function () {
-    const sql = `SELECT * FROM \`${util.project}.bq_extension_vscode_test.u_20210101\``;
+    const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.u_20210101\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
     const hover: Hover = (
       await vscode.commands.executeCommand(

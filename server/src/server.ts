@@ -6,7 +6,6 @@ import * as prettier from "prettier";
 import * as util from "./util";
 import { NeDB } from "./database";
 import { globalFunctions, notGlobalFunctions } from "./functions";
-import { execSync } from "child_process";
 import * as prettierPluginBQ from "prettier-plugin-bq";
 
 declare module "bq2cst" {
@@ -29,6 +28,7 @@ type Configuration = {
   experimental: {
     formatEachLine: boolean;
   };
+  project: { targetProjects: string[] };
 };
 
 const defaultConfiguration: Configuration = {
@@ -39,6 +39,9 @@ const defaultConfiguration: Configuration = {
   formatting: {},
   experimental: {
     formatEachLine: false,
+  },
+  project: {
+    targetProjects: [],
   },
 };
 
@@ -66,7 +69,19 @@ export class BQLanguageServer {
     db: NeDB,
     capabilities: Record<string, boolean>,
   ): Promise<BQLanguageServer> {
-    return new BQLanguageServer(connection, db, capabilities);
+    const server = new BQLanguageServer(connection, db, capabilities);
+    if (process.env.CI === "true") {
+      server.defaultProject = "bq-extension-vscode";
+      return server;
+    }
+
+    try {
+      await server.bqClient.getProjectId();
+      server.defaultProject = server.bqClient.projectId;
+    } catch {
+      // even if something went wrong, completion and hover would work
+    }
+    return server;
   }
   private bqClient = new BigQuery();
   public capabilities: LSP.InitializeResult = {
@@ -80,7 +95,7 @@ export class BQLanguageServer {
     },
   };
   private configurations: Map<string, Thenable<Configuration>> = new Map();
-  private defaultProject: string;
+  private defaultProject: string = "";
   private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
     TextDocument,
   );
@@ -93,10 +108,6 @@ export class BQLanguageServer {
     private db: NeDB,
     capabilities: Record<string, boolean>,
   ) {
-    this.defaultProject =
-      process.env.CI === "true"
-        ? "bq-extension-vscode"
-        : (execSync("gcloud config get-value project") + "").trim();
     this.hasConfigurationCapability = capabilities.hasConfigurationCapability;
   }
   private async dryRun(uri: LSP.URI): Promise<void> {
@@ -344,7 +355,6 @@ export class BQLanguageServer {
               documentation: util.convert2MarkdownItems({ kind: "dataset" }),
             });
           });
-          // TODO
           const tables =
             (await this.db.nedb.findAsync({
               project: this.defaultProject,
@@ -702,12 +712,16 @@ export class BQLanguageServer {
     }
   }
 
-  private async onRequestUpdateCache(_: any) {
+  private async onRequestUpdateCache(params: { uri: string }) {
+    const config = await this.getConfiguration(params.uri);
     try {
       if (process.env.CI === "true") {
         await this.db.updateCacheForTest(Object.values(this.uriToText));
       } else {
-        await this.db.updateCache(Object.values(this.uriToText));
+        await this.db.updateCache(
+          Object.values(this.uriToText),
+          config.project.targetProjects,
+        );
       }
       return "The cache was updated successfully.";
     } catch (e) {
