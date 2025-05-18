@@ -70,8 +70,14 @@ export class BQLanguageServer {
     capabilities: Record<string, boolean>,
   ): Promise<BQLanguageServer> {
     const server = new BQLanguageServer(connection, db, capabilities);
+    if (process.env.CI === "true") {
+      server.defaultProject = "bq-extension-vscode";
+      return server;
+    }
+
     try {
       await server.bqClient.getProjectId();
+      server.defaultProject = server.bqClient.projectId;
     } catch {
       // even if something went wrong, completion and hover would work
     }
@@ -89,6 +95,7 @@ export class BQLanguageServer {
     },
   };
   private configurations: Map<string, Thenable<Configuration>> = new Map();
+  private defaultProject: string = "";
   private documents: LSP.TextDocuments<TextDocument> = new LSP.TextDocuments(
     TextDocument,
   );
@@ -350,7 +357,7 @@ export class BQLanguageServer {
           });
           const tables =
             (await this.db.nedb.findAsync({
-              project: this.bqClient.projectId,
+              project: this.defaultProject,
               dataset: idents[0],
               table: { $ne: null },
             })) ?? [];
@@ -491,7 +498,7 @@ export class BQLanguageServer {
       }
       const datasets =
         (await this.db.nedb.findAsync({
-          project: this.bqClient.projectId,
+          project: this.defaultProject,
           dataset: { $ne: null },
           table: null,
         })) ?? [];
@@ -1061,7 +1068,7 @@ export class BQLanguageServer {
       return [];
     } else if (idents.length === 2) {
       const table = await this.db.nedb.findOneAsync({
-        project: this.bqClient.projectId,
+        project: this.defaultProject,
         dataset: idents[0],
         table: { $ne: null },
       });
