@@ -32,6 +32,7 @@ async function globalSetup() {
   )!;
   await ext.activate();
   const projectId = await util.getProjectId();
+  await util.createTextDocument("cache.bq");
   await util.insert(
     "cache.bq",
     new vscode.Position(0, 0),
