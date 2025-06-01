@@ -173,7 +173,7 @@
     "@typescript-eslint/eslint-plugin": "^8.33.0",
     "@typescript-eslint/parser": "^8.32.0",
     "@vscode/test-electron": "^2.5.2",
-    "@vscode/vsce": "^3.3.2",
+    "@vscode/vsce": "^3.4.2",
     "eslint": "^9.28.0",
     "eslint-config-prettier": "^10.1.5",
     "glob": "^11.0.2",
