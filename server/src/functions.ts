@@ -2376,7 +2376,7 @@ ORDER BY ts`,
     example: `SELECT
   SESSION_USER() -- 'abc@example.com'`,
   },
-  // ----- uuid functions -----
+  // ----- utility functions -----
   {
     ident: "GENERATE_UUID",
     example: `SELECT
@@ -2389,6 +2389,12 @@ ORDER BY ts`,
     -- 'STRING'
     TYPEOF("foo")`,
   },
+  // ----- match recognize functions -----
+  "FIRST",
+  "LAST",
+  "MATCH_NUMBER",
+  "MATCH_ROW_NUMBER",
+  "CLASSIFIER",
   // ----- conditional -----
   {
     ident: "COALESCE",
