@@ -1665,9 +1665,37 @@ SELECT
   ARRAY_CONCAT([1], [2, 3])`,
   },
   {
+    ident: "ARRAY_FIRST",
+    example: `SELECT
+  -- 1
+  ARRAY_FIRST([1, 2, 3])`,
+  },
+  {
+    ident: "ARRAY_LAST",
+    example: `SELECT
+  -- 3
+  ARRAY_LAST([1, 2, 3])`,
+  },
+  {
     ident: "ARRAY_LENGTH",
     example: `SELECT
   ARRAY_LENGTH([1, 2]) -- 2`,
+  },
+  {
+    ident: "ARRAY_REVERSE",
+    example: `SELECT
+  -- [3, 2, 1]
+  ARRAY_REVERSE([1, 2, 3])`,
+  },
+  {
+    ident: "ARRAY_SLICE",
+    example: `SELECT
+  -- [0, 1]
+  ARRAY_SLICE([0, 1, 2], 0, 1),
+  -- [2]
+  ARRAY_SLICE([0, 1, 2], -1, -1),
+  -- [0, 1, 2]
+  ARRAY_SLICE([0, 1, 2], 0, 10),`,
   },
   {
     ident: "ARRAY_TO_STRING",
@@ -1716,12 +1744,6 @@ SELECT
     '2020-01-02 00:00:00',
     INTERVAL 6 HOUR
   )`,
-  },
-  {
-    ident: "ARRAY_REVERSE",
-    example: `SELECT
-  -- [3, 2, 1]
-  ARRAY_REVERSE([1, 2, 3])`,
   },
   {
     ident: "OFFSET",
