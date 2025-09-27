@@ -1034,7 +1034,6 @@ export class BQLanguageServer {
           });
         }
 
-        // check sqlite
         queryResults.forEach((row) => {
           ns.variables.push({
             label: row.column,
