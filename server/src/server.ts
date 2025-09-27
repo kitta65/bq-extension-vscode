@@ -646,6 +646,7 @@ export class BQLanguageServer {
 
       const formattedText = await prettier.format(originalText, {
         parser: "sql-parse",
+        // @ts-expect-error: locStart, locEnd are missing
         plugins: [prettierPluginBQ],
         ...config.formatting,
       });
@@ -1033,7 +1034,6 @@ export class BQLanguageServer {
           });
         }
 
-        // check sqlite
         queryResults.forEach((row) => {
           ns.variables.push({
             label: row.column,
