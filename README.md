@@ -43,6 +43,11 @@ and the information about datasets and tables will be stored in local directory 
 In this process, this extension runs several queries against [INFROMATIN_SCHEMA](https://cloud.google.com/bigquery/docs/information-schema-intro).
 Note that datasets which does not appear in your query will be ignored to reduce cost.
 
+> [!TIP]
+>
+> Since v0.0.59, `Add To Cache` command is also available.
+> Execute this command to cache schema info about a single table under your cursor.
+
 ## Advanced Settings
 
 ### file extensions
