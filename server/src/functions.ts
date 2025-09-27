@@ -2657,4 +2657,5 @@ export const notGlobalFunctions: { [key: string]: Func[] } = {
   ), -- 'google.com'`,
     },
   ],
+  VECTOR_INDEX: ["STATISTICS"],
 };
