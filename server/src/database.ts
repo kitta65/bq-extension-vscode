@@ -1,5 +1,5 @@
 import * as fs from "fs";
-import { BigQuery } from "@google-cloud/bigquery";
+import { BigQuery, TableSchema } from "@google-cloud/bigquery";
 import { dirname } from "path";
 import Datastore from "@seald-io/nedb";
 
@@ -205,25 +205,57 @@ LIMIT 10000;`,
       insertTableAsia,
     ]);
   }
-
-  public async addToCache(texts: string[], targetProjects: string[]) {
-    const projects = [
-      ...new Set([...targetProjects, await this.bqClient.getProjectId()]),
-    ];
-    const updateProjects = this.nedb
-      .removeAsync({ dataset: null, table: null }, { multi: true })
-      .then(() =>
-        this.nedb.insertAsync(
-          projects.map((project) => ({
-            project,
-            dataset: null,
-            table: null,
-          })),
-        ),
+  public async addToCache(project: string, dataset: string, table: string) {
+    const [metadata] = await this.bqClient
+      .dataset(dataset, { projectId: project })
+      .table(table)
+      .getMetadata();
+    const schema = metadata.schema as TableSchema;
+    const fields = schema?.fields;
+    if (!fields) {
+      throw new Error(
+        `The schema of ${project}.${dataset}.${table} is not found.`,
       );
-    const updateDatasets = Promise.all(
-      projects.map(async (proj) => this.updateCacheDatasets(texts, proj)),
+    }
+    const columns =
+      fields?.map((f) => ({
+        column: f.name || "",
+        data_type: f.type || "",
+      })) || [];
+
+    // TODO: convert schema to columns
+
+    await this.nedb.updateAsync(
+      {
+        project,
+        dataset: null,
+        table: null,
+      },
+      { project, dataset: null, table: null },
+      { upsert: true },
     );
-    await Promise.all([updateProjects, updateDatasets]);
+    await this.nedb.updateAsync(
+      {
+        project,
+        dataset,
+        table: null,
+      },
+      { project, dataset, table: null },
+      { upsert: true },
+    );
+    await this.nedb.updateAsync(
+      {
+        project,
+        dataset,
+        table,
+      },
+      {
+        project,
+        dataset,
+        table,
+        columns,
+      },
+      { upsert: true },
+    );
   }
 }

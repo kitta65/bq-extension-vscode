@@ -297,7 +297,7 @@ export class BQLanguageServer {
     );
     this.connection.onRequest(
       "bq/addToCache",
-      this.onRequestUpdateCache.bind(this),
+      this.onRequestAddToCache.bind(this),
     );
     this.connection.onShutdown(() => {
       // close the db connection if needed
@@ -729,6 +729,72 @@ export class BQLanguageServer {
         );
       }
       return "The cache was updated successfully.";
+    } catch (e) {
+      const params: LSP.ShowMessageParams = {
+        message: String(e),
+        type: LSP.MessageType.Error,
+      };
+      this.connection.sendNotification("window/showMessage", params);
+    }
+  }
+
+  private async onRequestAddToCache(params: {
+    uri: string;
+    // 0-based position
+    line: number;
+    column: number;
+  }) {
+    const docInfo = this.getDocInfo(params.uri);
+    let table = util.getNodeByRowColumn(
+      docInfo.cst,
+      params.line + 1,
+      params.column + 1,
+    );
+
+    let parent = table?.parent?.deref();
+    while (
+      parent?.node_type === "DotOperator" ||
+      parent?.node_type === "MultiTokenIdentifier"
+    ) {
+      table = parent;
+      parent = parent.parent?.deref();
+    }
+
+    if (!table) {
+      this.connection.sendNotification(
+        "window/showMessage",
+        "When exec addToCache, the cursor should be on a table name.",
+      );
+      return;
+    }
+
+    const fullTableName = util.getFullTableNameFromNode(table);
+    const splitted = fullTableName.split(".");
+    const tablename = splitted.pop();
+    const dataset = splitted.pop();
+    let project = splitted.pop();
+
+    if (!tablename) {
+      this.connection.sendNotification(
+        "window/showMessage",
+        "Something went wrong.",
+      );
+      return;
+    }
+    if (!dataset) {
+      this.connection.sendNotification(
+        "window/showMessage",
+        `Cannot add ${tablename} to the cache because the dataset name is missing.`,
+      );
+      return;
+    }
+    if (!project) {
+      project = this.defaultProject;
+    }
+
+    try {
+      await this.db.addToCache(project, dataset, tablename);
+      return `${project}.${dataset}.${tablename} was added to the cache successfully.`;
     } catch (e) {
       const params: LSP.ShowMessageParams = {
         message: String(e),

@@ -89,8 +89,14 @@ async function updateCache(this: LanguageClient): Promise<void> {
 }
 
 async function addToCache(this: LanguageClient): Promise<void> {
-  const uri = vscode.window.activeTextEditor.document.uri.toString();
-  const response = await this.sendRequest("bq/addToCache", { uri });
+  const editor = vscode.window.activeTextEditor;
+  const uri = editor.document.uri.toString();
+  const position = editor.selection.active; // 0-based position
+  const response = await this.sendRequest("bq/addToCache", {
+    uri,
+    line: position.line,
+    column: position.character,
+  });
 
   if (typeof response === "string") {
     vscode.window.showInformationMessage(response);

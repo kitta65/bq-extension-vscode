@@ -539,3 +539,19 @@ export function parseSQL(sql: string): bq2cst.UnknownNode[] {
   });
   return csts;
 }
+
+export function getFullTableNameFromNode(node: bq2cst.UnknownNode): string {
+  if (node.node_type === "DotOperator") {
+    const left = getFullTableNameFromNode(node.children.left.Node);
+    const right = getFullTableNameFromNode(node.children.right.Node);
+    return `${left}.${right}`;
+  } else if (node.node_type === "MultiTokenIdentifier") {
+    const trailing = node.children.trailing_idents.NodeVec.map(
+      (node) => node.token.literal,
+    ).join();
+    return `${node.token.literal}${trailing}`;
+  }
+
+  const literal = node?.token?.literal || "";
+  return literal.replaceAll("`", "");
+}
