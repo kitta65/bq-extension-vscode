@@ -295,6 +295,10 @@ export class BQLanguageServer {
       "bq/updateCache",
       this.onRequestUpdateCache.bind(this),
     );
+    this.connection.onRequest(
+      "bq/addToCache",
+      this.onRequestUpdateCache.bind(this),
+    );
     this.connection.onShutdown(() => {
       // close the db connection if needed
     });

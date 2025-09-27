@@ -205,4 +205,25 @@ LIMIT 10000;`,
       insertTableAsia,
     ]);
   }
+
+  public async addToCache(texts: string[], targetProjects: string[]) {
+    const projects = [
+      ...new Set([...targetProjects, await this.bqClient.getProjectId()]),
+    ];
+    const updateProjects = this.nedb
+      .removeAsync({ dataset: null, table: null }, { multi: true })
+      .then(() =>
+        this.nedb.insertAsync(
+          projects.map((project) => ({
+            project,
+            dataset: null,
+            table: null,
+          })),
+        ),
+      );
+    const updateDatasets = Promise.all(
+      projects.map(async (proj) => this.updateCacheDatasets(texts, proj)),
+    );
+    await Promise.all([updateProjects, updateDatasets]);
+  }
 }
