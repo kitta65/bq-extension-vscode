@@ -2,6 +2,7 @@ import * as fs from "fs";
 import { BigQuery, TableSchema } from "@google-cloud/bigquery";
 import { dirname } from "path";
 import Datastore from "@seald-io/nedb";
+import * as util from "./util.js";
 
 type Document = {
   project: string;
@@ -220,10 +221,8 @@ LIMIT 10000;`,
     const columns =
       fields?.map((f) => ({
         column: f.name || "",
-        data_type: f.type || "",
+        data_type: util.sqlStyleSchema(f),
       })) || [];
-
-    // TODO: convert schema to columns
 
     await this.nedb.updateAsync(
       {
