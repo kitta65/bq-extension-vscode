@@ -549,7 +549,7 @@ export function getFullTableNameFromNode(node: bq2cst.UnknownNode): string {
   } else if (node.node_type === "MultiTokenIdentifier") {
     const trailing = node.children.trailing_idents.NodeVec.map(
       (node) => node.token.literal,
-    ).join();
+    ).join("");
     return `${node.token.literal}${trailing}`;
   }
 
