@@ -257,4 +257,11 @@ LIMIT 10000;`,
       { upsert: true },
     );
   }
+  public async dumpCache() {
+    const data = await this.nedb.findAsync({});
+    fs.promises.writeFile(
+      `${process.env.HOME}/.bq_extension_vscode/cache_dump.json`,
+      JSON.stringify(data),
+    );
+  }
 }

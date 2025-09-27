@@ -299,6 +299,10 @@ export class BQLanguageServer {
       "bq/addToCache",
       this.onRequestAddToCache.bind(this),
     );
+    this.connection.onRequest(
+      "bq/dumpCache",
+      this.onRequestDumpCache.bind(this),
+    );
     this.connection.onShutdown(() => {
       // close the db connection if needed
     });
@@ -804,6 +808,10 @@ export class BQLanguageServer {
     }
   }
 
+  private async onRequestDumpCache() {
+    await this.db.dumpCache();
+  }
+
   private async provideHoverMessage(
     docInfo: util.DocumentInfo,
     position: LSP.Position,
@@ -1140,7 +1148,7 @@ export class BQLanguageServer {
       const table = await this.db.nedb.findOneAsync({
         project: this.defaultProject,
         dataset: idents[0],
-        table: { $ne: null },
+        table: replaceTableSuffix(idents[1]),
       });
       const queryResults: QueryResult[] =
         table?.columns?.map((col) => ({

@@ -61,6 +61,11 @@
         "command": "bqExtensionVSCode.addToCache",
         "title": "Add To Cache",
         "category": "BQExtensionVSCode"
+      },
+      {
+        "command": "bqExtensionVSCode.dumpCache",
+        "title": "Dump Cache (for Debug)",
+        "category": "BQExtensionVSCode"
       }
     ],
     "menus": {
@@ -79,6 +84,10 @@
         },
         {
           "command": "bqExtensionVSCode.addToCache",
+          "when": "editorLangId == bigquery"
+        },
+        {
+          "command": "bqExtensionVSCode.dumpCache",
           "when": "editorLangId == bigquery"
         }
       ]

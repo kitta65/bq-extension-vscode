@@ -37,7 +37,7 @@ export async function activate(context: vscode.ExtensionContext) {
     serverOptions,
     clientOptions,
   );
-  const commands = [clearCache, updateCache, dryRun, addToCache];
+  const commands = [clearCache, updateCache, dryRun, addToCache, dumpCache];
   await client.start().then(() => {
     client.onNotification("bq/totalBytesProcessed", (params) => {
       statusBarItem.text = params.totalBytesProcessed;
@@ -97,6 +97,16 @@ async function addToCache(this: LanguageClient): Promise<void> {
     line: position.line,
     column: position.character,
   });
+
+  if (typeof response === "string") {
+    vscode.window.showInformationMessage(response);
+  } else {
+    vscode.window.showInformationMessage("done!");
+  }
+}
+
+async function dumpCache(this: LanguageClient): Promise<void> {
+  const response = await this.sendRequest("bq/dumpCache", {});
 
   if (typeof response === "string") {
     vscode.window.showInformationMessage(response);
