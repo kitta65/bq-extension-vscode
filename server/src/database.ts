@@ -1,7 +1,8 @@
 import * as fs from "fs";
-import { BigQuery } from "@google-cloud/bigquery";
+import { BigQuery, TableSchema } from "@google-cloud/bigquery";
 import { dirname } from "path";
 import Datastore from "@seald-io/nedb";
+import * as util from "./util.js";
 
 type Document = {
   project: string;
@@ -204,5 +205,56 @@ LIMIT 10000;`,
       insertDatasetAsia,
       insertTableAsia,
     ]);
+  }
+  public async addToCache(project: string, dataset: string, table: string) {
+    const [metadata] = await this.bqClient
+      .dataset(dataset, { projectId: project })
+      .table(table)
+      .getMetadata();
+    const schema = metadata.schema as TableSchema;
+    const fields = schema?.fields;
+    if (!fields) {
+      throw new Error(
+        `The schema of ${project}.${dataset}.${table} is not found.`,
+      );
+    }
+    const columns =
+      fields?.map((f) => ({
+        column: f.name || "",
+        data_type: util.sqlStyleSchema(f),
+      })) || [];
+
+    await this.nedb.updateAsync(
+      {
+        project,
+        dataset: null,
+        table: null,
+      },
+      { project, dataset: null, table: null },
+      { upsert: true },
+    );
+    await this.nedb.updateAsync(
+      {
+        project,
+        dataset,
+        table: null,
+      },
+      { project, dataset, table: null },
+      { upsert: true },
+    );
+    await this.nedb.updateAsync(
+      {
+        project,
+        dataset,
+        table,
+      },
+      {
+        project,
+        dataset,
+        table,
+        columns,
+      },
+      { upsert: true },
+    );
   }
 }

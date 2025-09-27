@@ -24,12 +24,25 @@ If you get an error, check data location in query settings.
 
 ```sql
 CREATE SCHEMA IF NOT EXISTS bq_extension_vscode_test OPTIONS (location='US');
+-- here is data type list
+-- https://cloud.google.com/bigquery/docs/reference/standard-sql/data-types#data_type_list
 CREATE OR REPLACE TABLE bq_extension_vscode_test.t (
-  str STRING,
-  int INT64,
-  float FLOAT64,
-  bool BOOLEAN,
   arr ARRAY<INT64>,
+  bool BOOL,
+  bytes BYTES,
+  date DATE,
+  datetime DATETIME,
+  geography GEOGRAPHY,
+  interval_ INTERVAL,
+  json JSON,
+  int INT64,
+  numeric NUMERIC,
+  bignumeric BIGNUMERIC,
+  float FLOAT64,
+  range_ RANGE<DATE>,
+  str STRING,
+  time TIME,
+  timestamp  TIMESTAMP,
   nested STRUCT<
     arr2 ARRAY<INT64>,
     str2 STRING,

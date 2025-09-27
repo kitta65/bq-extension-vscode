@@ -56,6 +56,11 @@
         "command": "bqExtensionVSCode.updateCache",
         "title": "Update Cache",
         "category": "BQExtensionVSCode"
+      },
+      {
+        "command": "bqExtensionVSCode.addToCache",
+        "title": "Add To Cache",
+        "category": "BQExtensionVSCode"
       }
     ],
     "menus": {
@@ -70,6 +75,10 @@
         },
         {
           "command": "bqExtensionVSCode.updateCache",
+          "when": "editorLangId == bigquery"
+        },
+        {
+          "command": "bqExtensionVSCode.addToCache",
           "when": "editorLangId == bigquery"
         }
       ]

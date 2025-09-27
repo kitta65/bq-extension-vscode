@@ -1,5 +1,6 @@
 import * as bq2cst from "bq2cst";
 import * as LSP from "vscode-languageserver/node";
+import { type TableSchema } from "@google-cloud/bigquery";
 
 export type DocumentInfo = {
   text: string;
@@ -538,4 +539,47 @@ export function parseSQL(sql: string): bq2cst.UnknownNode[] {
     setParentAndRange(cst);
   });
   return csts;
+}
+
+export function getFullTableNameFromNode(node: bq2cst.UnknownNode): string {
+  if (node.node_type === "DotOperator") {
+    const left = getFullTableNameFromNode(node.children.left.Node);
+    const right = getFullTableNameFromNode(node.children.right.Node);
+    return `${left}.${right}`;
+  } else if (node.node_type === "MultiTokenIdentifier") {
+    const trailing = node.children.trailing_idents.NodeVec.map(
+      (node) => node.token.literal,
+    ).join();
+    return `${node.token.literal}${trailing}`;
+  }
+
+  const literal = node?.token?.literal || "";
+  return literal.replaceAll("`", "");
+}
+
+const schemaMap: { [key: string]: string } = {
+  INTEGER: "INT64",
+  FLOAT: "FLOAT64",
+  BOOLEAN: "BOOL",
+};
+export function sqlStyleSchema(
+  schema: NonNullable<TableSchema["fields"]>[number],
+): string {
+  let res = schema.type || "UNKNOWN";
+  res = schemaMap[res] || res;
+  if (schema.type === "RANGE") {
+    res = `RANGE<${schema.rangeElementType?.type || "UNKNOWN"}>`;
+  } else if (schema.type === "RECORD") {
+    const fields = schema.fields || [];
+    const innerSchema = fields
+      .map((f) => `${f.name} ${sqlStyleSchema(f)}`)
+      .join(", ");
+    res = `STRUCT<${innerSchema}>`;
+  }
+
+  if (schema.mode === "REPEATED") {
+    res = `ARRAY<${res}>`;
+  }
+
+  return res;
 }
