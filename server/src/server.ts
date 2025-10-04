@@ -1014,6 +1014,30 @@ export class BQLanguageServer {
               info: {},
               kind: LSP.CompletionItemKind.Field,
             });
+          } else if (expr.token.literal === "*") {
+            // TODO
+          } else if (
+            expr.node_type === "DotOperator" &&
+            expr.children.right.Node.token.literal === "*"
+          ) {
+            const allNameSpaces = res.filter(
+              (ns) =>
+                ns.name &&
+                ns.name === expr.children.left.Node.token.literal &&
+                util.arrangedInThisOrder(
+                  true,
+                  ns.start,
+                  { line: node.token.line, character: node.token.column },
+                  ns.end,
+                ),
+            );
+            const smallestNameSpaces =
+              this.getSmallestNameSpaces(allNameSpaces);
+            smallestNameSpaces.forEach((ns) => {
+              ns.variables.forEach((v) => {
+                namespace.variables.push(v);
+              });
+            });
           } else if (
             expr.node_type === "Identifier" ||
             expr.node_type === "DotOperator"
