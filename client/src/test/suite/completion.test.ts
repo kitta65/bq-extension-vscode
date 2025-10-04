@@ -683,7 +683,7 @@ WHERE EXISTS(
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str4"));
   });
-  it("pivot operator (single)", async function () {
+  it("pivot operator (single, no alias for aggregation)", async function () {
     const sql = `
 WITH temp AS (
   SELECT 1 AS groupby, 2 AS value union all
@@ -702,6 +702,26 @@ FROM temp PIVOT (
       new vscode.Position(5, 7),
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
+  });
+  it("pivot operator (single, no alias for pivot column)", async function () {
+    const sql = `
+WITH temp AS (
+  SELECT 1 AS groupby, 2 AS value union all
+  SELECT 2 AS groupby, 3 AS value
+)
+SELECT 
+FROM temp PIVOT (
+  SUM(value) AS s
+  FOR groupby IN (1, 2)
+)
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(5, 7),
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "s_1"));
   });
   it("pivot operator (multiple)", async function () {
     const sql = `
@@ -723,5 +743,43 @@ FROM temp PIVOT (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "sum_value_one"));
     assert.ok(list.items.some((x) => x.label === "avg_value_two"));
+  });
+  it("unpivot operator (single)", async function () {
+    const sql = `
+WITH temp AS (
+  SELECT 1 AS one, 2 AS two, 3 AS three
+)
+SELECT 
+FROM temp UNPIVOT (new_col_name FOR original_col_name IN (one, two, three))
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(4, 7),
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "new_col_name"));
+    assert.ok(list.items.some((x) => x.label === "original_col_name"));
+  });
+  it("unpivot operator (multiple)", async function () {
+    const sql = `
+WITH temp AS (
+  SELECT 1 AS one, 2 AS two, 3 AS three, 4 AS four
+)
+SELECT 
+FROM temp UNPIVOT (
+  (first_col, second_col)
+  FOR input_columns
+  IN ((one, two) AS 'group_a', (three, four) AS 'group_b')
+)
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(4, 7),
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "first_col"));
+    assert.ok(list.items.some((x) => x.label === "input_columns"));
   });
 });
