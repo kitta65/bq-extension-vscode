@@ -1080,6 +1080,7 @@ export class BQLanguageServer {
       const additionalVariables: string[] = [];
       const removedVariables: string[] = [];
       const pivotConfig = node.children.pivot?.Node.children.config.Node;
+      const unpivotConfig = node.children.unpivot?.Node.children.config.Node;
       if (pivotConfig) {
         // prefix
         const prefixes: string[] = [];
@@ -1142,7 +1143,41 @@ export class BQLanguageServer {
         if (expr.node_type === "Identifier") {
           removedVariables.push(expr.token.literal);
         }
+      } else if (unpivotConfig) {
+        const valueExpr = unpivotConfig.children.expr.Node;
+        if (valueExpr.node_type === "Identifier") {
+          additionalVariables.push(valueExpr.token.literal);
+        } else if (valueExpr.node_type === "GroupedExprs") {
+          const exprs = valueExpr.children.exprs?.NodeVec || [];
+          exprs.forEach((n) => {
+            if (n.node_type !== "Identifier") return;
+            additionalVariables.push(n.token.literal);
+          });
+        }
+
+        const nameExpr = unpivotConfig.children.for.Node.children.expr.Node;
+        if (nameExpr.node_type === "Identifier") {
+          additionalVariables.push(nameExpr.token.literal);
+        }
+
+        const inExpr = unpivotConfig.children.in.Node.children.group.Node;
+        if (inExpr.node_type === "GroupedExprs") {
+          const exprs = inExpr.children.exprs?.NodeVec || [];
+          exprs.forEach((n) => {
+            if (n.node_type === "Identifier") {
+              removedVariables.push(n.token.literal);
+            } else if (n.node_type === "GroupedExprs") {
+              // NOTE: node type would be changed later
+              const exprs = n.children.exprs?.NodeVec || [];
+              exprs.forEach((n) => {
+                if (n.node_type !== "Identifier") return;
+                removedVariables.push(n.token.literal);
+              });
+            }
+          });
+        }
       }
+
       if (namespace) {
         const idents = util.parseIdentifier(node);
         const queryResults = await this.queryTableInfo(idents);
