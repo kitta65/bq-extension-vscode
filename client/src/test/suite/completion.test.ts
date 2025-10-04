@@ -15,6 +15,7 @@ describe("Completion", function () {
   afterEach(async function () {
     await util.deleteTextDocument(filename);
   });
+
   it("function", async function () {
     const sql = "SELECT C"; // NOTE Actually, any string is OK.
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -30,6 +31,7 @@ describe("Completion", function () {
       ),
     );
   });
+
   it("not global function", async function () {
     const sql = "SELECT net."; // NOTE Actually, any string is OK.
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -45,6 +47,7 @@ describe("Completion", function () {
       ),
     );
   });
+
   it("project", async function () {
     const sql = "SELECT * FROM ``";
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -55,6 +58,7 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === projectId));
   });
+
   it("dataset", async function () {
     const sql = `SELECT * FROM \`${projectId}.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -65,6 +69,7 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "bq_extension_vscode_test"));
   });
+
   it("table_name", async function () {
     const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -75,6 +80,7 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "t"));
   });
+
   it("table_name_asia", async function () {
     const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test_asia.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -85,6 +91,7 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "v"));
   });
+
   it("table_name without project", async function () {
     const sql = `SELECT * FROM \`bq_extension_vscode_test.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -95,6 +102,7 @@ describe("Completion", function () {
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "t"));
   });
+
   it("table_name (table suffix)", async function () {
     const sql = `SELECT * FROM \`${projectId}.bq_extension_vscode_test.\``;
     await util.insert(filename, new vscode.Position(0, 0), sql);
@@ -107,6 +115,7 @@ describe("Completion", function () {
     assert.ok(!list.items.some((x) => x.label === "u_20210101"));
     assert.ok(!list.items.some((x) => x.label === "u_20210102"));
   });
+
   it("column", async function () {
     // NOTE `s` is neeeded to parse sql!
     const sql = `
@@ -121,6 +130,7 @@ FROM \`${projectId}.bq_extension_vscode_test.t\``;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column without first character", async function () {
     // NOTE `s` is neeeded to parse sql!
     const sql = `
@@ -135,6 +145,7 @@ FROM \`${projectId}.bq_extension_vscode_test.t\``;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column end of statement", async function () {
     // NOTE `s` is neeeded to parse sql!
     const sql = `
@@ -150,6 +161,7 @@ WHERE
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column (not explicit alias)", async function () {
     const sql = `
 SELECT
@@ -164,6 +176,7 @@ FROM (SELECT sub.one FROM (SELECT 1 AS one) AS sub)`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column (from with clause in subquery)", async function () {
     const sql = `
 WITH abc AS (SELECT 1 AS one)
@@ -182,6 +195,7 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column (ident.*)", async function () {
     const sql = `
 WITH
@@ -198,6 +212,7 @@ FROM temp2`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "foo"));
   });
+
   it("table alias", async function () {
     const sql = `
 SELECT
@@ -211,6 +226,7 @@ FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "tmp"));
   });
+
   it("table alias join former", async function () {
     const sql = `
 SELECT
@@ -226,6 +242,7 @@ FROM
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "former"));
   });
+
   it("table alias join latter", async function () {
     const sql = `
 SELECT
@@ -241,6 +258,7 @@ FROM
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "latter"));
   });
+
   it("column subquery", async function () {
     const sql = `
 SELECT
@@ -256,6 +274,7 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column subquery and set operator", async function () {
     const sql = `
 SELECT
@@ -273,6 +292,7 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column subquery and set operator and groupedStatement", async function () {
     const sql = `
 SELECT
@@ -290,6 +310,7 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column exists subquery", async function () {
     const sql = `
 SELECT *
@@ -308,6 +329,7 @@ WHERE EXISTS(
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column subquery as column", async function () {
     const sql = `
 SELECT (
@@ -322,6 +344,7 @@ SELECT (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column with", async function () {
     const sql = `
 WITH tmp AS (
@@ -338,6 +361,7 @@ FROM tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with alias", async function () {
     const sql = `
 WITH tmp AS (
@@ -354,6 +378,7 @@ FROM tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "tmp"));
   });
+
   it("column with alias", async function () {
     const sql = `
 WITH tmp AS (
@@ -371,6 +396,7 @@ FROM tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column with alias (refine existing table)", async function () {
     const sql = `
 WITH
@@ -387,6 +413,7 @@ FROM t`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with alias rename", async function () {
     const sql = `
 WITH tmp AS (
@@ -403,6 +430,7 @@ FROM tmp AS renamed`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "renamed"));
   });
+
   it("column with alias rename", async function () {
     const sql = `
 WITH tmp AS (
@@ -420,6 +448,7 @@ FROM tmp AS renamed`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with and set operator", async function () {
     const sql = `
 WITH tmp AS (SELECT 1 AS one)
@@ -435,6 +464,7 @@ SELECT 1`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "tmp"));
   });
+
   it("with and set operator (column)", async function () {
     const sql = `
 WITH tmp AS (SELECT 1 AS one)
@@ -452,6 +482,7 @@ FROM tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with and set operator (table.column)", async function () {
     const sql = `
 WITH tmp AS (SELECT 1 AS one)
@@ -468,6 +499,7 @@ FROM tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with and set operator and group (column)", async function () {
     const sql = `
 WITH tmp AS (SELECT 1 AS one)
@@ -482,6 +514,7 @@ UNION ALL
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with and group (column)", async function () {
     const sql = `
 WITH tmp AS (SELECT 1 AS one)
@@ -494,6 +527,7 @@ WITH tmp AS (SELECT 1 AS one)
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("column in leading with query", async function () {
     const sql = `
 WITH
@@ -513,6 +547,7 @@ SELECT 1`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+
   it("with alias recursive", async function () {
     const sql = `
 WITH RECURSIVE
@@ -533,6 +568,7 @@ SELECT * FROM T1
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "temp"));
   });
+
   it("column with recursive", async function () {
     const sql = `
 WITH RECURSIVE
@@ -553,6 +589,7 @@ SELECT * FROM T1
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "temp"));
   });
+
   it("column with recursive", async function () {
     const sql = `
 WITH RECURSIVE
@@ -571,6 +608,7 @@ SELECT * FROM temp1
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "temp2"));
   });
+
   it("column leaded by table", async function () {
     const sql = `
 SELECT
@@ -585,6 +623,7 @@ FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column leaded by table end of statement", async function () {
     const sql = `
 SELECT *
@@ -599,6 +638,7 @@ WHERE 0 < tmp`;
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("column leaded by table subquery", async function () {
     const sql = `
 SELECT *
@@ -617,6 +657,7 @@ WHERE EXISTS(
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str"));
   });
+
   it("struct", async function () {
     const sql = `
 SELECT nested
@@ -631,6 +672,7 @@ FROM \`${projectId}.bq_extension_vscode_test.t\`
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "int2"));
   });
+
   it("struct subquery", async function () {
     const sql = `
 SELECT *
@@ -650,6 +692,7 @@ WHERE EXISTS(
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "int2"));
   });
+
   it("deep struct", async function () {
     const sql = `
 SELECT nested.nested2.nested3
@@ -664,6 +707,7 @@ FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp1
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str4"));
   });
+
   it("deep struct subquery", async function () {
     const sql = `
 SELECT *
@@ -683,6 +727,7 @@ WHERE EXISTS(
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "str4"));
   });
+
   it("pivot operator (single, no alias for aggregation)", async function () {
     const sql = `
 WITH temp AS (
@@ -701,8 +746,13 @@ FROM temp PIVOT (
       util.getDocUri(filename),
       new vscode.Position(5, 7),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
+
   it("pivot operator (single, no alias for pivot column)", async function () {
     const sql = `
 WITH temp AS (
@@ -721,8 +771,13 @@ FROM temp PIVOT (
       util.getDocUri(filename),
       new vscode.Position(5, 7),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "s_1"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "s_1" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
+
   it("pivot operator (multiple)", async function () {
     const sql = `
 WITH temp AS (
@@ -741,9 +796,22 @@ FROM temp PIVOT (
       util.getDocUri(filename),
       new vscode.Position(5, 7),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "sum_value_one"));
-    assert.ok(list.items.some((x) => x.label === "avg_value_two"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "sum_value_one" &&
+          x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "avg_value_two" &&
+          x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
+
   it("unpivot operator (single)", async function () {
     const sql = `
 WITH temp AS (
@@ -758,9 +826,22 @@ FROM temp UNPIVOT (new_col_name FOR original_col_name IN (one, two, three))
       util.getDocUri(filename),
       new vscode.Position(4, 7),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "new_col_name"));
-    assert.ok(list.items.some((x) => x.label === "original_col_name"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "new_col_name" &&
+          x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "original_col_name" &&
+          x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
+
   it("unpivot operator (multiple)", async function () {
     const sql = `
 WITH temp AS (
@@ -777,9 +858,20 @@ FROM temp UNPIVOT (
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(4, 7),
+      new vscode.Position(1, 7),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "first_col"));
-    assert.ok(list.items.some((x) => x.label === "input_columns"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "first_col" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "input_columns" &&
+          x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 });
