@@ -753,7 +753,7 @@ FROM temp PIVOT (
     );
   });
 
-  it("pivot operator (single, no alias for pivot column)", async function () {
+  it("pivot operator (single, no alias for integer pivot column)", async function () {
     const sql = `
 WITH temp AS (
   SELECT 1 AS groupby, 2 AS value union all
@@ -774,6 +774,37 @@ FROM temp PIVOT (
     assert.ok(
       list.items.some(
         (x) => x.label === "s_1" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("pivot operator (single, no alias for string pivot column)", async function () {
+    const sql = `
+WITH temp AS (
+  SELECT 'a' AS groupby, 2 AS value union all
+  SELECT 'あ' AS groupby, 3 AS value
+)
+SELECT 
+FROM temp PIVOT (
+  SUM(value) AS s
+  FOR groupby IN ('a', 'あ')
+)
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(5, 7),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "s_a" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "`s_あ`" && x.kind === vscode.CompletionItemKind.Field,
       ),
     );
   });

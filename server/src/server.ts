@@ -1112,12 +1112,11 @@ export class BQLanguageServer {
                     break;
                   }
                   case "UnaryOperator": {
-                    // TODO: support NUMERIC, BIGNUMERIC, DATE
+                    // TODO: support NUMERIC, BIGNUMERIC, DATE, RAW string literal
                     break;
                   }
                   case "StringLiteral": {
-                    // TODO: strip quotes
-                    suffixes.push(n.token.literal);
+                    suffixes.push(util.stripStringLiteral(n.token.literal));
                     break;
                   }
                   // TODO: ENUM, STRUCT
@@ -1130,7 +1129,9 @@ export class BQLanguageServer {
         if (0 < prefixes.length) {
           for (const p of prefixes) {
             for (const s of suffixes) {
-              additionalVariables.push(`${p}_${s}`);
+              additionalVariables.push(
+                util.quoteIfComplexIdentifier(`${p}_${s}`),
+              );
             }
           }
         } else {
