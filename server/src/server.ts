@@ -1077,6 +1077,72 @@ export class BQLanguageServer {
       node.node_type === "DotOperator" ||
       node.node_type === "MultiTokenIdentifier"
     ) {
+      const additionalVariables: string[] = [];
+      const removedVariables: string[] = [];
+      const pivotConfig = node.children.pivot?.Node.children.config.Node;
+      if (pivotConfig) {
+        // prefix
+        const prefixes: string[] = [];
+        pivotConfig.children.exprs.NodeVec.map(
+          (n) => n.children.alias?.Node.token?.literal,
+        ).forEach((alias) => {
+          if (alias) prefixes.push(alias);
+        });
+
+        // suffix
+        // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#rules_pivot_column
+        const group = pivotConfig.children.in.Node.children.group.Node;
+        const suffixes: string[] = [];
+        if (group.node_type === "GroupedExprs") {
+          group.children.exprs?.NodeVec.map(
+            (n: bq2cst.Expr & bq2cst.UnknownNode) => {
+              if (n.children.alias) {
+                suffixes.push(n.children.alias.Node.token.literal);
+              } else {
+                // TODO: unary operator
+                switch (n.node_type) {
+                  case "NullLiteral":
+                  case "BooleanLiteral": {
+                    suffixes.push(n.token.literal.toUpperCase());
+                    break;
+                  }
+                  case "NumericLiteral": {
+                    suffixes.push(n.token.literal);
+                    break;
+                  }
+                  case "UnaryOperator": {
+                    // TODO: support NUMERIC, BIGNUMERIC, DATE
+                    break;
+                  }
+                  case "StringLiteral": {
+                    // TODO: strip quotes
+                    suffixes.push(n.token.literal);
+                    break;
+                  }
+                  // TODO: ENUM, STRUCT
+                }
+              }
+            },
+          );
+        }
+
+        if (0 < prefixes.length) {
+          for (const p of prefixes) {
+            for (const s of suffixes) {
+              additionalVariables.push(`${p}_${s}`);
+            }
+          }
+        } else {
+          for (const s of suffixes) {
+            additionalVariables.push(s);
+          }
+        }
+
+        const expr = pivotConfig.children.for.Node.children.expr.Node;
+        if (expr.node_type === "Identifier") {
+          removedVariables.push(expr.token.literal);
+        }
+      }
       if (namespace) {
         const idents = util.parseIdentifier(node);
         const queryResults = await this.queryTableInfo(idents);
@@ -1107,14 +1173,28 @@ export class BQLanguageServer {
             ),
           );
           namespaces.forEach((namespace) => {
-            ns.variables.push(...namespace.variables);
+            namespace.variables.forEach((v) => {
+              if (removedVariables.includes(v.label)) return;
+
+              ns.variables.push(v);
+            });
           });
         }
 
         queryResults.forEach((row) => {
+          if (removedVariables.includes(row.column)) return;
+
           ns.variables.push({
             label: row.column,
             info: { type: row.data_type },
+            kind: LSP.CompletionItemKind.Field,
+          });
+        });
+
+        additionalVariables.forEach((v) => {
+          ns.variables.push({
+            label: v,
+            info: {},
             kind: LSP.CompletionItemKind.Field,
           });
         });
