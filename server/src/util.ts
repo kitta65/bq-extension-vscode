@@ -583,3 +583,22 @@ export function sqlStyleSchema(
 
   return res;
 }
+
+const simpleIdentRegex = /^[a-zA-Z_][a-zA-Z0-9_]*$/;
+export function quoteIfComplexIdentifier(ident: string): string {
+  if (ident.match(simpleIdentRegex)) {
+    return ident;
+  } else {
+    return "`" + ident + "`";
+  }
+}
+
+export function stripStringLiteral(str: string): string {
+  if (str.startsWith("'''") || str.startsWith('"""')) {
+    return str.slice(3, -3);
+  } else if (str.startsWith("'") || str.startsWith('"')) {
+    return str.slice(1, -1);
+  } else {
+    return ""; // can't be
+  }
+}

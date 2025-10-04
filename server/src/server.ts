@@ -1077,12 +1077,123 @@ export class BQLanguageServer {
       node.node_type === "DotOperator" ||
       node.node_type === "MultiTokenIdentifier"
     ) {
+      const additionalVariables: string[] = [];
+      const removedVariables: string[] = [];
+      const pivotConfig = node.children.pivot?.Node.children.config.Node;
+      const unpivotConfig = node.children.unpivot?.Node.children.config.Node;
+      if (pivotConfig) {
+        // prefix
+        const prefixes: string[] = [];
+        pivotConfig.children.exprs.NodeVec.map(
+          (n) => n.children.alias?.Node.token?.literal,
+        ).forEach((alias) => {
+          if (alias) prefixes.push(alias);
+        });
+
+        // suffix
+        // https://cloud.google.com/bigquery/docs/reference/standard-sql/query-syntax#rules_pivot_column
+        const group = pivotConfig.children.in.Node.children.group.Node;
+        const suffixes: string[] = [];
+        if (group.node_type === "GroupedExprs") {
+          group.children.exprs?.NodeVec.map(
+            (n: bq2cst.Expr & bq2cst.UnknownNode) => {
+              if (n.children.alias) {
+                suffixes.push(n.children.alias.Node.token.literal);
+              } else {
+                // TODO: unary operator
+                switch (n.node_type) {
+                  case "NullLiteral":
+                  case "BooleanLiteral": {
+                    suffixes.push(n.token.literal.toUpperCase());
+                    break;
+                  }
+                  case "NumericLiteral": {
+                    suffixes.push(n.token.literal);
+                    break;
+                  }
+                  case "UnaryOperator": {
+                    // TODO: support NUMERIC, BIGNUMERIC, DATE, RAW string literal
+                    break;
+                  }
+                  case "StringLiteral": {
+                    suffixes.push(util.stripStringLiteral(n.token.literal));
+                    break;
+                  }
+                  // TODO: ENUM, STRUCT
+                }
+              }
+            },
+          );
+        }
+
+        if (0 < prefixes.length) {
+          for (const p of prefixes) {
+            for (const s of suffixes) {
+              additionalVariables.push(
+                util.quoteIfComplexIdentifier(`${p}_${s}`),
+              );
+            }
+          }
+        } else {
+          for (const s of suffixes) {
+            additionalVariables.push(s);
+          }
+        }
+
+        const expr = pivotConfig.children.for.Node.children.expr.Node;
+        if (expr.node_type === "Identifier") {
+          removedVariables.push(expr.token.literal);
+        }
+      } else if (unpivotConfig) {
+        const valueExpr = unpivotConfig.children.expr.Node;
+        if (valueExpr.node_type === "Identifier") {
+          additionalVariables.push(valueExpr.token.literal);
+        } else if (valueExpr.node_type === "GroupedExprs") {
+          const exprs = valueExpr.children.exprs?.NodeVec || [];
+          exprs.forEach((n) => {
+            if (n.node_type !== "Identifier") return;
+            additionalVariables.push(n.token.literal);
+          });
+        }
+
+        const nameExpr = unpivotConfig.children.for.Node.children.expr.Node;
+        if (nameExpr.node_type === "Identifier") {
+          additionalVariables.push(nameExpr.token.literal);
+        }
+
+        const inExpr = unpivotConfig.children.in.Node.children.group.Node;
+        if (inExpr.node_type === "GroupedExprs") {
+          const exprs = inExpr.children.exprs?.NodeVec || [];
+          exprs.forEach((n) => {
+            if (n.node_type === "Identifier") {
+              removedVariables.push(n.token.literal);
+            } else if (n.node_type === "GroupedExprs") {
+              // NOTE: node type would be changed later
+              const exprs = n.children.exprs?.NodeVec || [];
+              exprs.forEach((n) => {
+                if (n.node_type !== "Identifier") return;
+                removedVariables.push(n.token.literal);
+              });
+            }
+          });
+        }
+      }
+
       if (namespace) {
         const idents = util.parseIdentifier(node);
         const queryResults = await this.queryTableInfo(idents);
-        const name = node.children.alias
+        let name = node.children.alias
           ? node.children.alias.Node.token.literal
           : idents[idents.length - 1];
+        if (node.children.pivot) {
+          name =
+            node.children.pivot.Node.children.alias?.Node.token?.literal ||
+            name;
+        } else if (node.children.unpivot) {
+          name =
+            node.children.unpivot.Node.children.alias?.Node.token?.literal ||
+            name;
+        }
         const ns: NameSpace = {
           start: namespace.start,
           end: namespace.end,
@@ -1107,14 +1218,28 @@ export class BQLanguageServer {
             ),
           );
           namespaces.forEach((namespace) => {
-            ns.variables.push(...namespace.variables);
+            namespace.variables.forEach((v) => {
+              if (removedVariables.includes(v.label)) return;
+
+              ns.variables.push(v);
+            });
           });
         }
 
         queryResults.forEach((row) => {
+          if (removedVariables.includes(row.column)) return;
+
           ns.variables.push({
             label: row.column,
             info: { type: row.data_type },
+            kind: LSP.CompletionItemKind.Field,
+          });
+        });
+
+        additionalVariables.forEach((v) => {
+          ns.variables.push({
+            label: v,
+            info: {},
             kind: LSP.CompletionItemKind.Field,
           });
         });

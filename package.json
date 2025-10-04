@@ -10,7 +10,7 @@
   },
   "author": "kitta65",
   "license": "MIT",
-  "version": "0.0.59",
+  "version": "0.0.60",
   "publisher": "kitta65",
   "categories": [
     "Programming Languages",
@@ -173,12 +173,13 @@
     "watch": "tsc -b -w",
     "lint": "prettier --check client/src server/src && eslint client/src server/src",
     "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-    "test": "tsc -b && node client/out/test/runTest"
+    "test": "tsc -b && node client/out/test/runTest",
+    "latest-bq2cst": "rm -rf ./node_modules/bq2cst && gh run download -R kitta65/prettier-plugin-bq -n bq2cst-cjs -D ./node_modules/bq2cst"
   },
   "dependencies": {
     "@google-cloud/bigquery": "^8.1.1",
     "@seald-io/nedb": "^4.1.2",
-    "prettier-plugin-bq": "1.0.1",
+    "prettier-plugin-bq": "1.0.2",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-textdocument": "^1.0.12"
