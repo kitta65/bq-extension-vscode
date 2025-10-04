@@ -951,24 +951,8 @@ export class BQLanguageServer {
           if (isRecursive) {
             start = node.range.start; // position of WITH
           } else {
-            if (node.node_type === "SetOperator") {
-              if (node.children.left.Node.range.start) {
-                start = node.children.left.Node.range.start;
-              } else {
-                return;
-              }
-            } else {
-              start = {
-                line: node.token.line,
-                character: node.token.column,
-              }; // position of SELECT
-            }
-            if (withQueries.length - 1 !== i) {
-              const nextWithQuery = withQueries[i + 1];
-              if (nextWithQuery.range.start) {
-                start = nextWithQuery.range.start;
-              }
-            }
+            if (!currWithQuery.range.end) return;
+            start = currWithQuery.range.end;
           }
           const ns: NameSpace = {
             start: start,
@@ -1014,16 +998,17 @@ export class BQLanguageServer {
               info: {},
               kind: LSP.CompletionItemKind.Field,
             });
-          } else if (expr.token.literal === "*") {
-            // TODO
           } else if (
-            expr.node_type === "DotOperator" &&
-            expr.children.right.Node.token.literal === "*"
+            expr.node_type === "Asterisk" ||
+            (expr.node_type === "DotOperator" &&
+              expr.children.right.Node.node_type === "Asterisk")
           ) {
             const allNameSpaces = res.filter(
               (ns) =>
                 ns.name &&
-                ns.name === expr.children.left.Node.token.literal &&
+                (expr.node_type === "Asterisk"
+                  ? true
+                  : ns.name === expr.children.left.Node.token.literal) &&
                 util.arrangedInThisOrder(
                   true,
                   ns.start,
@@ -1034,6 +1019,9 @@ export class BQLanguageServer {
             const smallestNameSpaces =
               this.getSmallestNameSpaces(allNameSpaces);
             smallestNameSpaces.forEach((ns) => {
+              // TODO:
+              // consider EXCEPT() and REPLACE().
+              // you should modify type definition before that.
               ns.variables.forEach((v) => {
                 namespace.variables.push(v);
               });
