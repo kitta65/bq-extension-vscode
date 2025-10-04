@@ -559,19 +559,6 @@ export class BQLanguageServer {
         });
       });
     } else {
-      if (node && node.parent) {
-        const parent = node.parent.deref();
-        // do not complete alias
-        if (
-          parent &&
-          "alias" in parent.children &&
-          parent.children.alias &&
-          parent.children.alias.Node === node
-        ) {
-          return [];
-        }
-      }
-
       const namespaces = (
         await this.createNameSpaces(this.uriToCst[uri])
       ).filter((ns) =>
@@ -964,24 +951,8 @@ export class BQLanguageServer {
           if (isRecursive) {
             start = node.range.start; // position of WITH
           } else {
-            if (node.node_type === "SetOperator") {
-              if (node.children.left.Node.range.start) {
-                start = node.children.left.Node.range.start;
-              } else {
-                return;
-              }
-            } else {
-              start = {
-                line: node.token.line,
-                character: node.token.column,
-              }; // position of SELECT
-            }
-            if (withQueries.length - 1 !== i) {
-              const nextWithQuery = withQueries[i + 1];
-              if (nextWithQuery.range.start) {
-                start = nextWithQuery.range.start;
-              }
-            }
+            if (!currWithQuery.range.end) return;
+            start = currWithQuery.range.end;
           }
           const ns: NameSpace = {
             start: start,
@@ -1026,6 +997,34 @@ export class BQLanguageServer {
               label: expr.children.alias.Node.token.literal,
               info: {},
               kind: LSP.CompletionItemKind.Field,
+            });
+          } else if (
+            expr.node_type === "Asterisk" ||
+            (expr.node_type === "DotOperator" &&
+              expr.children.right.Node.node_type === "Asterisk")
+          ) {
+            const allNameSpaces = res.filter(
+              (ns) =>
+                ns.name &&
+                (expr.node_type === "Asterisk"
+                  ? true
+                  : ns.name === expr.children.left.Node.token.literal) &&
+                util.arrangedInThisOrder(
+                  true,
+                  ns.start,
+                  { line: node.token.line, character: node.token.column },
+                  ns.end,
+                ),
+            );
+            const smallestNameSpaces =
+              this.getSmallestNameSpaces(allNameSpaces);
+            smallestNameSpaces.forEach((ns) => {
+              // TODO:
+              // consider EXCEPT() and REPLACE().
+              // you should modify type definition before that.
+              ns.variables.forEach((v) => {
+                namespace.variables.push(v);
+              });
             });
           } else if (
             expr.node_type === "Identifier" ||
