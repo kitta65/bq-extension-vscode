@@ -858,7 +858,7 @@ FROM temp UNPIVOT (
     const list = (await vscode.commands.executeCommand(
       "vscode.executeCompletionItemProvider",
       util.getDocUri(filename),
-      new vscode.Position(1, 7),
+      new vscode.Position(4, 7),
     )) as vscode.CompletionList;
     assert.ok(
       list.items.some(
