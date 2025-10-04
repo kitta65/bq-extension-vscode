@@ -809,6 +809,37 @@ FROM temp PIVOT (
     );
   });
 
+  it("pivot operator (single, with `.`)", async function () {
+    const sql = `
+WITH t AS (
+  SELECT 'a' AS groupby, 2 AS value union all
+  SELECT 'あ' AS groupby, 3 AS value
+)
+SELECT p.
+FROM t PIVOT (
+  SUM(value) AS s
+  FOR groupby IN ('a', 'あ')
+) AS p
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(5, 9),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "s_a" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "`s_あ`" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
   it("pivot operator (multiple)", async function () {
     const sql = `
 WITH temp AS (

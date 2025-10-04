@@ -1182,9 +1182,18 @@ export class BQLanguageServer {
       if (namespace) {
         const idents = util.parseIdentifier(node);
         const queryResults = await this.queryTableInfo(idents);
-        const name = node.children.alias
+        let name = node.children.alias
           ? node.children.alias.Node.token.literal
           : idents[idents.length - 1];
+        if (node.children.pivot) {
+          name =
+            node.children.pivot.Node.children.alias?.Node.token?.literal ||
+            name;
+        } else if (node.children.unpivot) {
+          name =
+            node.children.unpivot.Node.children.alias?.Node.token?.literal ||
+            name;
+        }
         const ns: NameSpace = {
           start: namespace.start,
           end: namespace.end,
