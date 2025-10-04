@@ -182,6 +182,22 @@ FROM (
     )) as vscode.CompletionList;
     assert.ok(list.items.some((x) => x.label === "one"));
   });
+  it("column (ident.*)", async function () {
+    const sql = `
+WITH
+temp1 AS (SELECT 1 AS foo),
+temp2 AS (SELECT temp1.* FROM temp1)
+
+SELECT temp2.
+FROM temp2`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(5, 13),
+    )) as vscode.CompletionList;
+    assert.ok(list.items.some((x) => x.label === "foo"));
+  });
   it("table alias", async function () {
     const sql = `
 SELECT
