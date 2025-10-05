@@ -1128,4 +1128,41 @@ FROM temp UNPIVOT (
       ),
     );
   });
+
+  it("from with WithClause", async function () {
+    const sql = `
+WITH temp AS (SELECT 1 AS one)
+FROM t
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 6),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "temp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+  });
+  it("pipe with WithClause", async function () {
+    const sql = `
+WITH foo AS (SELECT 1 AS one)
+FROM bar
+|> CROSS JOIN f
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 15),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "foo" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+  });
 });

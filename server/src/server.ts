@@ -939,7 +939,9 @@ export class BQLanguageServer {
       node:
         | bq2cst.SelectStatement
         | bq2cst.GroupedStatement
-        | bq2cst.SetOperator,
+        | bq2cst.SetOperator
+        | bq2cst.PipeStatement
+        | bq2cst.FromStatement,
     ) {
       if (node.children.with) {
         const withQueries = node.children.with.Node.children.queries.NodeVec;
@@ -1253,6 +1255,22 @@ export class BQLanguageServer {
           kind: LSP.CompletionItemKind.Field,
         });
       }
+    } else if (node.node_type === "PipeStatement") {
+      await createNameSpacesFromWithClause.call(this, node);
+
+      const operators: bq2cst.UnknownNode[] = [];
+      let curr: bq2cst.UnknownNode = node;
+      while (curr.node_type === "PipeStatement") {
+        operators.unshift(curr.children.right.Node);
+        curr = curr.children.left.Node;
+      }
+      operators.unshift(curr);
+      for (const _ of operators) {
+        // TODO
+      }
+    } else if (node.node_type === "FromStatement") {
+      // when used without PipeStatement
+      await createNameSpacesFromWithClause.call(this, node);
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);
