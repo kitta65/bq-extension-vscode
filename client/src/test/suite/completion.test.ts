@@ -1147,6 +1147,7 @@ FROM t
       ),
     );
   });
+
   it("pipe with WithClause", async function () {
     const sql = `
 WITH foo AS (SELECT 1 AS one)
@@ -1162,6 +1163,24 @@ FROM bar
     assert.ok(
       list.items.some(
         (x) => x.label === "foo" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+  });
+
+  it("from then select", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
       ),
     );
   });

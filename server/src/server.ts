@@ -1265,12 +1265,30 @@ export class BQLanguageServer {
         curr = curr.children.left.Node;
       }
       operators.unshift(curr);
-      for (const _ of operators) {
-        // TODO
+      for (let i = 0; i < operators.length; i++) {
+        const curr = operators[i];
+        const next = operators[i + 1];
+        if (!next?.range.start || !next?.range.end) continue;
+
+        const ns: NameSpace = {
+          start: next.range.start,
+          end: next.range.end,
+          name: undefined,
+          variables: [],
+        };
+        await this.createNameSpacesFromNode(res, curr, ns);
       }
     } else if (node.node_type === "FromStatement") {
-      // when used without PipeStatement
-      await createNameSpacesFromWithClause.call(this, node);
+      if (namespace) {
+        await this.createNameSpacesFromNode(
+          res,
+          node.children.expr.Node,
+          namespace,
+        );
+      } else {
+        // when used without PipeStatement
+        await createNameSpacesFromWithClause.call(this, node);
+      }
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);
