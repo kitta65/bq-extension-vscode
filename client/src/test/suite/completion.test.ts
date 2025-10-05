@@ -1128,4 +1128,235 @@ FROM temp UNPIVOT (
       ),
     );
   });
+
+  it("from with WithClause", async function () {
+    const sql = `
+WITH temp AS (SELECT 1 AS one)
+FROM t
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 6),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "temp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+  });
+
+  it("pipe with WithClause", async function () {
+    const sql = `
+WITH foo AS (SELECT 1 AS one)
+FROM bar
+|> CROSS JOIN f
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 15),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "foo" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+  });
+
+  it("from then select", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(2, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after select pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> SELECT *, "" AS new_col
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "new_col" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after where pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> WHERE TRUE
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after drop pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> DROP str
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "arr" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    // assert.ok(
+    //   !list.items.some(
+    //     (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+    //   ),
+    // );
+  });
+
+  it("after extend pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> EXTEND "" AS new_col
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "new_col" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after rename pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> RENAME str AS new_str
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 10),
+    )) as vscode.CompletionList;
+    // assert.ok(
+    //   !list.items.some(
+    //     (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+    //   ),
+    // );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "new_str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after rename pipe operator (not top-level)", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test\`.\`t\`
+|> RENAME str AS new_str
+|> SELECT t.
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 12),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after as pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test\`.\`t\`
+|> AS u
+|> SELECT u.
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 12),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after join pipe operator", async function () {
+    const sql = `
+SELECT 1 AS one
+|> CROSS JOIN \`${projectId}.bq_extension_vscode_test\`.\`t\`
+|> SELECT t.
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 12),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
 });

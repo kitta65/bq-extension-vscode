@@ -939,7 +939,9 @@ export class BQLanguageServer {
       node:
         | bq2cst.SelectStatement
         | bq2cst.GroupedStatement
-        | bq2cst.SetOperator,
+        | bq2cst.SetOperator
+        | bq2cst.PipeStatement
+        | bq2cst.FromStatement,
     ) {
       if (node.children.with) {
         const withQueries = node.children.with.Node.children.queries.NodeVec;
@@ -966,6 +968,101 @@ export class BQLanguageServer {
       }
     }
 
+    async function createNameSpacesFromExprs(
+      this: BQLanguageServer,
+      node: bq2cst.SelectStatement | bq2cst.SelectPipeOperator,
+      namespace: NameSpace,
+    ) {
+      (node.children.exprs?.NodeVec ?? []).forEach((n) => {
+        const expr = n as bq2cst.Expr & bq2cst.UnknownNode;
+        if (expr.children.alias) {
+          namespace.variables.push({
+            label: expr.children.alias.Node.token.literal,
+            info: {},
+            kind: LSP.CompletionItemKind.Field,
+          });
+        } else if (
+          expr.node_type === "Asterisk" ||
+          (expr.node_type === "DotOperator" &&
+            expr.children.right.Node.node_type === "Asterisk")
+        ) {
+          const allNameSpaces = res.filter(
+            (ns) =>
+              ns.name &&
+              (expr.node_type === "Asterisk"
+                ? true
+                : ns.name === expr.children.left.Node.token.literal) &&
+              util.arrangedInThisOrder(
+                true,
+                ns.start,
+                { line: node.token.line, character: node.token.column },
+                ns.end,
+              ),
+          );
+          const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+          smallestNameSpaces.forEach((ns) => {
+            // TODO:
+            // consider EXCEPT() and REPLACE().
+            // you should modify type definition before that.
+            ns.variables.forEach((v) => {
+              namespace.variables.push(v);
+            });
+          });
+        } else if (
+          expr.node_type === "Identifier" ||
+          expr.node_type === "DotOperator"
+        ) {
+          const idents = util.parseIdentifier(expr);
+          if (idents.length > 0) {
+            namespace.variables.push({
+              label: idents[idents.length - 1],
+              info: {},
+              kind: LSP.CompletionItemKind.Field,
+            });
+          }
+        }
+      });
+    }
+
+    function createExtendedNameSpaceFromNode(
+      this: BQLanguageServer,
+      node: bq2cst.UnknownNode,
+      namespace: NameSpace,
+      additionalVariables: string[],
+      // TODO: send the list of removed columns (= not top-level columns) to client
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      removedVariables: string[],
+    ) {
+      const token = node.token;
+      if (!token) return;
+
+      const allNameSpaces = res.filter((ns) =>
+        util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: token.line, character: token.column },
+          ns.end,
+        ),
+      );
+      const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+      smallestNameSpaces.forEach((ns) => {
+        const newNameSpace: NameSpace = {
+          start: namespace.start,
+          end: namespace.end,
+          name: ns.name,
+          variables: ns.variables,
+        };
+        res.push(newNameSpace);
+      });
+      additionalVariables.forEach((v) => {
+        namespace.variables.push({
+          label: v,
+          info: {},
+          kind: LSP.CompletionItemKind.Field,
+        });
+      });
+    }
+
     if (node.node_type === "SelectStatement") {
       await createNameSpacesFromWithClause.call(this, node);
       if (node.children.where) {
@@ -990,56 +1087,7 @@ export class BQLanguageServer {
         if (ns.variables.length > 0) res.push(ns);
       }
       if (namespace) {
-        node.children.exprs.NodeVec.forEach((n) => {
-          const expr = n as bq2cst.Expr & bq2cst.UnknownNode;
-          if (expr.children.alias) {
-            namespace.variables.push({
-              label: expr.children.alias.Node.token.literal,
-              info: {},
-              kind: LSP.CompletionItemKind.Field,
-            });
-          } else if (
-            expr.node_type === "Asterisk" ||
-            (expr.node_type === "DotOperator" &&
-              expr.children.right.Node.node_type === "Asterisk")
-          ) {
-            const allNameSpaces = res.filter(
-              (ns) =>
-                ns.name &&
-                (expr.node_type === "Asterisk"
-                  ? true
-                  : ns.name === expr.children.left.Node.token.literal) &&
-                util.arrangedInThisOrder(
-                  true,
-                  ns.start,
-                  { line: node.token.line, character: node.token.column },
-                  ns.end,
-                ),
-            );
-            const smallestNameSpaces =
-              this.getSmallestNameSpaces(allNameSpaces);
-            smallestNameSpaces.forEach((ns) => {
-              // TODO:
-              // consider EXCEPT() and REPLACE().
-              // you should modify type definition before that.
-              ns.variables.forEach((v) => {
-                namespace.variables.push(v);
-              });
-            });
-          } else if (
-            expr.node_type === "Identifier" ||
-            expr.node_type === "DotOperator"
-          ) {
-            const idents = util.parseIdentifier(expr);
-            if (idents.length > 0) {
-              namespace.variables.push({
-                label: idents[idents.length - 1],
-                info: {},
-                kind: LSP.CompletionItemKind.Field,
-              });
-            }
-          }
-        });
+        await createNameSpacesFromExprs.call(this, node, namespace);
       }
     } else if (node.node_type === "SetOperator") {
       await createNameSpacesFromWithClause.call(this, node);
@@ -1253,6 +1301,147 @@ export class BQLanguageServer {
           kind: LSP.CompletionItemKind.Field,
         });
       }
+    } else if (node.node_type === "PipeStatement") {
+      await createNameSpacesFromWithClause.call(this, node);
+
+      const operators: bq2cst.UnknownNode[] = [];
+      let curr: bq2cst.UnknownNode = node;
+      while (curr.node_type === "PipeStatement") {
+        operators.unshift(curr.children.right.Node);
+        curr = curr.children.left.Node;
+      }
+      operators.unshift(curr);
+      for (let i = 0; i < operators.length; i++) {
+        const curr = operators[i];
+        const next = operators[i + 1];
+        if (!next?.range.start || !next?.range.end) continue;
+
+        const ns: NameSpace = {
+          start: next.range.start,
+          end: next.range.end,
+          name: undefined,
+          variables: [],
+        };
+        // TODO: pivot, unpivot, match_recognize, call, with pipe operator is not yet supported
+        await this.createNameSpacesFromNode(res, curr, ns);
+
+        if (ns.variables.length === 0) continue;
+        res.push(ns);
+      }
+    } else if (node.node_type === "FromStatement") {
+      if (namespace) {
+        await this.createNameSpacesFromNode(
+          res,
+          node.children.expr.Node,
+          namespace,
+        );
+      } else {
+        // when used without PipeStatement
+        await createNameSpacesFromWithClause.call(this, node);
+      }
+    } else if (node.node_type === "SelectPipeOperator") {
+      if (!namespace) return;
+      await createNameSpacesFromExprs.call(this, node, namespace);
+    } else if (
+      (node.node_type === "BasePipeOperator" &&
+        ["SET", "WHERE", "ORDER"].includes(node.token.literal.toUpperCase())) ||
+      (node.node_type === "Symbol" &&
+        node.token.literal.toUpperCase() === "DISTINCT") ||
+      node.node_type === "LimitPipeOperator" ||
+      node.node_type === "TableSamplePipeOperator" ||
+      node.node_type === "UnionPipeOperator"
+    ) {
+      if (!namespace) return;
+      createExtendedNameSpaceFromNode.call(this, node, namespace, [], []);
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "DROP"
+    ) {
+      if (!namespace) return;
+      const exprs = (node.children.exprs?.NodeVec ?? [])
+        .map((n) => {
+          if (n.node_type !== "Identifier") return null;
+          return n.token.literal;
+        })
+        .filter((literal) => literal) as string[];
+      createExtendedNameSpaceFromNode.call(this, node, namespace, [], exprs);
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      ["EXTEND", "AGGREGATE"].includes(node.token.literal.toUpperCase())
+    ) {
+      if (!namespace) return;
+      const exprs = (node.children.exprs?.NodeVec ?? [])
+        .map((n) => {
+          if ("alias" in n.children) {
+            return n.children.alias?.Node.token?.literal;
+          } else {
+            return null;
+          }
+        })
+        .filter((literal) => literal) as string[];
+      // NOTE:
+      // ideally, group by clause should be considered in aggregate pipe operator.
+      // but it is a little complex...
+      createExtendedNameSpaceFromNode.call(this, node, namespace, exprs, []);
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "RENAME"
+    ) {
+      if (!namespace) return;
+      const renames = (node.children.exprs?.NodeVec ?? []).map((n) => {
+        if (n.node_type !== "Identifier") return null;
+        const originalIdent = n.token.literal;
+        const alias = n.children.alias?.Node;
+        if (!alias) return null;
+        const newIdent = alias.token.literal;
+        return { originalIdent, newIdent };
+      });
+      const additionalVariables: string[] = [];
+      const removedVariables: string[] = [];
+      renames.forEach((r) => {
+        if (!r) return;
+        additionalVariables.push(r.newIdent);
+        removedVariables.push(r.originalIdent);
+      });
+      createExtendedNameSpaceFromNode.call(
+        this,
+        node,
+        namespace,
+        additionalVariables,
+        removedVariables,
+      );
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "AS"
+    ) {
+      if (!namespace) return;
+      const allNameSpaces = res.filter((ns) =>
+        util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: node.token.line, character: node.token.column },
+          ns.end,
+        ),
+      );
+      const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+      smallestNameSpaces
+        .flatMap((ns) => ns.variables)
+        .forEach((v) => {
+          namespace.variables.push(v);
+        });
+      const exprs = node.children.exprs?.NodeVec ?? [];
+      const alias = exprs[0];
+      if (alias && alias.node_type === "Identifier") {
+        namespace.name = alias.token.literal;
+      }
+    } else if (node.node_type === "JoinPipeOperator") {
+      if (!namespace) return;
+      createExtendedNameSpaceFromNode.call(this, node, namespace, [], []);
+      const exprs = node.children.exprs?.NodeVec ?? [];
+      const expr = exprs[0];
+
+      if (!expr) return;
+      await this.createNameSpacesFromNode(res, expr, namespace);
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);
