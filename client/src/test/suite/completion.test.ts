@@ -27,7 +27,9 @@ describe("Completion", function () {
     assert.ok(
       list.items.some(
         // case insensitive compare (to ignore user config)
-        (x) => x.label.toString().toUpperCase() === "CURRENT_TIMESTAMP",
+        (x) =>
+          x.label.toString().toUpperCase() === "CURRENT_TIMESTAMP" &&
+          x.kind === vscode.CompletionItemKind.Function,
       ),
     );
   });
@@ -43,7 +45,9 @@ describe("Completion", function () {
     assert.ok(
       list.items.some(
         // case insensitive compare (to ignore user config)
-        (x) => x.label.toString().toUpperCase() === "IPV4_FROM_INT64",
+        (x) =>
+          x.label.toString().toUpperCase() === "IPV4_FROM_INT64" &&
+          x.kind === vscode.CompletionItemKind.Function,
       ),
     );
   });
@@ -56,7 +60,12 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === projectId));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === projectId && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("dataset", async function () {
@@ -67,7 +76,13 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "bq_extension_vscode_test"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "bq_extension_vscode_test" &&
+          x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("table_name", async function () {
@@ -78,7 +93,11 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "t"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "t" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("table_name_asia", async function () {
@@ -89,7 +108,11 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "v"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "v" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("table_name without project", async function () {
@@ -100,7 +123,11 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "t"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "t" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("table_name (table suffix)", async function () {
@@ -111,9 +138,25 @@ describe("Completion", function () {
       util.getDocUri(filename),
       new vscode.Position(0, sql.length - 1),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "u_*"));
-    assert.ok(!list.items.some((x) => x.label === "u_20210101"));
-    assert.ok(!list.items.some((x) => x.label === "u_20210102"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "u_*" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+    assert.ok(
+      !list.items.some(
+        (x) =>
+          x.label === "u_20210101" &&
+          x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
+    assert.ok(
+      !list.items.some(
+        (x) =>
+          x.label === "u_20210102" &&
+          x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column", async function () {
@@ -128,11 +171,14 @@ FROM \`${projectId}.bq_extension_vscode_test.t\``;
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column without first character", async function () {
-    // NOTE `s` is neeeded to parse sql!
     const sql = `
 SELECT
 
@@ -143,7 +189,11 @@ FROM \`${projectId}.bq_extension_vscode_test.t\``;
       util.getDocUri(filename),
       new vscode.Position(2, 0),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column end of statement", async function () {
@@ -159,7 +209,11 @@ WHERE
       util.getDocUri(filename),
       new vscode.Position(4, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column (not explicit alias)", async function () {
@@ -174,7 +228,11 @@ FROM (SELECT sub.one FROM (SELECT 1 AS one) AS sub)`;
       util.getDocUri(filename),
       new vscode.Position(3, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column (from with clause in subquery)", async function () {
@@ -193,7 +251,11 @@ FROM (
       util.getDocUri(filename),
       new vscode.Position(6, 5),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column (ident.*)", async function () {
@@ -210,7 +272,11 @@ FROM temp2`;
       util.getDocUri(filename),
       new vscode.Position(5, 13),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "foo"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "foo" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("table alias", async function () {
@@ -224,7 +290,11 @@ FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp`;
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "tmp"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "tmp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("table alias join former", async function () {
@@ -240,7 +310,12 @@ FROM
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "former"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "former" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("table alias join latter", async function () {
@@ -256,7 +331,12 @@ FROM
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "latter"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "latter" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column subquery", async function () {
@@ -272,7 +352,11 @@ FROM (
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column subquery and set operator", async function () {
@@ -290,7 +374,11 @@ FROM (
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column subquery and set operator and groupedStatement", async function () {
@@ -308,7 +396,11 @@ FROM (
       util.getDocUri(filename),
       new vscode.Position(2, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column exists subquery", async function () {
@@ -327,7 +419,11 @@ WHERE EXISTS(
       util.getDocUri(filename),
       new vscode.Position(6, 10),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column subquery as column", async function () {
@@ -342,7 +438,11 @@ SELECT (
       util.getDocUri(filename),
       new vscode.Position(2, 9),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column with", async function () {
@@ -359,7 +459,11 @@ FROM tmp`;
       util.getDocUri(filename),
       new vscode.Position(5, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with alias", async function () {
@@ -376,7 +480,11 @@ FROM tmp`;
       util.getDocUri(filename),
       new vscode.Position(5, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "tmp"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "tmp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column with alias", async function () {
@@ -394,7 +502,11 @@ FROM tmp`;
       util.getDocUri(filename),
       new vscode.Position(5, 6),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column with alias (refine existing table)", async function () {
@@ -411,7 +523,11 @@ FROM t`;
       util.getDocUri(filename),
       new vscode.Position(4, 9),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with alias rename", async function () {
@@ -428,7 +544,12 @@ FROM tmp AS renamed`;
       util.getDocUri(filename),
       new vscode.Position(5, 3),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "renamed"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "renamed" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column with alias rename", async function () {
@@ -446,7 +567,11 @@ FROM tmp AS renamed`;
       util.getDocUri(filename),
       new vscode.Position(5, 10),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with and set operator", async function () {
@@ -462,7 +587,11 @@ SELECT 1`;
       util.getDocUri(filename),
       new vscode.Position(2, 8),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "tmp"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "tmp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("with and set operator (column)", async function () {
@@ -480,7 +609,11 @@ FROM tmp`;
       util.getDocUri(filename),
       new vscode.Position(6, 8),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with and set operator (table.column)", async function () {
@@ -497,7 +630,11 @@ FROM tmp`;
       util.getDocUri(filename),
       new vscode.Position(4, 11),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with and set operator and group (column)", async function () {
@@ -512,7 +649,11 @@ UNION ALL
       util.getDocUri(filename),
       new vscode.Position(4, 9),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with and group (column)", async function () {
@@ -525,7 +666,11 @@ WITH tmp AS (SELECT 1 AS one)
       util.getDocUri(filename),
       new vscode.Position(2, 9),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column in leading with query", async function () {
@@ -545,7 +690,11 @@ SELECT 1`;
       util.getDocUri(filename),
       new vscode.Position(6, 12),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "one"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "one" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("with alias recursive", async function () {
@@ -566,7 +715,12 @@ SELECT * FROM T1
       util.getDocUri(filename),
       new vscode.Position(6, 9),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "temp"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "temp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column with recursive", async function () {
@@ -587,7 +741,12 @@ SELECT * FROM T1
       util.getDocUri(filename),
       new vscode.Position(7, 10),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "temp"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "temp" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column with recursive", async function () {
@@ -606,7 +765,12 @@ SELECT * FROM temp1
       util.getDocUri(filename),
       new vscode.Position(4, 9),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "temp2"));
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "temp2" && x.kind === vscode.CompletionItemKind.Struct,
+      ),
+    );
   });
 
   it("column leaded by table", async function () {
@@ -621,7 +785,11 @@ FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp`;
       util.getDocUri(filename),
       new vscode.Position(2, 6),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column leaded by table end of statement", async function () {
@@ -636,7 +804,11 @@ WHERE 0 < tmp`;
       util.getDocUri(filename),
       new vscode.Position(3, 14),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("column leaded by table subquery", async function () {
@@ -655,7 +827,11 @@ WHERE EXISTS(
       util.getDocUri(filename),
       new vscode.Position(6, 24),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("struct", async function () {
@@ -670,7 +846,11 @@ FROM \`${projectId}.bq_extension_vscode_test.t\`
       util.getDocUri(filename),
       new vscode.Position(1, 14),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "int2"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "int2" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("struct subquery", async function () {
@@ -690,7 +870,11 @@ WHERE EXISTS(
       util.getDocUri(filename),
       new vscode.Position(6, 31),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "int2"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "int2" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("deep struct", async function () {
@@ -705,7 +889,11 @@ FROM \`${projectId}.bq_extension_vscode_test.t\` AS tmp1
       util.getDocUri(filename),
       new vscode.Position(1, 30),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str4"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str4" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("deep struct subquery", async function () {
@@ -725,7 +913,11 @@ WHERE EXISTS(
       util.getDocUri(filename),
       new vscode.Position(6, 47),
     )) as vscode.CompletionList;
-    assert.ok(list.items.some((x) => x.label === "str4"));
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str4" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
   });
 
   it("pivot operator (single, no alias for aggregation)", async function () {
