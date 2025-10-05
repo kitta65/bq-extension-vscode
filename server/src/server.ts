@@ -1374,6 +1374,33 @@ export class BQLanguageServer {
         })
         .filter((literal) => literal) as string[];
       createExtendedNameSpaceFromNode.call(this, node, namespace, exprs, []);
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "RENAME"
+    ) {
+      if (!namespace) return;
+      const renames = (node.children.exprs?.NodeVec ?? []).map((n) => {
+        if (n.node_type !== "Identifier") return null;
+        const originalIdent = n.token.literal;
+        const alias = n.children.alias?.Node;
+        if (!alias) return null;
+        const newIdent = alias.token.literal;
+        return { originalIdent, newIdent };
+      });
+      const additionalVariables: string[] = [];
+      const removedVariables: string[] = [];
+      renames.forEach((r) => {
+        if (!r) return;
+        additionalVariables.push(r.newIdent);
+        removedVariables.push(r.originalIdent);
+      });
+      createExtendedNameSpaceFromNode.call(
+        this,
+        node,
+        namespace,
+        additionalVariables,
+        removedVariables,
+      );
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);

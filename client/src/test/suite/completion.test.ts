@@ -1277,4 +1277,29 @@ FROM \`${projectId}.bq_extension_vscode_test.t\`
       ),
     );
   });
+
+  it("after rename pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test.t\`
+|> RENAME str AS new_str
+|> SELECT 
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 10),
+    )) as vscode.CompletionList;
+    assert.ok(
+      !list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+    assert.ok(
+      list.items.some(
+        (x) =>
+          x.label === "new_str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
 });
