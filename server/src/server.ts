@@ -1317,6 +1317,7 @@ export class BQLanguageServer {
           name: undefined,
           variables: [],
         };
+        // TODO: pivot, unpivot, match_recognize, call, with pipe operator is not yet supported
         await this.createNameSpacesFromNode(res, curr, ns);
 
         if (ns.variables.length === 0) continue;
@@ -1361,7 +1362,7 @@ export class BQLanguageServer {
       createExtendedNameSpaceFromNode.call(this, node, namespace, [], exprs);
     } else if (
       node.node_type === "BasePipeOperator" &&
-      node.token.literal.toUpperCase() === "EXTEND"
+      ["EXTEND", "AGGREGATE"].includes(node.token.literal.toUpperCase())
     ) {
       if (!namespace) return;
       const exprs = (node.children.exprs?.NodeVec ?? [])
@@ -1373,6 +1374,9 @@ export class BQLanguageServer {
           }
         })
         .filter((literal) => literal) as string[];
+      // NOTE:
+      // ideally, group by clause should be considered in aggregate pipe operator.
+      // but it is a little complex...
       createExtendedNameSpaceFromNode.call(this, node, namespace, exprs, []);
     } else if (
       node.node_type === "BasePipeOperator" &&
