@@ -1434,6 +1434,14 @@ export class BQLanguageServer {
       if (alias && alias.node_type === "Identifier") {
         namespace.name = alias.token.literal;
       }
+    } else if (node.node_type === "JoinPipeOperator") {
+      if (!namespace) return;
+      createExtendedNameSpaceFromNode.call(this, node, namespace, [], []);
+      const exprs = node.children.exprs?.NodeVec ?? [];
+      const expr = exprs[0];
+
+      if (!expr) return;
+      await this.createNameSpacesFromNode(res, expr, namespace);
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);

@@ -1340,4 +1340,23 @@ FROM \`${projectId}.bq_extension_vscode_test\`.\`t\`
       ),
     );
   });
+
+  it("after join pipe operator", async function () {
+    const sql = `
+SELECT 1 AS one
+|> CROSS JOIN \`${projectId}.bq_extension_vscode_test\`.\`t\`
+|> SELECT t.
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 12),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
 });
