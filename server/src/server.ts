@@ -1302,6 +1302,30 @@ export class BQLanguageServer {
     } else if (node.node_type === "SelectPipeOperator") {
       if (!namespace) return;
       await createNameSpacesFromExprs.call(this, node, namespace);
+    } else if (
+      (node.node_type === "BasePipeOperator" &&
+        ["SET", "WHERE", "ORDER"].includes(node.token.literal.toUpperCase())) ||
+      (node.node_type === "Symbol" &&
+        node.token.literal.toUpperCase() === "DISTINCT") ||
+      node.node_type === "LimitPipeOperator" ||
+      node.node_type === "TableSamplePipeOperator" ||
+      node.node_type === "UnionPipeOperator"
+    ) {
+      if (!namespace) return;
+      const allNameSpaces = res.filter((ns) =>
+        util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: node.token.line, character: node.token.column },
+          ns.end,
+        ),
+      );
+      const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+      smallestNameSpaces
+        .flatMap((ns) => ns.variables)
+        .forEach((v) => {
+          namespace.variables.push(v);
+        });
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);
