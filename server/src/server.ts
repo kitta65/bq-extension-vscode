@@ -1029,6 +1029,8 @@ export class BQLanguageServer {
       node: bq2cst.UnknownNode,
       namespace: NameSpace,
       additionalVariables: string[],
+      // TODO: send the list of removed columns (= not top-level columns) to client
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       removedVariables: string[],
     ) {
       const token = node.token;
@@ -1043,12 +1045,15 @@ export class BQLanguageServer {
         ),
       );
       const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
-      smallestNameSpaces
-        .flatMap((ns) => ns.variables)
-        .forEach((v) => {
-          if (removedVariables.includes(v.label)) return;
-          namespace.variables.push(v);
-        });
+      smallestNameSpaces.forEach((ns) => {
+        const newNameSpace: NameSpace = {
+          start: namespace.start,
+          end: namespace.end,
+          name: ns.name,
+          variables: ns.variables,
+        };
+        res.push(newNameSpace);
+      });
       additionalVariables.forEach((v) => {
         namespace.variables.push({
           label: v,
@@ -1405,6 +1410,30 @@ export class BQLanguageServer {
         additionalVariables,
         removedVariables,
       );
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "AS"
+    ) {
+      if (!namespace) return;
+      const allNameSpaces = res.filter((ns) =>
+        util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: node.token.line, character: node.token.column },
+          ns.end,
+        ),
+      );
+      const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+      smallestNameSpaces
+        .flatMap((ns) => ns.variables)
+        .forEach((v) => {
+          namespace.variables.push(v);
+        });
+      const exprs = node.children.exprs?.NodeVec ?? [];
+      const alias = exprs[0];
+      if (alias && alias.node_type === "Identifier") {
+        namespace.name = alias.token.literal;
+      }
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);

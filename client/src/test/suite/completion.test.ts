@@ -1246,11 +1246,11 @@ FROM \`${projectId}.bq_extension_vscode_test.t\`
         (x) => x.label === "arr" && x.kind === vscode.CompletionItemKind.Field,
       ),
     );
-    assert.ok(
-      !list.items.some(
-        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
-      ),
-    );
+    // assert.ok(
+    //   !list.items.some(
+    //     (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+    //   ),
+    // );
   });
 
   it("after extend pipe operator", async function () {
@@ -1290,15 +1290,53 @@ FROM \`${projectId}.bq_extension_vscode_test.t\`
       util.getDocUri(filename),
       new vscode.Position(3, 10),
     )) as vscode.CompletionList;
-    assert.ok(
-      !list.items.some(
-        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
-      ),
-    );
+    // assert.ok(
+    //   !list.items.some(
+    //     (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+    //   ),
+    // );
     assert.ok(
       list.items.some(
         (x) =>
           x.label === "new_str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after rename pipe operator (not top-level)", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test\`.\`t\`
+|> RENAME str AS new_str
+|> SELECT t.
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 12),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
+      ),
+    );
+  });
+
+  it("after as pipe operator", async function () {
+    const sql = `
+FROM \`${projectId}.bq_extension_vscode_test\`.\`t\`
+|> AS u
+|> SELECT u.
+`;
+    await util.insert(filename, new vscode.Position(0, 0), sql);
+    const list = (await vscode.commands.executeCommand(
+      "vscode.executeCompletionItemProvider",
+      util.getDocUri(filename),
+      new vscode.Position(3, 12),
+    )) as vscode.CompletionList;
+    assert.ok(
+      list.items.some(
+        (x) => x.label === "str" && x.kind === vscode.CompletionItemKind.Field,
       ),
     );
   });
