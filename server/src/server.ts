@@ -1024,6 +1024,40 @@ export class BQLanguageServer {
       });
     }
 
+    function createExtendedNameSpaceFromNode(
+      this: BQLanguageServer,
+      node: bq2cst.UnknownNode,
+      namespace: NameSpace,
+      additionalVariables: string[],
+      removedVariables: string[],
+    ) {
+      const token = node.token;
+      if (!token) return;
+
+      const allNameSpaces = res.filter((ns) =>
+        util.arrangedInThisOrder(
+          true,
+          ns.start,
+          { line: token.line, character: token.column },
+          ns.end,
+        ),
+      );
+      const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+      smallestNameSpaces
+        .flatMap((ns) => ns.variables)
+        .forEach((v) => {
+          if (removedVariables.includes(v.label)) return;
+          namespace.variables.push(v);
+        });
+      additionalVariables.forEach((v) => {
+        namespace.variables.push({
+          label: v,
+          info: {},
+          kind: LSP.CompletionItemKind.Field,
+        });
+      });
+    }
+
     if (node.node_type === "SelectStatement") {
       await createNameSpacesFromWithClause.call(this, node);
       if (node.children.where) {
@@ -1312,20 +1346,34 @@ export class BQLanguageServer {
       node.node_type === "UnionPipeOperator"
     ) {
       if (!namespace) return;
-      const allNameSpaces = res.filter((ns) =>
-        util.arrangedInThisOrder(
-          true,
-          ns.start,
-          { line: node.token.line, character: node.token.column },
-          ns.end,
-        ),
-      );
-      const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
-      smallestNameSpaces
-        .flatMap((ns) => ns.variables)
-        .forEach((v) => {
-          namespace.variables.push(v);
-        });
+      createExtendedNameSpaceFromNode.call(this, node, namespace, [], []);
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "DROP"
+    ) {
+      if (!namespace) return;
+      const exprs = (node.children.exprs?.NodeVec ?? [])
+        .map((n) => {
+          if (n.node_type !== "Identifier") return null;
+          return n.token.literal;
+        })
+        .filter((literal) => literal) as string[];
+      createExtendedNameSpaceFromNode.call(this, node, namespace, [], exprs);
+    } else if (
+      node.node_type === "BasePipeOperator" &&
+      node.token.literal.toUpperCase() === "EXTEND"
+    ) {
+      if (!namespace) return;
+      const exprs = (node.children.exprs?.NodeVec ?? [])
+        .map((n) => {
+          if ("alias" in n.children) {
+            return n.children.alias?.Node.token?.literal;
+          } else {
+            return null;
+          }
+        })
+        .filter((literal) => literal) as string[];
+      createExtendedNameSpaceFromNode.call(this, node, namespace, exprs, []);
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);
