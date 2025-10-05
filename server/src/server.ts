@@ -968,6 +968,62 @@ export class BQLanguageServer {
       }
     }
 
+    async function createNameSpacesFromExprs(
+      this: BQLanguageServer,
+      node: bq2cst.SelectStatement | bq2cst.SelectPipeOperator,
+      namespace: NameSpace,
+    ) {
+      (node.children.exprs?.NodeVec ?? []).forEach((n) => {
+        const expr = n as bq2cst.Expr & bq2cst.UnknownNode;
+        if (expr.children.alias) {
+          namespace.variables.push({
+            label: expr.children.alias.Node.token.literal,
+            info: {},
+            kind: LSP.CompletionItemKind.Field,
+          });
+        } else if (
+          expr.node_type === "Asterisk" ||
+          (expr.node_type === "DotOperator" &&
+            expr.children.right.Node.node_type === "Asterisk")
+        ) {
+          const allNameSpaces = res.filter(
+            (ns) =>
+              ns.name &&
+              (expr.node_type === "Asterisk"
+                ? true
+                : ns.name === expr.children.left.Node.token.literal) &&
+              util.arrangedInThisOrder(
+                true,
+                ns.start,
+                { line: node.token.line, character: node.token.column },
+                ns.end,
+              ),
+          );
+          const smallestNameSpaces = this.getSmallestNameSpaces(allNameSpaces);
+          smallestNameSpaces.forEach((ns) => {
+            // TODO:
+            // consider EXCEPT() and REPLACE().
+            // you should modify type definition before that.
+            ns.variables.forEach((v) => {
+              namespace.variables.push(v);
+            });
+          });
+        } else if (
+          expr.node_type === "Identifier" ||
+          expr.node_type === "DotOperator"
+        ) {
+          const idents = util.parseIdentifier(expr);
+          if (idents.length > 0) {
+            namespace.variables.push({
+              label: idents[idents.length - 1],
+              info: {},
+              kind: LSP.CompletionItemKind.Field,
+            });
+          }
+        }
+      });
+    }
+
     if (node.node_type === "SelectStatement") {
       await createNameSpacesFromWithClause.call(this, node);
       if (node.children.where) {
@@ -992,56 +1048,7 @@ export class BQLanguageServer {
         if (ns.variables.length > 0) res.push(ns);
       }
       if (namespace) {
-        node.children.exprs.NodeVec.forEach((n) => {
-          const expr = n as bq2cst.Expr & bq2cst.UnknownNode;
-          if (expr.children.alias) {
-            namespace.variables.push({
-              label: expr.children.alias.Node.token.literal,
-              info: {},
-              kind: LSP.CompletionItemKind.Field,
-            });
-          } else if (
-            expr.node_type === "Asterisk" ||
-            (expr.node_type === "DotOperator" &&
-              expr.children.right.Node.node_type === "Asterisk")
-          ) {
-            const allNameSpaces = res.filter(
-              (ns) =>
-                ns.name &&
-                (expr.node_type === "Asterisk"
-                  ? true
-                  : ns.name === expr.children.left.Node.token.literal) &&
-                util.arrangedInThisOrder(
-                  true,
-                  ns.start,
-                  { line: node.token.line, character: node.token.column },
-                  ns.end,
-                ),
-            );
-            const smallestNameSpaces =
-              this.getSmallestNameSpaces(allNameSpaces);
-            smallestNameSpaces.forEach((ns) => {
-              // TODO:
-              // consider EXCEPT() and REPLACE().
-              // you should modify type definition before that.
-              ns.variables.forEach((v) => {
-                namespace.variables.push(v);
-              });
-            });
-          } else if (
-            expr.node_type === "Identifier" ||
-            expr.node_type === "DotOperator"
-          ) {
-            const idents = util.parseIdentifier(expr);
-            if (idents.length > 0) {
-              namespace.variables.push({
-                label: idents[idents.length - 1],
-                info: {},
-                kind: LSP.CompletionItemKind.Field,
-              });
-            }
-          }
-        });
+        await createNameSpacesFromExprs.call(this, node, namespace);
       }
     } else if (node.node_type === "SetOperator") {
       await createNameSpacesFromWithClause.call(this, node);
@@ -1277,6 +1284,9 @@ export class BQLanguageServer {
           variables: [],
         };
         await this.createNameSpacesFromNode(res, curr, ns);
+
+        if (ns.variables.length === 0) continue;
+        res.push(ns);
       }
     } else if (node.node_type === "FromStatement") {
       if (namespace) {
@@ -1289,6 +1299,9 @@ export class BQLanguageServer {
         // when used without PipeStatement
         await createNameSpacesFromWithClause.call(this, node);
       }
+    } else if (node.node_type === "SelectPipeOperator") {
+      if (!namespace) return;
+      await createNameSpacesFromExprs.call(this, node, namespace);
     } else {
       for (const child of util.getAllChildren(node)) {
         await this.createNameSpacesFromNode(res, child, namespace);
