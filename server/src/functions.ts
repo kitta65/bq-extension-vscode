@@ -2428,6 +2428,7 @@ ORDER BY ts`,
 
 export const notGlobalFunctions: { [key: string]: Func[] } = {
   AI: [
+    "EVALUATE",
     "FORECAST",
     "GENERATE",
     "GENERATE_BOOL",
