@@ -1391,6 +1391,14 @@ SELECT
   ),`,
   },
   {
+    ident: "JSON_FLATTEN",
+    example: `SELECT
+  -- [JSON '"a"']
+  JSON_FLATTEN(JSON '"a"'),
+  -- [JSON '"a"', JSON '"b"', JSON '"c"']
+  JSON_FLATTEN(JSON '["a", ["b"], [["c"]]]'),`,
+  },
+  {
     ident: "JSON_KEYS",
     example: `SELECT
   -- ARRAY["a", "a.b"]
