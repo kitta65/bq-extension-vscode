@@ -1366,8 +1366,9 @@ export class BQLanguageServer {
         .filter((literal) => literal) as string[];
       createExtendedNameSpaceFromNode.call(this, node, namespace, [], exprs);
     } else if (
-      node.node_type === "BasePipeOperator" &&
-      ["EXTEND", "AGGREGATE"].includes(node.token.literal.toUpperCase())
+      (node.node_type === "BasePipeOperator" &&
+        node.token.literal.toUpperCase() === "AGGREGATE") ||
+      node.node_type === "ExtendPipeOperator"
     ) {
       if (!namespace) return;
       const exprs = (node.children.exprs?.NodeVec ?? [])
