@@ -1391,6 +1391,14 @@ SELECT
   ),`,
   },
   {
+    ident: "JSON_FLATTEN",
+    example: `SELECT
+  -- [JSON '"a"']
+  JSON_FLATTEN(JSON '"a"'),
+  -- [JSON '"a"', JSON '"b"', JSON '"c"']
+  JSON_FLATTEN(JSON '["a", ["b"], [["c"]]]'),`,
+  },
+  {
     ident: "JSON_KEYS",
     example: `SELECT
   -- ARRAY["a", "a.b"]
@@ -2428,13 +2436,22 @@ ORDER BY ts`,
 
 export const notGlobalFunctions: { [key: string]: Func[] } = {
   AI: [
+    "CLASSIFY",
+    "DETECT_ANOMALIES",
+    "EMBED",
     "EVALUATE",
     "FORECAST",
     "GENERATE",
     "GENERATE_BOOL",
     "GENERATE_DOUBLE",
+    "GENERATE_EMBEDDING",
     "GENERATE_INT",
     "GENERATE_TABLE",
+    "GENERATE_TEXT",
+    "IF",
+    "SCORE",
+    "SEARCH",
+    "SIMILARITY",
   ],
   KEYS: [
     // ----- AEAD encryption functions -----
