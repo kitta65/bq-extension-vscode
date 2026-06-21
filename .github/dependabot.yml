@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 30
     open-pull-requests-limit: 50
     ignore:
       - dependency-name: "@types/vscode"
@@ -20,6 +22,8 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
+    cooldown:
+      default-days: 30
     open-pull-requests-limit: 50
     groups:
       minor-and-patch:
